@@ -227,16 +227,87 @@ app.post('/api/v1/projects/:id/scenarios/evaluate', (req, res) => {
 // -------------------------------------------------------------
 // OFFLINE SYNC ENDPOINTS
 // -------------------------------------------------------------
-app.post('/api/v1/sync/push', (req, res) => {
-  res.json({ appliedCount: (req.body.operations || []).length, status: 'APPLIED' });
+// -------------------------------------------------------------
+// APPLICATION RELEASES & APK DISTRIBUTION
+// -------------------------------------------------------------
+app.get('/api/v1/releases/latest', (req, res) => {
+  const appId = req.query.applicationId || 'com.projectflow.android';
+  const published = store.releases
+    .filter(r => r.applicationId === appId && r.status === 'PUBLISHED')
+    .sort((a, b) => b.versionCode - a.versionCode);
+
+  if (published.length === 0) {
+    return res.status(404).json({ error: 'No published releases available' });
+  }
+
+  const latest = published[0];
+  res.json({
+    ...latest,
+    downloadUrl: `/api/v1/releases/${latest.id}/download`
+  });
 });
 
-app.get('/api/v1/sync/pull', (req, res) => {
-  res.json({
-    workspaces: store.workspaces,
-    projects: store.projects,
-    tasks: store.tasks
+app.get('/api/v1/releases/:id/download', (req, res) => {
+  const rel = store.releases.find(r => r.id === req.params.id);
+  if (!rel) {
+    return res.status(404).json({ error: 'Release artifact not found' });
+  }
+
+  const filePath = path.join(__dirname, rel.storagePath);
+  res.setHeader('Content-Type', rel.mimeType || 'application/vnd.android.package-archive');
+  res.setHeader('Content-Disposition', `attachment; filename="${rel.artifactFilename}"`);
+  res.setHeader('x-sha256-checksum', rel.sha256Checksum);
+
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('[RELEASE DOWNLOAD ERROR]', err.message);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed streaming APK release artifact' });
+      }
+    }
   });
+});
+
+app.get('/api/v1/admin/releases', (req, res) => {
+  res.json(store.releases);
+});
+
+app.post('/api/v1/admin/releases', (req, res) => {
+  const { versionName, versionCode, artifactFilename, storagePath, releaseNotes, releaseChannel } = req.body;
+  const newRelease = {
+    id: uuidv4(),
+    applicationId: req.body.applicationId || 'com.projectflow.android',
+    versionName: versionName || '2.0.0',
+    versionCode: versionCode || 200,
+    artifactFilename: artifactFilename || 'ProjectFlow-Intelligence-v2.0.0.apk',
+    storagePath: storagePath || 'releases/android/ProjectFlow-Intelligence-v2.0.0.apk',
+    mimeType: 'application/vnd.android.package-archive',
+    fileSizeBytes: req.body.fileSizeBytes || 8114674,
+    sha256Checksum: req.body.sha256Checksum || '8c20000160064c7bb80af8765f912ed1d9bb20ef6bffbb4d35ed2b3729030409',
+    releaseChannel: releaseChannel || 'STABLE',
+    releaseNotes: releaseNotes || 'Official release',
+    minimumSupportedVersionCode: 1,
+    status: 'PUBLISHED',
+    createdAt: new Date().toISOString(),
+    publishedAt: new Date().toISOString()
+  };
+  store.releases.unshift(newRelease);
+  res.status(201).json(newRelease);
+});
+
+app.post('/api/v1/admin/releases/:id/publish', (req, res) => {
+  const rel = store.releases.find(r => r.id === req.params.id);
+  if (!rel) return res.status(404).json({ error: 'Release not found' });
+  rel.status = 'PUBLISHED';
+  rel.publishedAt = new Date().toISOString();
+  res.json(rel);
+});
+
+app.post('/api/v1/admin/releases/:id/unpublish', (req, res) => {
+  const rel = store.releases.find(r => r.id === req.params.id);
+  if (!rel) return res.status(404).json({ error: 'Release not found' });
+  rel.status = 'DRAFT';
+  res.json(rel);
 });
 
 // -------------------------------------------------------------

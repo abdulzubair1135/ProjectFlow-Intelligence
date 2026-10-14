@@ -114,3 +114,19 @@ export interface PageResponse<T> {
   size: number;
   number: number;
 }
+
+export interface AppRelease {
+  id: string;
+  versionName: string;
+  versionCode: number;
+  releaseNotes?: string;
+  channel: 'ALPHA' | 'BETA' | 'STABLE';
+  artifactUrl: string;
+  artifactSize: number;
+  sha256Checksum: string;
+  minAndroidSdk: number;
+  targetAndroidSdk: number;
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'DEPRECATED';
+  publishedAt?: string;
+  createdAt: string;
+}

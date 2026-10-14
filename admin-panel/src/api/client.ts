@@ -1,4 +1,4 @@
-import { AdminOverview, AuditLog, PageResponse, Project, RiskFinding, SystemHealth, Task, UserProfile, Workspace } from '../types';
+import { AdminOverview, AppRelease, AuditLog, PageResponse, Project, RiskFinding, SystemHealth, Task, UserProfile, Workspace } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -155,5 +155,42 @@ export const api = {
       headers: getAuthHeaders()
     });
     return handleResponse<RiskFinding[]>(res);
+  },
+
+  // App Releases & APK Distribution
+  async getReleases() {
+    const res = await fetch(`${API_BASE}/admin/releases`, {
+      headers: getAuthHeaders()
+    });
+    return handleResponse<AppRelease[]>(res);
+  },
+
+  async createRelease(data: Partial<AppRelease>) {
+    const res = await fetch(`${API_BASE}/admin/releases`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse<AppRelease>(res);
+  },
+
+  async publishRelease(id: string) {
+    const res = await fetch(`${API_BASE}/admin/releases/${id}/publish`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    return handleResponse<AppRelease>(res);
+  },
+
+  async unpublishRelease(id: string) {
+    const res = await fetch(`${API_BASE}/admin/releases/${id}/unpublish`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    return handleResponse<AppRelease>(res);
+  },
+
+  getDownloadUrl(id: string) {
+    return `${API_BASE}/releases/${id}/download`;
   }
 };

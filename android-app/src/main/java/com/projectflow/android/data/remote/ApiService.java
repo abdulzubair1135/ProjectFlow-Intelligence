@@ -32,4 +32,11 @@ public interface ApiService {
 
     @POST("projects/{id}/risks/evaluate")
     Call<List<RiskDto>> evaluateRisks(@Path("id") String projectId);
+
+    @GET("releases/latest")
+    Call<ReleaseDto> getLatestRelease(@Query("applicationId") String applicationId);
+
+    @Streaming
+    @GET("releases/{id}/download")
+    Call<okhttp3.ResponseBody> downloadRelease(@Path("id") String releaseId);
 }

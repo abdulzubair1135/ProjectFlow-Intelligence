@@ -123,6 +123,25 @@ const store = {
       metadata: '{"engine":"JavaScript Node.js Express","supabase":"connected"}',
       timestamp: new Date().toISOString()
     }
+  ],
+  releases: [
+    {
+      id: '50000000-0000-0000-0000-000000000001',
+      applicationId: 'com.projectflow.android',
+      versionName: '2.0.0',
+      versionCode: 200,
+      artifactFilename: 'ProjectFlow-Intelligence-v2.0.0.apk',
+      storagePath: 'releases/android/ProjectFlow-Intelligence-v2.0.0.apk',
+      mimeType: 'application/vnd.android.package-archive',
+      fileSizeBytes: 8114674,
+      sha256Checksum: '8c20000160064c7bb80af8765f912ed1d9bb20ef6bffbb4d35ed2b3729030409',
+      releaseChannel: 'STABLE',
+      releaseNotes: 'Official universal signed release of ProjectFlow Intelligence with 16-screen UI flow, Natural Mineral design system, and deterministic risk engine.',
+      minimumSupportedVersionCode: 1,
+      status: 'PUBLISHED',
+      createdAt: new Date().toISOString(),
+      publishedAt: new Date().toISOString()
+    }
   ]
 };
 

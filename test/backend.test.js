@@ -68,4 +68,15 @@ assert(scenarioResult.valid === true, 'Scenario evaluation should be valid');
 assert.strictEqual(scenarioResult.scenarioFinishDate, '2026-11-20', 'Scenario finish date should reflect proposed due date');
 console.log('✔ What-If scenario evaluation computed expected finish date: ' + scenarioResult.scenarioFinishDate);
 
+// 4. Application Release Verification
+console.log('\n--- 4. Testing Application Release Verification ---');
+const fs = require('node:fs');
+const crypto = require('node:crypto');
+const releaseApkPath = 'releases/android/ProjectFlow-Intelligence-v2.0.0.apk';
+assert(fs.existsSync(releaseApkPath), 'Official release APK artifact must exist in storage path');
+const apkBuffer = fs.readFileSync(releaseApkPath);
+const hash = crypto.createHash('sha256').update(apkBuffer).digest('hex');
+assert.strictEqual(hash, '8c20000160064c7bb80af8765f912ed1d9bb20ef6bffbb4d35ed2b3729030409', 'Release APK checksum must match cryptographic hash');
+console.log('✔ Official APK release artifact verified on disk with valid SHA-256: ' + hash);
+
 console.log('\n🎉 ALL PROJECTFLOW INTELLIGENCE BACKEND TESTS PASSED SUCCESSFULLY!\n');

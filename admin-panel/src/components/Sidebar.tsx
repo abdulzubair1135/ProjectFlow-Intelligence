@@ -9,7 +9,8 @@ import {
   ShieldAlert,
   Activity,
   HeartPulse,
-  Settings
+  Settings,
+  Package
 } from 'lucide-react';
 
 interface NavItem {
@@ -25,6 +26,7 @@ const navItems: NavItem[] = [
   { name: 'Tasks Explorer', path: '/tasks', icon: CheckSquare },
   { name: 'Risk Radar', path: '/risks', icon: ShieldAlert },
   { name: 'User Management', path: '/users', icon: Users },
+  { name: 'App Releases', path: '/releases', icon: Package },
   { name: 'Audit Logs', path: '/audit-logs', icon: Activity },
   { name: 'System Telemetry', path: '/health', icon: HeartPulse },
   { name: 'Admin Settings', path: '/settings', icon: Settings },

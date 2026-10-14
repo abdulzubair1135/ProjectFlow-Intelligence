@@ -56,4 +56,19 @@ public class DtoModels {
         public String token;
         public UserDto user;
     }
+
+    public static class ReleaseDto {
+        public String id;
+        public String applicationId;
+        public String versionName;
+        public long versionCode;
+        public String artifactFilename;
+        public String downloadUrl;
+        public long fileSizeBytes;
+        public String sha256Checksum;
+        public String releaseChannel;
+        public String releaseNotes;
+        public String status;
+        public String publishedAt;
+    }
 }

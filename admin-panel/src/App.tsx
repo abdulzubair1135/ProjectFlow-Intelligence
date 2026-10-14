@@ -12,6 +12,7 @@ import { UserManagement } from './pages/Users';
 import { AuditLogs } from './pages/AuditLogs';
 import { HealthView } from './pages/SystemHealth';
 import { Settings } from './pages/Settings';
+import { Releases } from './pages/Releases';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -48,6 +49,7 @@ export const App: React.FC = () => {
             <Route path="tasks" element={<Tasks />} />
             <Route path="risks" element={<Risks />} />
             <Route path="users" element={<UserManagement />} />
+            <Route path="releases" element={<Releases />} />
             <Route path="audit-logs" element={<AuditLogs />} />
             <Route path="health" element={<HealthView />} />
             <Route path="settings" element={<Settings />} />
