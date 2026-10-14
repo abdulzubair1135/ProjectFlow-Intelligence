@@ -57,8 +57,8 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(new TasksFragment(), "Tasks");
             } else if (id == R.id.nav_team) {
                 loadFragment(new TeamFragment(), "Team Members");
-            } else if (id == R.id.nav_more) {
-                if (drawerLayout != null) drawerLayout.openDrawer(GravityCompat.START);
+            } else if (id == R.id.nav_profile) {
+                loadFragment(new ProfileFragment(), "Profile & Settings");
             } else {
                 loadFragment(new DashboardFragment(), "Dashboard");
             }
@@ -89,9 +89,11 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.drawer_notifications) {
                 loadFragment(new NotificationsFragment(), "Notifications");
             } else if (id == R.id.drawer_profile) {
-                loadFragment(new ProfileFragment(), "My Profile");
+                loadFragment(new ProfileFragment(), "Profile & Settings");
+                bottomNav.setSelectedItemId(R.id.nav_profile);
             } else if (id == R.id.drawer_settings) {
-                loadFragment(new SettingsFragment(), "Settings");
+                loadFragment(new ProfileFragment(), "Profile & Settings");
+                bottomNav.setSelectedItemId(R.id.nav_profile);
             }
 
             if (drawerLayout != null) {

@@ -17,9 +17,11 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.appcompat.widget.SwitchCompat;
 import com.projectflow.android.R;
 import com.projectflow.android.data.remote.model.DtoModels.UserDto;
 import com.projectflow.android.data.repository.ProjectFlowRepository;
+import com.projectflow.android.distribution.ApkDistributionManager;
 import com.projectflow.android.ui.LoginActivity;
 
 public class ProfileFragment extends Fragment {
@@ -65,6 +67,44 @@ public class ProfileFragment extends Fragment {
         btnThemeSystem.setOnClickListener(v -> setThemeMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM, "system"));
 
         highlightActiveTheme();
+
+        // Application Settings inside Profile
+        View layoutProfileShareApk = view.findViewById(R.id.layoutProfileShareApk);
+        Button btnProfileShareApk = view.findViewById(R.id.btnProfileShareApk);
+        Button btnProfileSyncNow = view.findViewById(R.id.btnProfileSyncNow);
+        SwitchCompat switchProfileNotifications = view.findViewById(R.id.switchProfileNotifications);
+
+        View.OnClickListener openShare = v -> {
+            Toast.makeText(requireContext(), "Preparing ProjectFlow APK for native sharing...", Toast.LENGTH_SHORT).show();
+            ApkDistributionManager.prepareAndShareApk(requireActivity(), null, new ApkDistributionManager.ShareCallback() {
+                @Override public void onProgress(String status) {}
+                @Override public void onReady() {}
+                @Override public void onError(String message) {
+                    if (isAdded()) {
+                        requireActivity().runOnUiThread(() ->
+                                Toast.makeText(requireContext(), "Share failed: " + message, Toast.LENGTH_SHORT).show());
+                    }
+                }
+            });
+        };
+        if (layoutProfileShareApk != null) layoutProfileShareApk.setOnClickListener(openShare);
+        if (btnProfileShareApk != null) btnProfileShareApk.setOnClickListener(openShare);
+
+        if (btnProfileSyncNow != null) {
+            btnProfileSyncNow.setOnClickListener(v -> {
+                repository.refreshWorkspaces();
+                Toast.makeText(requireContext(), "Offline database synchronized with backend", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        if (switchProfileNotifications != null) {
+            boolean enabled = prefs.getBoolean("alerts_enabled", true);
+            switchProfileNotifications.setChecked(enabled);
+            switchProfileNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                prefs.edit().putBoolean("alerts_enabled", isChecked).apply();
+                Toast.makeText(requireContext(), isChecked ? "Deadline & Risk alerts enabled" : "Alerts muted", Toast.LENGTH_SHORT).show();
+            });
+        }
 
         btnLogout.setOnClickListener(v -> {
             new AlertDialog.Builder(requireContext())
