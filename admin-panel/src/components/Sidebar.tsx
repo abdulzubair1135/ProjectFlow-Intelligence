@@ -36,9 +36,7 @@ export const Sidebar: React.FC = () => {
       {/* Brand Header */}
       <div className="h-16 flex items-center px-6 border-b border-[#E2E0D8]">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[#56664C] text-[#F4F2E9] flex items-center justify-center font-bold text-lg shadow-sm">
-            PF
-          </div>
+          <img src="/logo.jpg" alt="ProjectFlow Logo" className="w-9 h-9 rounded-lg object-contain bg-white border border-[#E2E0D8] shadow-sm" />
           <div>
             <h1 className="text-base font-semibold text-[#292D28] leading-tight tracking-tight">
               ProjectFlow
