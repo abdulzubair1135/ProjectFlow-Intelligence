@@ -125,6 +125,10 @@ public class ProjectFlowRepository {
     }
 
     // Tasks
+    public LiveData<List<TaskEntity>> getAllTasks() {
+        return db.taskDao().getAllLive();
+    }
+
     public LiveData<List<TaskEntity>> getTasks(String projectId) {
         refreshTasks(projectId);
         return db.taskDao().getByProjectLive(projectId);

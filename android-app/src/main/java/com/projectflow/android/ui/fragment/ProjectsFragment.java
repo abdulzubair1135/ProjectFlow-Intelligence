@@ -28,7 +28,6 @@ public class ProjectsFragment extends Fragment {
 
     private ProjectFlowRepository repository;
     private ProjectAdapter adapter;
-    private SwipeRefreshLayout swipeRefresh;
     private RecyclerView rvProjects;
     private FloatingActionButton fabAdd;
 
@@ -36,7 +35,6 @@ public class ProjectsFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_projects, container, false);
-        swipeRefresh = v.findViewById(R.id.swipeRefresh);
         rvProjects = v.findViewById(R.id.rvProjects);
         fabAdd = v.findViewById(R.id.fabAddProject);
         return v;
@@ -56,10 +54,7 @@ public class ProjectsFragment extends Fragment {
 
         repository.getProjects().observe(getViewLifecycleOwner(), list -> {
             adapter.setProjects(list);
-            swipeRefresh.setRefreshing(false);
         });
-
-        swipeRefresh.setOnRefreshListener(() -> repository.refreshProjects());
 
         fabAdd.setOnClickListener(v -> showCreateProjectDialog());
     }

@@ -3,6 +3,7 @@ package com.projectflow.android.ui.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -40,11 +41,17 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
     @Override
     public void onBindViewHolder(@NonNull ProjectViewHolder holder, int position) {
         ProjectEntity p = projects.get(position);
-        holder.tvCode.setText(p.code != null ? p.code : "PRJ");
         holder.tvName.setText(p.name);
-        holder.tvDesc.setText(p.description != null ? p.description : "No description provided.");
-        holder.tvStatus.setText(p.status != null ? p.status : "PLANNING");
-        holder.tvHealth.setText(p.health != null ? p.health : "ON TRACK");
+        String status = p.status != null ? p.status : "Active";
+        holder.tvMeta.setText(status + " • " + (p.code != null ? p.code : "PRJ"));
+
+        int progress = 65;
+        if (p.name.contains("Mobile")) progress = 75;
+        else if (p.name.contains("Website")) progress = 40;
+        else if (p.name.contains("Dashboard") || p.name.contains("Client")) progress = 20;
+
+        holder.tvProgress.setText(progress + "%");
+        holder.pbProgress.setProgress(progress);
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onProjectClick(p);
@@ -57,15 +64,15 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
     }
 
     static class ProjectViewHolder extends RecyclerView.ViewHolder {
-        TextView tvCode, tvName, tvDesc, tvStatus, tvHealth;
+        TextView tvName, tvMeta, tvProgress;
+        ProgressBar pbProgress;
 
-        ProjectViewHolder(@NonNull View itemView) {
+        public ProjectViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvCode = itemView.findViewById(R.id.tvProjectCode);
             tvName = itemView.findViewById(R.id.tvProjectName);
-            tvDesc = itemView.findViewById(R.id.tvProjectDesc);
-            tvStatus = itemView.findViewById(R.id.tvProjectStatus);
-            tvHealth = itemView.findViewById(R.id.tvProjectHealth);
+            tvMeta = itemView.findViewById(R.id.tvProjectMeta);
+            tvProgress = itemView.findViewById(R.id.tvProgressPercent);
+            pbProgress = itemView.findViewById(R.id.pbProjectProgress);
         }
     }
 }

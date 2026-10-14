@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/limestone_ivory"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingTop="12dp"
+    android:paddingEnd="16dp">
+
+    <!-- Search Bar with (+) Action Button -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1"
+            app:cardBackgroundColor="@color/chalk_white"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_projects"
+                    app:tint="@color/stone_grey" />
+
+                <EditText
+                    android:id="@+id/etSearchTeam"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@null"
+                    android:hint="@string/search_members_hint"
+                    android:textColor="@color/charcoal"
+                    android:textColorHint="@color/stone_grey"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <ImageView
+            android:id="@+id/btnAddMember"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/ic_projects"
+            android:backgroundTint="@color/deep_sage"
+            android:contentDescription="Add Member"
+            android:padding="12dp"
+            android:src="@drawable/ic_projects"
+            app:tint="@color/chalk_white" />
+    </LinearLayout>
+
+    <!-- Team Members List -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:id="@+id/teamContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Member 1: Rahul Verma -->
+            <include layout="@layout/item_team_member" />
+            
+            <!-- Member 2: Priya Sharma -->
+            <include layout="@layout/item_team_member" />
+
+            <!-- Member 3: Amit Kumar -->
+            <include layout="@layout/item_team_member" />
+
+            <!-- Member 4: Sneha Patel -->
+            <include layout="@layout/item_team_member" />
+
+            <!-- Member 5: Vikram Singh -->
+            <include layout="@layout/item_team_member" />
+
+            <!-- Member 6: Neha Gupta -->
+            <include layout="@layout/item_team_member" />
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

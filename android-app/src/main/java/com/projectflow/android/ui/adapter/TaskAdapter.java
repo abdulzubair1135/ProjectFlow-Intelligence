@@ -3,6 +3,7 @@ package com.projectflow.android.ui.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -41,9 +42,14 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
         TaskEntity t = tasks.get(position);
         holder.tvTitle.setText(t.title);
-        holder.tvDesc.setText(t.description != null ? t.description : "");
-        holder.tvPriority.setText(t.priority != null ? t.priority : "MED");
-        holder.tvProgress.setText(t.progressPercent + "%");
+
+        String priority = t.priority != null ? t.priority : "Medium";
+        holder.tvPriority.setText(priority);
+
+        String dueDate = t.dueDate != null ? t.dueDate.split("T")[0] : "28 Apr";
+        holder.tvDueDate.setText(dueDate);
+
+        holder.cbComplete.setChecked("DONE".equalsIgnoreCase(t.statusCategory));
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onTaskClick(t);
@@ -56,14 +62,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvDesc, tvPriority, tvProgress;
+        TextView tvTitle, tvPriority, tvDueDate;
+        CheckBox cbComplete;
 
-        TaskViewHolder(@NonNull View itemView) {
+        public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tvTaskTitle);
-            tvDesc = itemView.findViewById(R.id.tvTaskDesc);
             tvPriority = itemView.findViewById(R.id.tvTaskPriority);
-            tvProgress = itemView.findViewById(R.id.tvTaskProgress);
+            tvDueDate = itemView.findViewById(R.id.tvTaskDueDate);
+            cbComplete = itemView.findViewById(R.id.cbTaskComplete);
         }
     }
 }

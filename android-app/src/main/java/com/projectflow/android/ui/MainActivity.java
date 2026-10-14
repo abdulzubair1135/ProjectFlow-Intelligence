@@ -1,18 +1,25 @@
 package com.projectflow.android.ui;
 
 import android.os.Bundle;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.navigation.NavigationView;
 import com.projectflow.android.R;
 import com.projectflow.android.data.repository.ProjectFlowRepository;
 import com.projectflow.android.ui.fragment.*;
 
 public class MainActivity extends AppCompatActivity {
 
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
     private BottomNavigationView bottomNav;
-    private TextView tvHeaderTitle, tvWorkspaceBadge;
+    private TextView tvHeaderTitle;
+    private ImageView btnMenu;
     private ProjectFlowRepository repository;
 
     @Override
@@ -20,45 +27,94 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navigationView = findViewById(R.id.navigation_view);
         bottomNav = findViewById(R.id.bottom_nav);
         tvHeaderTitle = findViewById(R.id.tvHeaderTitle);
-        tvWorkspaceBadge = findViewById(R.id.tvWorkspaceBadge);
+        btnMenu = findViewById(R.id.btnMenu);
 
         repository = new ProjectFlowRepository(this);
-
-        // Initial background fetch
         repository.refreshWorkspaces();
         repository.refreshProjects();
 
+        // Hamburger Menu click -> Open Drawer (Screen 15)
+        btnMenu.setOnClickListener(v -> {
+            if (drawerLayout != null) {
+                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                } else {
+                    drawerLayout.openDrawer(GravityCompat.START);
+                }
+            }
+        });
+
+        // Bottom Navigation (Screens 4, 5, 6, 10, More)
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
-            Fragment fragment;
             if (id == R.id.nav_projects) {
-                tvHeaderTitle.setText("Projects");
-                fragment = new ProjectsFragment();
-            } else if (id == R.id.nav_kanban) {
-                tvHeaderTitle.setText("Kanban");
-                fragment = new KanbanFragment();
-            } else if (id == R.id.nav_risk_radar) {
-                tvHeaderTitle.setText("Risk Radar");
-                fragment = new RiskRadarFragment();
-            } else if (id == R.id.nav_sync) {
-                tvHeaderTitle.setText("Offline Sync");
-                fragment = new SyncFragment();
+                loadFragment(new ProjectsFragment(), "Projects");
+            } else if (id == R.id.nav_tasks) {
+                loadFragment(new TasksFragment(), "Tasks");
+            } else if (id == R.id.nav_team) {
+                loadFragment(new TeamFragment(), "Team Members");
+            } else if (id == R.id.nav_more) {
+                if (drawerLayout != null) drawerLayout.openDrawer(GravityCompat.START);
             } else {
-                tvHeaderTitle.setText("Dashboard");
-                fragment = new DashboardFragment();
+                loadFragment(new DashboardFragment(), "Dashboard");
             }
-
-            getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, fragment)
-                    .commit();
             return true;
         });
 
-        // Set default fragment
+        // Navigation Drawer (Screen 15: Navigation Drawer)
+        navigationView.setNavigationItemSelectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.drawer_home) {
+                loadFragment(new DashboardFragment(), "Dashboard");
+                bottomNav.setSelectedItemId(R.id.nav_home);
+            } else if (id == R.id.drawer_projects) {
+                loadFragment(new ProjectsFragment(), "Projects");
+                bottomNav.setSelectedItemId(R.id.nav_projects);
+            } else if (id == R.id.drawer_tasks) {
+                loadFragment(new TasksFragment(), "Tasks");
+                bottomNav.setSelectedItemId(R.id.nav_tasks);
+            } else if (id == R.id.drawer_team) {
+                loadFragment(new TeamFragment(), "Team Members");
+                bottomNav.setSelectedItemId(R.id.nav_team);
+            } else if (id == R.id.drawer_calendar) {
+                loadFragment(new CalendarFragment(), "Calendar");
+            } else if (id == R.id.drawer_reports) {
+                loadFragment(new ReportsFragment(), "Reports");
+            } else if (id == R.id.drawer_notifications) {
+                loadFragment(new NotificationsFragment(), "Notifications");
+            } else if (id == R.id.drawer_settings) {
+                loadFragment(new SettingsFragment(), "Settings");
+            }
+
+            if (drawerLayout != null) {
+                drawerLayout.closeDrawer(GravityCompat.START);
+            }
+            return true;
+        });
+
+        // Initial default screen: Dashboard (Screen 4)
         if (savedInstanceState == null) {
-            bottomNav.setSelectedItemId(R.id.nav_dashboard);
+            loadFragment(new DashboardFragment(), "Dashboard");
+        }
+    }
+
+    private void loadFragment(Fragment fragment, String title) {
+        tvHeaderTitle.setText(title);
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .commit();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
         }
     }
 }

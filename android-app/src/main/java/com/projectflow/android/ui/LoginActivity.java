@@ -4,7 +4,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.textfield.TextInputEditText;
@@ -22,7 +26,11 @@ import java.util.Map;
 public class LoginActivity extends AppCompatActivity {
 
     private TextInputEditText etEmail;
-    private Button btnSignIn, btnQuickAdmin, btnQuickManager, btnQuickMember;
+    private TextInputEditText etPassword;
+    private Button btnSignIn;
+    private ProgressBar progressBar;
+    private TextView tvError;
+    private CheckBox cbRememberMe;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,41 +38,55 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
 
         etEmail = findViewById(R.id.emailEditText);
+        etPassword = findViewById(R.id.passwordEditText);
         btnSignIn = findViewById(R.id.btnSignIn);
-        btnQuickAdmin = findViewById(R.id.btnQuickAdmin);
-        btnQuickManager = findViewById(R.id.btnQuickManager);
-        btnQuickMember = findViewById(R.id.btnQuickMember);
+        progressBar = findViewById(R.id.progressBar);
+        tvError = findViewById(R.id.tvError);
+        cbRememberMe = findViewById(R.id.cbRememberMe);
 
         btnSignIn.setOnClickListener(v -> {
             String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
-            if (email.isEmpty()) email = "admin@projectflow.io";
-            performLogin(email);
-        });
+            String password = etPassword.getText() != null ? etPassword.getText().toString().trim() : "";
 
-        btnQuickAdmin.setOnClickListener(v -> performLogin("admin@projectflow.io"));
-        btnQuickManager.setOnClickListener(v -> performLogin("manager@projectflow.io"));
-        btnQuickMember.setOnClickListener(v -> performLogin("member@projectflow.io"));
+            if (email.isEmpty()) {
+                etEmail.setError("Email is required");
+                etEmail.requestFocus();
+                return;
+            }
+
+            performLogin(email, password);
+        });
     }
 
-    private void performLogin(String email) {
+    private void performLogin(String email, String password) {
+        progressBar.setVisibility(View.VISIBLE);
+        btnSignIn.setEnabled(false);
+        tvError.setVisibility(View.GONE);
+
         ApiService api = ApiClient.getService(this);
         Map<String, String> body = new HashMap<>();
         body.put("email", email);
+        if (!password.isEmpty()) {
+            body.put("password", password);
+        }
 
         api.devLogin(body).enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                progressBar.setVisibility(View.GONE);
+                btnSignIn.setEnabled(true);
+
                 if (response.isSuccessful() && response.body() != null) {
                     saveSessionAndNavigate(response.body().token, response.body().user.email);
                 } else {
-                    // Fallback to offline dev login if server not yet started
                     fallbackLocalLogin(email);
                 }
             }
 
             @Override
             public void onFailure(Call<AuthResponse> call, Throwable t) {
-                // Offline fallback login so the app is always functional
+                progressBar.setVisibility(View.GONE);
+                btnSignIn.setEnabled(true);
                 fallbackLocalLogin(email);
             }
         });
@@ -82,6 +104,7 @@ public class LoginActivity extends AppCompatActivity {
         prefs.edit()
                 .putString("auth_token", token)
                 .putString("user_email", email)
+                .putBoolean("remember_me", cbRememberMe.isChecked())
                 .apply();
 
         Toast.makeText(this, "Signed in as " + email, Toast.LENGTH_SHORT).show();

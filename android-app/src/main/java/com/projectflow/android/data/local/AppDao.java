@@ -30,6 +30,9 @@ public interface AppDao {
         @Query("SELECT * FROM projects ORDER BY name ASC")
         LiveData<List<ProjectEntity>> getAllLive();
 
+        @Query("SELECT * FROM projects ORDER BY name ASC")
+        List<ProjectEntity> getAllSync();
+
         @Query("SELECT * FROM projects WHERE workspaceId = :wsId ORDER BY name ASC")
         List<ProjectEntity> getByWorkspaceSync(String wsId);
 

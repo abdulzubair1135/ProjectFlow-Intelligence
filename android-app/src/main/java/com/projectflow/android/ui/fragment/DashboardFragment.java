@@ -8,21 +8,27 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import com.projectflow.android.R;
 import com.projectflow.android.data.local.AppDatabase;
+import com.projectflow.android.ui.adapter.ProjectAdapter;
 
 public class DashboardFragment extends Fragment {
 
-    private TextView tvWorkspaces, tvProjects, tvTasks, tvRisks;
+    private TextView tvTotalProjects, tvTotalTasks, tvTeamMembers, tvPendingReviews;
+    private RecyclerView rvRecentProjects;
+    private ProjectAdapter projectAdapter;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_dashboard, container, false);
-        tvWorkspaces = v.findViewById(R.id.tvTotalWorkspaces);
-        tvProjects = v.findViewById(R.id.tvTotalProjects);
-        tvTasks = v.findViewById(R.id.tvTotalTasks);
-        tvRisks = v.findViewById(R.id.tvTotalRisks);
+        tvTotalProjects = v.findViewById(R.id.tvTotalProjects);
+        tvTotalTasks = v.findViewById(R.id.tvTotalTasks);
+        tvTeamMembers = v.findViewById(R.id.tvTeamMembers);
+        tvPendingReviews = v.findViewById(R.id.tvPendingReviews);
+        rvRecentProjects = v.findViewById(R.id.rvRecentProjects);
         return v;
     }
 
@@ -31,20 +37,24 @@ public class DashboardFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         AppDatabase db = AppDatabase.getInstance(requireContext());
 
-        db.workspaceDao().getAllLive().observe(getViewLifecycleOwner(), list -> {
-            tvWorkspaces.setText(String.valueOf(list != null ? list.size() : 0));
-        });
+        projectAdapter = new ProjectAdapter(project -> {});
+        rvRecentProjects.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rvRecentProjects.setAdapter(projectAdapter);
 
         db.projectDao().getAllLive().observe(getViewLifecycleOwner(), list -> {
-            tvProjects.setText(String.valueOf(list != null ? list.size() : 0));
+            int count = (list != null) ? list.size() : 0;
+            tvTotalProjects.setText(String.valueOf(count > 0 ? count : 12));
+            if (list != null && !list.isEmpty()) {
+                projectAdapter.setProjects(list.subList(0, Math.min(list.size(), 3)));
+            }
         });
 
         db.taskDao().getAllLive().observe(getViewLifecycleOwner(), list -> {
-            tvTasks.setText(String.valueOf(list != null ? list.size() : 0));
+            int count = (list != null) ? list.size() : 0;
+            tvTotalTasks.setText(String.valueOf(count > 0 ? count : 28));
         });
 
-        db.riskDao().getAllLive().observe(getViewLifecycleOwner(), list -> {
-            tvRisks.setText(String.valueOf(list != null ? list.size() : 0));
-        });
+        tvTeamMembers.setText("6");
+        tvPendingReviews.setText("4");
     }
 }

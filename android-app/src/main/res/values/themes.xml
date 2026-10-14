@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme with Natural Mineral branding -->
+    <!-- Base application theme with Natural Mineral branding (Light) -->
     <style name="Theme.ProjectFlow" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color -->
         <item name="colorPrimary">@color/deep_sage</item>
@@ -9,15 +9,32 @@
         <!-- Secondary brand color -->
         <item name="colorSecondary">@color/mineral_sage</item>
         <item name="colorSecondaryVariant">@color/mineral_sage</item>
-        <item name="colorOnSecondary">@color/warm_white</item>
+        <item name="colorOnSecondary">@color/chalk_white</item>
 
         <!-- Status bar color -->
-        <item name="android:statusBarColor">@color/warm_white</item>
+        <item name="android:statusBarColor">@color/chalk_white</item>
         <item name="android:windowLightStatusBar">true</item>
 
         <!-- Background & Surface -->
         <item name="android:windowBackground">@color/limestone_ivory</item>
-        <item name="colorSurface">@color/warm_white</item>
-        <item name="colorOnSurface">@color/charcoal</item>
+        <item name="colorSurface">@color/chalk_white</item>
+    </style>
+
+    <style name="CalendarDayHeader">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/stone_grey</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="CalendarDayNumber">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">32dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/charcoal</item>
+        <item name="android:textSize">13sp</item>
     </style>
 </resources>

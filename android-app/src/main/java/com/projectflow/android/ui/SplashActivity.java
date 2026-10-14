@@ -19,15 +19,18 @@ public class SplashActivity extends AppCompatActivity {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             SharedPreferences prefs = getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
             String token = prefs.getString("auth_token", null);
+            boolean onboardingCompleted = prefs.getBoolean("onboarding_completed", false);
 
             Intent intent;
             if (token != null && !token.isEmpty()) {
                 intent = new Intent(SplashActivity.this, MainActivity.class);
+            } else if (!onboardingCompleted) {
+                intent = new Intent(SplashActivity.this, OnboardingActivity.class);
             } else {
                 intent = new Intent(SplashActivity.this, LoginActivity.class);
             }
             startActivity(intent);
             finish();
-        }, 1000);
+        }, 1200);
     }
 }
