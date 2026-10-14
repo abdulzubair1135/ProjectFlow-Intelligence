@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "cd admin-panel && npm install && npm run build",
+    "build": "cd admin-panel && npm install --include=dev && npm run build",
     "test": "node test/backend.test.js"
   },
   "dependencies": {

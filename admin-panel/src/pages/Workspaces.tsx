@@ -43,7 +43,7 @@ export const Workspaces: React.FC = () => {
     setSubmitting(true);
     try {
       const created = await api.createWorkspace({ name, slug, description });
-      setWorkspaces((prev) => [created, ...prev]);
+      setWorkspaces((prev: Workspace[]) => [created, ...prev]);
       setShowModal(false);
       setName('');
       setSlug('');
