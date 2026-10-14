@@ -142,6 +142,50 @@ const store = {
       createdAt: new Date().toISOString(),
       publishedAt: new Date().toISOString()
     }
+  ],
+  notifications: [
+    {
+      id: '60000000-0000-0000-0000-000000000001',
+      title: 'Task Assigned',
+      message: 'You have been assigned to "Deterministic Risk Radar Engine"',
+      type: 'TASK_ASSIGNED',
+      read: false,
+      createdAt: new Date(Date.now() - 35 * 60000).toISOString()
+    },
+    {
+      id: '60000000-0000-0000-0000-000000000002',
+      title: 'Risk Detected',
+      message: 'Critical deadline approaching for Frontend Admin Panel',
+      type: 'RISK_ALERT',
+      read: false,
+      createdAt: new Date(Date.now() - 120 * 60000).toISOString()
+    },
+    {
+      id: '60000000-0000-0000-0000-000000000003',
+      title: 'Release Published',
+      message: 'ProjectFlow Intelligence v2.0.0 is now live for download',
+      type: 'SYSTEM',
+      read: true,
+      createdAt: new Date(Date.now() - 360 * 60000).toISOString()
+    }
+  ],
+  messages: [
+    {
+      id: '70000000-0000-0000-0000-000000000001',
+      senderId: '00000000-0000-0000-0000-000000000001',
+      senderName: 'System Administrator',
+      content: 'Welcome to the ProjectFlow engineering channel! Architecture discussions and task updates take place here.',
+      channel: 'general',
+      createdAt: new Date(Date.now() - 240 * 60000).toISOString()
+    },
+    {
+      id: '70000000-0000-0000-0000-000000000002',
+      senderId: '00000000-0000-0000-0000-000000000002',
+      senderName: 'Project Manager',
+      content: 'The v2.0.0 APK release is verified with SHA-256 integrity check and ready for team distribution.',
+      channel: 'general',
+      createdAt: new Date(Date.now() - 60 * 60000).toISOString()
+    }
   ]
 };
 

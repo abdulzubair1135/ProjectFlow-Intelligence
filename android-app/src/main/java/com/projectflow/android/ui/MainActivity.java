@@ -84,8 +84,12 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(new CalendarFragment(), "Calendar");
             } else if (id == R.id.drawer_reports) {
                 loadFragment(new ReportsFragment(), "Reports");
+            } else if (id == R.id.drawer_chat) {
+                loadFragment(new ChatFragment(), "Team Discussions");
             } else if (id == R.id.drawer_notifications) {
                 loadFragment(new NotificationsFragment(), "Notifications");
+            } else if (id == R.id.drawer_profile) {
+                loadFragment(new ProfileFragment(), "My Profile");
             } else if (id == R.id.drawer_settings) {
                 loadFragment(new SettingsFragment(), "Settings");
             }
@@ -102,9 +106,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void navigateToFragment(Fragment fragment, String title) {
+        loadFragment(fragment, title);
+    }
+
     private void loadFragment(Fragment fragment, String title) {
         tvHeaderTitle.setText(title);
         getSupportFragmentManager().beginTransaction()
+                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
                 .replace(R.id.fragment_container, fragment)
                 .commit();
     }

@@ -71,4 +71,44 @@ public class DtoModels {
         public String status;
         public String publishedAt;
     }
+
+    public static class TeamMemberDto {
+        public String id;
+        public String email;
+        public String fullName;
+        public String role;
+        public boolean active;
+        public int assignedTasksCount;
+    }
+
+    public static class NotificationDto {
+        public String id;
+        public String title;
+        public String message;
+        public String type;
+        public boolean read;
+        public String createdAt;
+    }
+
+    public static class ChatMessageDto {
+        public String id;
+        public String senderId;
+        public String senderName;
+        public String content;
+        public String channel;
+        public String createdAt;
+    }
+
+    public static class ReportSummaryDto {
+        public int totalTasks;
+        public int completedTasks;
+        public int inProgressTasks;
+        public int todoTasks;
+        public int overdueTasks;
+        public int completionRate;
+        public int totalProjects;
+        public int activeProjects;
+        public java.util.Map<String, Integer> statusDistribution;
+        public String generatedAt;
+    }
 }

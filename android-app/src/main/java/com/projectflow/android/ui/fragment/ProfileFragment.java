@@ -1,5 +1,6 @@
 package com.projectflow.android.ui.fragment;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -8,36 +9,140 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import com.projectflow.android.R;
+import com.projectflow.android.data.remote.model.DtoModels.UserDto;
+import com.projectflow.android.data.repository.ProjectFlowRepository;
 import com.projectflow.android.ui.LoginActivity;
 
 public class ProfileFragment extends Fragment {
 
+    private TextView tvProfileName, tvProfileEmail, tvProfileRole, tvProfileInitial;
+    private Button btnEditProfile, btnLogout;
+    private TextView btnThemeLight, btnThemeDark, btnThemeSystem;
+    private ProjectFlowRepository repository;
+    private SharedPreferences prefs;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_profile, container, false);
+        return inflater.inflate(R.layout.fragment_profile, container, false);
+    }
 
-        TextView tvName = v.findViewById(R.id.tvProfileName);
-        Button btnLogout = v.findViewById(R.id.btnLogout);
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
-        SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
-        String email = prefs.getString("user_email", "Rahul Verma");
-        if (email.contains("@")) {
-            tvName.setText(email.split("@")[0]);
-        }
+        repository = new ProjectFlowRepository(requireContext());
+        prefs = requireContext().getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
 
-        btnLogout.setOnClickListener(view -> {
-            prefs.edit().remove("auth_token").remove("user_email").apply();
-            Intent intent = new Intent(requireContext(), LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
+        tvProfileName = view.findViewById(R.id.tvProfileName);
+        tvProfileEmail = view.findViewById(R.id.tvProfileEmail);
+        tvProfileRole = view.findViewById(R.id.tvProfileRole);
+        tvProfileInitial = view.findViewById(R.id.tvProfileInitial);
+
+        btnEditProfile = view.findViewById(R.id.btnEditProfile);
+        btnLogout = view.findViewById(R.id.btnLogout);
+
+        btnThemeLight = view.findViewById(R.id.btnThemeLight);
+        btnThemeDark = view.findViewById(R.id.btnThemeDark);
+        btnThemeSystem = view.findViewById(R.id.btnThemeSystem);
+
+        loadUserData();
+
+        btnEditProfile.setOnClickListener(v -> showEditNameDialog());
+
+        // Theme switchers
+        btnThemeLight.setOnClickListener(v -> setThemeMode(AppCompatDelegate.MODE_NIGHT_NO, "light"));
+        btnThemeDark.setOnClickListener(v -> setThemeMode(AppCompatDelegate.MODE_NIGHT_YES, "dark"));
+        btnThemeSystem.setOnClickListener(v -> setThemeMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM, "system"));
+
+        highlightActiveTheme();
+
+        btnLogout.setOnClickListener(v -> {
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Sign Out")
+                    .setMessage("Are you sure you want to log out of ProjectFlow Intelligence on this device?")
+                    .setPositiveButton("Sign Out", (dialog, which) -> {
+                        prefs.edit().remove("auth_token").remove("user_email").apply();
+                        Intent intent = new Intent(requireContext(), LoginActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
         });
+    }
 
-        return v;
+    private void loadUserData() {
+        String name = prefs.getString("user_name", "Rahul Verma");
+        String email = prefs.getString("user_email", "admin@projectflow.io");
+        String role = prefs.getString("user_role", "ADMINISTRATOR");
+
+        tvProfileName.setText(name);
+        tvProfileEmail.setText(email);
+        tvProfileRole.setText(role);
+
+        if (!name.isEmpty()) {
+            tvProfileInitial.setText(name.substring(0, 1).toUpperCase());
+        }
+    }
+
+    private void showEditNameDialog() {
+        EditText input = new EditText(requireContext());
+        input.setText(tvProfileName.getText());
+        input.setSelection(input.getText().length());
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Update Display Name")
+                .setView(input)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String newName = input.getText().toString().trim();
+                    if (!newName.isEmpty()) {
+                        tvProfileName.setText(newName);
+                        tvProfileInitial.setText(newName.substring(0, 1).toUpperCase());
+                        prefs.edit().putString("user_name", newName).apply();
+
+                        repository.updateProfile(newName, new ProjectFlowRepository.DataCallback<UserDto>() {
+                            @Override
+                            public void onData(UserDto data) {
+                                if (getActivity() != null) {
+                                    getActivity().runOnUiThread(() ->
+                                            Toast.makeText(requireContext(), "Profile updated successfully", Toast.LENGTH_SHORT).show()
+                                    );
+                                }
+                            }
+                            @Override
+                            public void onError(String message) {}
+                        });
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void setThemeMode(int mode, String name) {
+        prefs.edit().putString("app_theme", name).apply();
+        AppCompatDelegate.setDefaultNightMode(mode);
+        highlightActiveTheme();
+    }
+
+    private void highlightActiveTheme() {
+        String activeTheme = prefs.getString("app_theme", "light");
+        btnThemeLight.setBackgroundResource("light".equals(activeTheme) ? R.drawable.bg_chip_selected : R.drawable.bg_chip_unselected);
+        btnThemeLight.setTextColor(ContextCompat.getColor(requireContext(), "light".equals(activeTheme) ? R.color.white : R.color.text_main));
+
+        btnThemeDark.setBackgroundResource("dark".equals(activeTheme) ? R.drawable.bg_chip_selected : R.drawable.bg_chip_unselected);
+        btnThemeDark.setTextColor(ContextCompat.getColor(requireContext(), "dark".equals(activeTheme) ? R.color.white : R.color.text_main));
+
+        btnThemeSystem.setBackgroundResource("system".equals(activeTheme) ? R.drawable.bg_chip_selected : R.drawable.bg_chip_unselected);
+        btnThemeSystem.setTextColor(ContextCompat.getColor(requireContext(), "system".equals(activeTheme) ? R.color.white : R.color.text_main));
     }
 }

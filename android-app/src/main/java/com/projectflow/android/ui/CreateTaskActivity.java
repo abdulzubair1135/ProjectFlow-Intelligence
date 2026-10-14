@@ -31,6 +31,28 @@ public class CreateTaskActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
 
+        // Check if pre-filled date or project passed from calendar/project screen
+        String prefilledDate = getIntent().getStringExtra("default_due_date");
+        if (prefilledDate != null && !prefilledDate.isEmpty()) {
+            etDueDate.setText(prefilledDate);
+        }
+
+        String intentProjectId = getIntent().getStringExtra("project_id");
+
+        etDueDate.setFocusable(false);
+        etDueDate.setClickable(true);
+        etDueDate.setOnClickListener(v -> {
+            java.util.Calendar c = java.util.Calendar.getInstance();
+            int year = c.get(java.util.Calendar.YEAR);
+            int month = c.get(java.util.Calendar.MONTH);
+            int day = c.get(java.util.Calendar.DAY_OF_MONTH);
+
+            new android.app.DatePickerDialog(this, (view, y, m, d) -> {
+                String formatted = String.format(java.util.Locale.US, "%04d-%02d-%02d", y, m + 1, d);
+                etDueDate.setText(formatted);
+            }, year, month, day).show();
+        });
+
         ProjectFlowRepository repository = new ProjectFlowRepository(this);
 
         btnSubmit.setOnClickListener(v -> {
@@ -50,7 +72,8 @@ public class CreateTaskActivity extends AppCompatActivity {
             final String finalPriority = priority;
             new Thread(() -> {
                 List<ProjectEntity> projects = AppDatabase.getInstance(this).projectDao().getAllSync();
-                String projectId = (projects != null && !projects.isEmpty()) ? projects.get(0).id : "00000000-0000-0000-0000-000000000001";
+                String projectId = (intentProjectId != null && !intentProjectId.isEmpty()) ? intentProjectId :
+                        ((projects != null && !projects.isEmpty()) ? projects.get(0).id : "10000000-0000-0000-0000-000000000001");
 
                 repository.createTask(projectId, title, desc, finalPriority,
                         () -> runOnUiThread(() -> {

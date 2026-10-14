@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/limestone_ivory">
+    android:background="@color/earth_bg">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -20,9 +20,9 @@
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/chalk_white"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="0dp">
+                app:cardBackgroundColor="@color/earth_surface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -35,31 +35,60 @@
                         android:layout_height="wrap_content">
 
                         <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:id="@+id/btnPrevMonth"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
                             android:layout_alignParentStart="true"
+                            android:layout_centerVertical="true"
+                            android:background="?android:attr/selectableItemBackgroundBorderless"
+                            android:gravity="center"
                             android:text="‹"
-                            android:textColor="@color/charcoal"
-                            android:textSize="20sp"
+                            android:textColor="@color/text_main"
+                            android:textSize="24sp"
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tvCurrentMonthYear"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_centerInParent="true"
-                            android:text="April 2025"
-                            android:textColor="@color/charcoal"
-                            android:textSize="16sp"
+                            android:text="October 2026"
+                            android:textColor="@color/text_main"
+                            android:textSize="17sp"
                             android:textStyle="bold" />
 
-                        <TextView
+                        <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
-                            android:text="›"
-                            android:textColor="@color/charcoal"
-                            android:textSize="20sp"
-                            android:textStyle="bold" />
+                            android:layout_centerVertical="true"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/btnToday"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_badge_info"
+                                android:paddingHorizontal="10dp"
+                                android:paddingVertical="4dp"
+                                android:text="Today"
+                                android:textColor="@color/earth_info"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/btnNextMonth"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:background="?android:attr/selectableItemBackgroundBorderless"
+                                android:gravity="center"
+                                android:text="›"
+                                android:textColor="@color/text_main"
+                                android:textSize="24sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
                     </RelativeLayout>
 
                     <!-- Days of Week Header -->
@@ -69,198 +98,79 @@
                         android:layout_marginTop="16dp"
                         android:orientation="horizontal">
 
-                        <TextView style="@style/CalendarDayHeader" android:text="Sun" />
-                        <TextView style="@style/CalendarDayHeader" android:text="Mon" />
-                        <TextView style="@style/CalendarDayHeader" android:text="Tue" />
-                        <TextView style="@style/CalendarDayHeader" android:text="Wed" />
-                        <TextView style="@style/CalendarDayHeader" android:text="Thu" />
-                        <TextView style="@style/CalendarDayHeader" android:text="Fri" />
-                        <TextView style="@style/CalendarDayHeader" android:text="Sat" />
+                        <TextView style="@style/CalendarDayHeader" android:text="S" />
+                        <TextView style="@style/CalendarDayHeader" android:text="M" />
+                        <TextView style="@style/CalendarDayHeader" android:text="T" />
+                        <TextView style="@style/CalendarDayHeader" android:text="W" />
+                        <TextView style="@style/CalendarDayHeader" android:text="T" />
+                        <TextView style="@style/CalendarDayHeader" android:text="F" />
+                        <TextView style="@style/CalendarDayHeader" android:text="S" />
                     </LinearLayout>
 
-                    <!-- Calendar Date Numbers Sample Row -->
-                    <LinearLayout
+                    <!-- Calendar Grid -->
+                    <GridView
+                        android:id="@+id/gvCalendar"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:orientation="horizontal">
-
-                        <TextView style="@style/CalendarDayNumber" android:text="20" />
-                        <TextView style="@style/CalendarDayNumber" android:text="21" />
-                        <TextView style="@style/CalendarDayNumber" android:text="22" />
-                        <TextView style="@style/CalendarDayNumber" android:text="23" />
-                        <TextView style="@style/CalendarDayNumber" android:text="24" />
-                        <TextView
-                            style="@style/CalendarDayNumber"
-                            android:background="@color/deep_sage"
-                            android:text="25"
-                            android:textColor="@color/chalk_white"
-                            android:textStyle="bold" />
-                        <TextView style="@style/CalendarDayNumber" android:text="26" />
-                    </LinearLayout>
-
+                        android:layout_height="270dp"
+                        android:layout_marginTop="10dp"
+                        android:horizontalSpacing="4dp"
+                        android:numColumns="7"
+                        android:stretchMode="columnWidth"
+                        android:verticalSpacing="4dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Schedule Header -->
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- Selected Date Tasks Header -->
+            <RelativeLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="Today, 25 Apr 2025"
-                android:textColor="@color/charcoal"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:layout_marginTop="22dp">
 
-            <!-- Event Card 1 -->
-            <androidx.cardview.widget.CardView
+                <TextView
+                    android:id="@+id/tvSelectedDateHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:text="Scheduled Deadlines"
+                    android:textColor="@color/text_main"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvDayTaskCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:background="@drawable/bg_badge_warning"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp"
+                    android:text="0 Tasks"
+                    android:textColor="@color/earth_warning"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </RelativeLayout>
+
+            <!-- Tasks for Selected Date -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvDayTasks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:nestedScrollingEnabled="false" />
+
+            <!-- Empty State for Day -->
+            <TextView
+                android:id="@+id/tvEmptyDay"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                app:cardBackgroundColor="@color/chalk_white"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="0dp">
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp">
-
-                    <FrameLayout
-                        android:id="@+id/iconEvent1"
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:layout_alignParentStart="true"
-                        android:layout_centerVertical="true"
-                        android:background="@drawable/ic_projects"
-                        android:backgroundTint="@color/status_green_light" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_centerVertical="true"
-                        android:layout_marginStart="14dp"
-                        android:layout_toEndOf="@id/iconEvent1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Team Meeting"
-                            android:textColor="@color/charcoal"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="10:00 AM - 11:00 AM"
-                            android:textColor="@color/stone_grey"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-                </RelativeLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Event Card 2 -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                app:cardBackgroundColor="@color/chalk_white"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="0dp">
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp">
-
-                    <FrameLayout
-                        android:id="@+id/iconEvent2"
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:layout_alignParentStart="true"
-                        android:layout_centerVertical="true"
-                        android:background="@drawable/ic_kanban"
-                        android:backgroundTint="@color/alert_amber_light" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_centerVertical="true"
-                        android:layout_marginStart="14dp"
-                        android:layout_toEndOf="@id/iconEvent2"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Design Review"
-                            android:textColor="@color/charcoal"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="02:00 PM - 03:00 PM"
-                            android:textColor="@color/stone_grey"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-                </RelativeLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Event Card 3 -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                app:cardBackgroundColor="@color/chalk_white"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="0dp">
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp">
-
-                    <FrameLayout
-                        android:id="@+id/iconEvent3"
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:layout_alignParentStart="true"
-                        android:layout_centerVertical="true"
-                        android:background="@drawable/ic_sync"
-                        android:backgroundTint="@color/status_green_light" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_centerVertical="true"
-                        android:layout_marginStart="14dp"
-                        android:layout_toEndOf="@id/iconEvent3"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Client Call"
-                            android:textColor="@color/charcoal"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="04:00 PM - 05:00 PM"
-                            android:textColor="@color/stone_grey"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-                </RelativeLayout>
-            </androidx.cardview.widget.CardView>
+                android:background="@drawable/bg_card_earth"
+                android:gravity="center"
+                android:padding="20dp"
+                android:text="No tasks or deadlines scheduled for this date."
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:visibility="gone" />
 
         </LinearLayout>
     </ScrollView>
@@ -270,10 +180,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="20dp"
-        android:backgroundTint="@color/deep_sage"
+        android:layout_margin="24dp"
         android:contentDescription="Add Event"
-        android:src="@drawable/ic_projects"
-        app:tint="@color/chalk_white" />
+        android:src="@drawable/ic_tasks"
+        app:backgroundTint="@color/primary_earth"
+        app:elevation="4dp"
+        app:tint="@color/white" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ============================================================= -->
+    <!-- NATURAL मिट्टी (EARTH-TONE) DESIGN SYSTEM TOKENS (DARK THEME) -->
+    <!-- ============================================================= -->
+    <color name="earth_bg">#211C17</color>
+    <color name="earth_surface">#2B241E</color>
+    <color name="earth_raised">#342A22</color>
+    <color name="primary_earth">#C3A17D</color>
+    <color name="deep_earth">#D8BA97</color>
+    <color name="muted_clay">#A89078</color>
+    <color name="secondary_sand">#534336</color>
+    <color name="earth_border">#493A2D</color>
+    <color name="text_main">#F5EEE4</color>
+    <color name="text_secondary">#C1B3A2</color>
+    <color name="text_muted">#9A8C7C</color>
+    <color name="earth_success">#68A27E</color>
+    <color name="earth_warning">#CCA064</color>
+    <color name="earth_error">#D46B60</color>
+    <color name="earth_info">#759BBA</color>
+
+    <!-- Semantic Dark Status Tints -->
+    <color name="earth_success_light">#263B2E</color>
+    <color name="earth_warning_light">#3D3021</color>
+    <color name="earth_error_light">#3E2422</color>
+    <color name="earth_info_light">#22323E</color>
+
+    <!-- Legacy / Alias Compatibility Layer -->
+    <color name="limestone_ivory">#211C17</color>
+    <color name="chalk_white">#2B241E</color>
+    <color name="warm_white">#342A22</color>
+    <color name="deep_sage">#C3A17D</color>
+    <color name="deep_sage_dark">#D8BA97</color>
+    <color name="mineral_sage">#A89078</color>
+    <color name="mineral_grey">#534336</color>
+    <color name="natural_border">#493A2D</color>
+    <color name="stone_border">#493A2D</color>
+    <color name="charcoal">#F5EEE4</color>
+    <color name="stone_grey">#C1B3A2</color>
+    <color name="muted_slate">#C1B3A2</color>
+    <color name="forest_green">#68A27E</color>
+    <color name="status_green">#68A27E</color>
+    <color name="status_green_light">#263B2E</color>
+    <color name="alert_amber">#CCA064</color>
+    <color name="alert_amber_light">#3D3021</color>
+    <color name="alert_red">#D46B60</color>
+    <color name="alert_red_light">#3E2422</color>
+
+    <color name="black">#211C17</color>
+    <color name="white">#F5EEE4</color>
+</resources>

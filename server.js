@@ -225,8 +225,100 @@ app.post('/api/v1/projects/:id/scenarios/evaluate', (req, res) => {
 });
 
 // -------------------------------------------------------------
-// OFFLINE SYNC ENDPOINTS
+// TEAM MEMBERS
 // -------------------------------------------------------------
+app.get('/api/v1/team', (req, res) => {
+  const team = store.users.map(u => ({
+    id: u.id,
+    email: u.email,
+    fullName: u.fullName,
+    role: u.role,
+    active: u.active !== false,
+    assignedTasksCount: store.tasks.filter(t => t.assigneeId === u.id).length
+  }));
+  res.json(team);
+});
+
+// -------------------------------------------------------------
+// NOTIFICATIONS
+// -------------------------------------------------------------
+app.get('/api/v1/notifications', (req, res) => {
+  res.json(store.notifications || []);
+});
+
+app.patch('/api/v1/notifications/:id/read', (req, res) => {
+  const notif = (store.notifications || []).find(n => n.id === req.params.id);
+  if (notif) notif.read = true;
+  res.json(notif || { success: true });
+});
+
+app.post('/api/v1/notifications/mark-all-read', (req, res) => {
+  (store.notifications || []).forEach(n => { n.read = true; });
+  res.json({ success: true, count: (store.notifications || []).length });
+});
+
+// -------------------------------------------------------------
+// CHAT & DISCUSSIONS
+// -------------------------------------------------------------
+app.get('/api/v1/chat/messages', (req, res) => {
+  res.json(store.messages || []);
+});
+
+app.post('/api/v1/chat/messages', (req, res) => {
+  const { content, channel, senderName } = req.body;
+  const msg = {
+    id: uuidv4(),
+    senderId: req.body.senderId || store.users[0].id,
+    senderName: senderName || 'User',
+    content: content || '',
+    channel: channel || 'general',
+    createdAt: new Date().toISOString()
+  };
+  (store.messages = store.messages || []).push(msg);
+  res.status(201).json(msg);
+});
+
+// -------------------------------------------------------------
+// USER PROFILE UPDATE
+// -------------------------------------------------------------
+app.patch('/api/v1/me/profile', (req, res) => {
+  const user = store.users[0];
+  if (req.body.fullName) user.fullName = req.body.fullName.trim();
+  res.json(user);
+});
+
+// -------------------------------------------------------------
+// REPORTS & REAL-TIME ANALYTICS
+// -------------------------------------------------------------
+app.get('/api/v1/reports/summary', (req, res) => {
+  const totalTasks = store.tasks.length;
+  const completedTasks = store.tasks.filter(t => t.statusCategory === 'DONE').length;
+  const inProgressTasks = store.tasks.filter(t => t.statusCategory === 'IN_PROGRESS').length;
+  const todoTasks = store.tasks.filter(t => t.statusCategory === 'TODO').length;
+  const overdueTasks = store.tasks.filter(t => !t.completedAt && t.dueDate && new Date(t.dueDate) < new Date()).length;
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  const totalProjects = store.projects.length;
+  const activeProjects = store.projects.filter(p => p.status !== 'COMPLETED').length;
+
+  res.json({
+    totalTasks,
+    completedTasks,
+    inProgressTasks,
+    todoTasks,
+    overdueTasks,
+    completionRate,
+    totalProjects,
+    activeProjects,
+    statusDistribution: {
+      TODO: todoTasks,
+      IN_PROGRESS: inProgressTasks,
+      DONE: completedTasks
+    },
+    generatedAt: new Date().toISOString()
+  });
+});
+
 // -------------------------------------------------------------
 // APPLICATION RELEASES & APK DISTRIBUTION
 // -------------------------------------------------------------

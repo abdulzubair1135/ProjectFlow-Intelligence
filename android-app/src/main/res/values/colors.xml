@@ -1,39 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Natural Mineral Design System Palette (Locked Brand Tokens) -->
-    <color name="limestone_ivory">#F4F2E9</color>
-    <color name="chalk_white">#FFFEFA</color>
-    <color name="mineral_sage">#78866B</color>
-    <color name="deep_sage">#56664C</color>
-    <color name="deep_sage_dark">#485640</color>
-    <color name="mineral_grey">#C9CDC5</color>
-    <color name="natural_border">#D9D7CD</color>
-    <color name="charcoal">#292D28</color>
-    <color name="stone_grey">#73766D</color>
-    <color name="forest_green">#467653</color>
+    <!-- ============================================================== -->
+    <!-- NATURAL मिट्टी (EARTH-TONE) DESIGN SYSTEM TOKENS (LIGHT THEME) -->
+    <!-- ============================================================== -->
+    <color name="earth_bg">#F3EDE2</color>
+    <color name="earth_surface">#FBF8F1</color>
+    <color name="earth_raised">#FFFDF8</color>
+    <color name="primary_earth">#795B43</color>
+    <color name="deep_earth">#493628</color>
+    <color name="muted_clay">#B69A78</color>
+    <color name="secondary_sand">#D9C9B2</color>
+    <color name="earth_border">#E1D6C6</color>
+    <color name="text_main">#30271F</color>
+    <color name="text_secondary">#74695C</color>
+    <color name="text_muted">#92877A</color>
+    <color name="earth_success">#47745A</color>
+    <color name="earth_warning">#A56A2B</color>
+    <color name="earth_error">#B7473C</color>
+    <color name="earth_info">#4D718C</color>
 
-    <!-- Aliases for existing components -->
-    <color name="warm_white">#FFFEFA</color>
-    <color name="muted_slate">#73766D</color>
-    <color name="stone_border">#D9D7CD</color>
+    <!-- Semantic Status Tints -->
+    <color name="earth_success_light">#EAF2EC</color>
+    <color name="earth_warning_light">#F8EFE4</color>
+    <color name="earth_error_light">#FBECEB</color>
+    <color name="earth_info_light">#EBF2F7</color>
 
-    <!-- Dark Mode Mineral Tokens -->
-    <color name="dark_bg">#181B18</color>
-    <color name="dark_surface">#222622</color>
-    <color name="dark_surface_variant">#2E332E</color>
-    <color name="dark_border">#3D433D</color>
-    <color name="dark_text_primary">#EBECE8</color>
-    <color name="dark_text_secondary">#A8ACA5</color>
+    <!-- Legacy / Alias Compatibility Layer -->
+    <color name="limestone_ivory">#F3EDE2</color>
+    <color name="chalk_white">#FBF8F1</color>
+    <color name="warm_white">#FFFDF8</color>
+    <color name="deep_sage">#795B43</color>
+    <color name="deep_sage_dark">#493628</color>
+    <color name="mineral_sage">#B69A78</color>
+    <color name="mineral_grey">#D9C9B2</color>
+    <color name="natural_border">#E1D6C6</color>
+    <color name="stone_border">#E1D6C6</color>
+    <color name="charcoal">#30271F</color>
+    <color name="stone_grey">#74695C</color>
+    <color name="muted_slate">#74695C</color>
+    <color name="forest_green">#47745A</color>
+    <color name="status_green">#47745A</color>
+    <color name="status_green_light">#EAF2EC</color>
+    <color name="alert_amber">#A56A2B</color>
+    <color name="alert_amber_light">#F8EFE4</color>
+    <color name="alert_red">#B7473C</color>
+    <color name="alert_red_light">#FBECEB</color>
 
-    <!-- Status & Alerts -->
-    <color name="alert_red">#C84B31</color>
-    <color name="alert_red_light">#FDEEE9</color>
-    <color name="alert_amber">#D97706</color>
-    <color name="alert_amber_light">#FEF3C7</color>
-    <color name="status_green">#467653</color>
-    <color name="status_green_light">#EEF2EC</color>
-
-    <!-- Standard Android Fallbacks -->
-    <color name="black">#292D28</color>
-    <color name="white">#FFFEFA</color>
+    <color name="black">#30271F</color>
+    <color name="white">#FFFDF8</color>
 </resources>

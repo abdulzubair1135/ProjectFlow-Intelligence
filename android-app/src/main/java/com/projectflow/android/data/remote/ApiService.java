@@ -39,4 +39,28 @@ public interface ApiService {
     @Streaming
     @GET("releases/{id}/download")
     Call<okhttp3.ResponseBody> downloadRelease(@Path("id") String releaseId);
+
+    @GET("team")
+    Call<List<TeamMemberDto>> getTeam();
+
+    @GET("notifications")
+    Call<List<NotificationDto>> getNotifications();
+
+    @PATCH("notifications/{id}/read")
+    Call<NotificationDto> markNotificationRead(@Path("id") String id);
+
+    @POST("notifications/mark-all-read")
+    Call<Map<String, Object>> markAllNotificationsRead();
+
+    @GET("chat/messages")
+    Call<List<ChatMessageDto>> getChatMessages();
+
+    @POST("chat/messages")
+    Call<ChatMessageDto> sendChatMessage(@Body Map<String, String> body);
+
+    @PATCH("me/profile")
+    Call<UserDto> updateProfile(@Body Map<String, String> body);
+
+    @GET("reports/summary")
+    Call<ReportSummaryDto> getReportSummary();
 }

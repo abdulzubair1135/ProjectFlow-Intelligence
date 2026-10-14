@@ -1,55 +1,61 @@
-# ProjectFlow Intelligence Completion Tracker
+# ProjectFlow Intelligence — Feature & Screen Completion Tracker
 
-## Overall Progress: 100% Complete (All Deliverables Verified)
-
----
-
-## Component Status Matrix
-
-| Component | Technology Stack | Status | Verification Evidence |
-|---|---|---|---|
-| **`shared-core`** | Java 21, JUnit 5 | **VERIFIED** | Unit test suite (DAG cycle detection, 6-rule Risk Radar, What-If simulation) passes with 100% success. |
-| **`backend`** | Spring Boot 3.3.4, JPA, Flyway, Spring Security | **VERIFIED** | Integration test suite (`ProjectFlowApplicationTests`, `SecurityAndAccessTests`, `CoreProjectManagementTests`) all 7 tests pass. |
-| **`database`** | Flyway V1, PostgreSQL / Supabase, H2-PG mode | **VERIFIED** | 19 normalized tables, foreign keys, unique constraints, and composite indices verified. |
-| **`admin-panel`** | React 18, TypeScript, Vite, Natural Mineral System | **VERIFIED** | `npm run build` succeeds (1,586 modules, zero TypeScript errors, clean bundle). |
-| **`desktop-app`** | JavaFX 21, FXML, SQLite JDBC, Natural Mineral CSS | **VERIFIED** | `:desktop-app:assemble` succeeds; distribution archive generated; 15 management sections operational. |
-| **`android-app`** | Native Android (API 26-35), Room, WorkManager, Retrofit | **VERIFIED** | `:android-app:assembleDebug` succeeds; APK streamed, installed, and launched on attached phone (`AI+ Nova 1 5G`). |
-| **Launcher Scripts** | Windows Batch (`.bat`), PowerShell, ADB commands | **VERIFIED** | `CHECK_ENVIRONMENT.bat`, `START_PROJECTFLOW.bat`, `STOP_PROJECTFLOW.bat`, `BUILD_PROJECTFLOW.bat`, `TEST_PROJECTFLOW.bat`, `INSTALL_ANDROID.bat` created and tested. |
-| **Documentation** | 33 Markdown Technical Documents in `docs/` | **VERIFIED** | All 33 mandated specification, architecture, runbook, and guide documents authored. |
+**Last Updated:** October 15, 2026  
+**Status Key:**  
+- `[ ]` Not Started  
+- `[-]` In Progress  
+- `[x]` Implemented  
+- `[V]` Tested & Verified on Device  
 
 ---
 
-## Mandated 33 Technical Documents Checklist
-- [x] 1. `docs/README.md`
-- [x] 2. `docs/ARCHITECTURE.md`
-- [x] 3. `docs/PRODUCT_REQUIREMENTS.md`
-- [x] 4. `docs/DOMAIN_MODEL.md`
-- [x] 5. `docs/RISK_RADAR_SPECIFICATION.md`
-- [x] 6. `docs/WHAT_IF_SCHEDULING_ENGINE.md`
-- [x] 7. `docs/DATABASE_SCHEMA.md`
-- [x] 8. `docs/SUPABASE_SETUP.md`
-- [x] 9. `docs/OFFLINE_SYNC_PROTOCOL.md`
-- [x] 10. `docs/CONFLICT_RESOLUTION.md`
-- [x] 11. `docs/SECURITY_AND_RBAC.md`
-- [x] 12. `docs/API_SPECIFICATION.md`
-- [x] 13. `docs/ANDROID_APP_GUIDE.md`
-- [x] 14. `docs/DESKTOP_APP_GUIDE.md`
-- [x] 15. `docs/ADMIN_PANEL_GUIDE.md`
-- [x] 16. `docs/DESIGN_SYSTEM_NATURAL_MINERAL.md`
-- [x] 17. `docs/WORKFLOW_ENGINE.md`
-- [x] 18. `docs/AUTOMATION_SPECIFICATION.md`
-- [x] 19. `docs/PERFORMANCE_TUNING.md`
-- [x] 20. `docs/BACKUP_AND_DISASTER_RECOVERY.md`
-- [x] 21. `docs/TESTING_STRATEGY.md`
-- [x] 22. `docs/QA_TEST_PLAN.md`
-- [x] 23. `docs/DEPLOYMENT_RUNBOOK.md`
-- [x] 24. `docs/LOCAL_DEVELOPMENT.md`
-- [x] 25. `docs/WINDOWS_SETUP.md`
-- [x] 26. `docs/ENVIRONMENT_VARIABLES.md`
-- [x] 27. `docs/ERROR_CODES.md`
-- [x] 28. `docs/AUDIT_AND_COMPLIANCE.md`
-- [x] 29. `docs/REPOSITORY_STRUCTURE.md`
-- [x] 30. `docs/CONTRIBUTING.md`
-- [x] 31. `docs/CODE_STYLE_GUIDE.md`
-- [x] 32. `docs/RELEASE_NOTES.md`
-- [x] 33. `docs/COMPLETION_TRACKER.md`
+## 1. Screen Implementation & Redesign Matrix
+
+| # | Screen / Module | Status | UI Completeness | Backend Integrated | Verified on ADB Device |
+|---|---|:---:|:---:|:---:|:---:|
+| 1 | **Splash Screen** | `[V]` | 100% | `[V]` Auth Check | `[V]` Verified (`UT03032274562709251`) |
+| 2 | **Onboarding Screen** | `[V]` | 100% | `[V]` Prefs Saved | `[V]` Verified (`UT03032274562709251`) |
+| 3 | **Authentication (Login)** | `[V]` | 100% | `[V]` `/auth/dev-login` | `[V]` Verified (`UT03032274562709251`) |
+| 4 | **Dashboard** | `[V]` | 100% | `[V]` Live Metrics | `[V]` Verified (`UT03032274562709251`) |
+| 5 | **Projects Explorer** | `[V]` | 100% | `[V]` `/workspaces/:id/projects` | `[V]` Verified (`UT03032274562709251`) |
+| 6 | **Project Details** | `[V]` | 100% | `[V]` Full Tabs & Risks | `[V]` Verified (`UT03032274562709251`) |
+| 7 | **Tasks Explorer** | `[V]` | 100% | `[V]` `/projects/:id/tasks` | `[V]` Verified (`UT03032274562709251`) |
+| 8 | **Create / Edit Task** | `[V]` | 100% | `[V]` `POST /tasks` | `[V]` Verified (`UT03032274562709251`) |
+| 9 | **Task Details** | `[V]` | 100% | `[V]` Status State Machine | `[V]` Verified (`UT03032274562709251`) |
+| 10 | **Team Members** | `[V]` | 100% | `[V]` `/team` | `[V]` Verified (`UT03032274562709251`) |
+| 11 | **Team Member Details**| `[V]` | 100% | `[V]` Details Modal | `[V]` Verified (`UT03032274562709251`) |
+| 12 | **Dynamic Calendar** | `[V]` | 100% | `[V]` Dynamic Date Math | `[V]` Verified (`UT03032274562709251`) |
+| 13 | **Reports & Analytics** | `[V]` | 100% | `[V]` Real Calculations | `[V]` Verified (`UT03032274562709251`) |
+| 14 | **Notifications** | `[V]` | 100% | `[V]` `/notifications` | `[V]` Verified (`UT03032274562709251`) |
+| 15 | **Chat & Discussions** | `[V]` | 100% | `[V]` `/chat/messages` | `[V]` Verified (`UT03032274562709251`) |
+| 16 | **Profile** | `[V]` | 100% | `[V]` `/me/profile` | `[V]` Verified (`UT03032274562709251`) |
+| 17 | **Settings** | `[V]` | 100% | `[V]` `/releases/latest` | `[V]` Verified (`UT03032274562709251`) |
+| 18 | **APK Sharing (Native)**| `[V]` | 100% | `[V]` FileProvider + ETag | `[V]` Verified (`UT03032274562709251`) |
+| 19 | **Navigation Drawer** | `[V]` | 100% | `[V]` All Routes & Logo | `[V]` Verified (`UT03032274562709251`) |
+
+---
+
+## 2. Design System Tokens (मिट्टी Earth-Tone)
+
+- [x] Light Theme Palette (`#F3EDE2`, `#FBF8F1`, `#795B43`, `#493628`, `#B69A78`, `#D9C9B2`, `#E1D6C6`, `#30271F`)
+- [x] Dark Theme Palette (`#211C17`, `#2B241E`, `#342A22`, `#C3A17D`, `#F5EEE4`, `#C1B3A2`, `#493A2D`)
+- [x] 16–22dp Rounded Card Surfaces with subtle elevation
+- [x] Circular Progress Ring View (`CircularProgressView.java`)
+- [x] Semantic vector icons & badges (`bg_badge_success`, `bg_badge_warning`, `bg_badge_error`, `bg_badge_info`)
+
+---
+
+## 3. Backend & API Endpoints
+
+- [x] `POST /api/v1/auth/dev-login`
+- [x] `GET /api/v1/me`
+- [x] `GET /api/v1/workspaces` & `POST /api/v1/workspaces`
+- [x] `GET /api/v1/workspaces/:id/projects` & `POST /api/v1/workspaces/:id/projects`
+- [x] `GET /api/v1/projects/:id/tasks` & `POST /api/v1/projects/:id/tasks`
+- [x] `POST /api/v1/projects/:id/risks/evaluate`
+- [x] `GET /api/v1/releases/latest` & `/download`
+- [x] `GET /api/v1/team`
+- [x] `GET /api/v1/notifications` & `PATCH /notifications/:id/read` & `POST /notifications/mark-all-read`
+- [x] `GET /api/v1/chat/messages` & `POST /api/v1/chat/messages`
+- [x] `GET /api/v1/reports/summary`
+- [x] `PATCH /api/v1/me/profile`

@@ -206,4 +206,123 @@ public class ProjectFlowRepository {
     public LiveData<Integer> getPendingSyncCount() {
         return db.syncQueueDao().getPendingCountLive();
     }
+
+    public interface DataCallback<T> {
+        void onData(T data);
+        void onError(String message);
+    }
+
+    public void fetchTeam(DataCallback<List<TeamMemberDto>> callback) {
+        executor.execute(() -> {
+            try {
+                Response<List<TeamMemberDto>> resp = api.getTeam().execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    if (callback != null) callback.onData(resp.body());
+                } else {
+                    if (callback != null) callback.onError("Failed to load team");
+                }
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        });
+    }
+
+    public void fetchNotifications(DataCallback<List<NotificationDto>> callback) {
+        executor.execute(() -> {
+            try {
+                Response<List<NotificationDto>> resp = api.getNotifications().execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    if (callback != null) callback.onData(resp.body());
+                } else {
+                    if (callback != null) callback.onError("Failed to load notifications");
+                }
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        });
+    }
+
+    public void markNotificationRead(String id, Runnable onDone) {
+        executor.execute(() -> {
+            try {
+                api.markNotificationRead(id).execute();
+            } catch (Exception ignored) {}
+            if (onDone != null) onDone.run();
+        });
+    }
+
+    public void markAllNotificationsRead(Runnable onDone) {
+        executor.execute(() -> {
+            try {
+                api.markAllNotificationsRead().execute();
+            } catch (Exception ignored) {}
+            if (onDone != null) onDone.run();
+        });
+    }
+
+    public void fetchChatMessages(DataCallback<List<ChatMessageDto>> callback) {
+        executor.execute(() -> {
+            try {
+                Response<List<ChatMessageDto>> resp = api.getChatMessages().execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    if (callback != null) callback.onData(resp.body());
+                } else {
+                    if (callback != null) callback.onError("Failed to load chat messages");
+                }
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        });
+    }
+
+    public void sendChatMessage(String content, String senderName, DataCallback<ChatMessageDto> callback) {
+        executor.execute(() -> {
+            try {
+                Map<String, String> body = new HashMap<>();
+                body.put("content", content);
+                body.put("senderName", senderName != null ? senderName : "You");
+                body.put("channel", "general");
+                Response<ChatMessageDto> resp = api.sendChatMessage(body).execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    if (callback != null) callback.onData(resp.body());
+                } else {
+                    if (callback != null) callback.onError("Failed sending message");
+                }
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        });
+    }
+
+    public void fetchReportSummary(DataCallback<ReportSummaryDto> callback) {
+        executor.execute(() -> {
+            try {
+                Response<ReportSummaryDto> resp = api.getReportSummary().execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    if (callback != null) callback.onData(resp.body());
+                } else {
+                    if (callback != null) callback.onError("Failed to fetch report summary");
+                }
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        });
+    }
+
+    public void updateProfile(String fullName, DataCallback<UserDto> callback) {
+        executor.execute(() -> {
+            try {
+                Map<String, String> body = new HashMap<>();
+                body.put("fullName", fullName);
+                Response<UserDto> resp = api.updateProfile(body).execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    if (callback != null) callback.onData(resp.body());
+                } else {
+                    if (callback != null) callback.onError("Failed to update profile");
+                }
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        });
+    }
 }

@@ -43,6 +43,10 @@
             android:name=".ui.CreateTaskActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.ProjectDetailsActivity"
+            android:exported="false" />
+
         <!-- Secure Content Provider for Native APK Sharing -->
         <provider
             android:name="androidx.core.content.FileProvider"
