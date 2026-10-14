@@ -1,0 +1,33 @@
+services:
+  # 1. Spring Boot Backend Service
+  - type: web
+    name: projectflow-backend
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: SUPABASE_DB_USER
+        value: postgres
+      - key: SUPABASE_DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+
+  # 2. React Admin Panel Web Service
+  - type: web
+    name: projectflow-admin-panel
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: admin-panel
+    buildCommand: npm install && npm run build
+    startCommand: npm run preview -- --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: projectflow-backend
+          type: web
+          property: host

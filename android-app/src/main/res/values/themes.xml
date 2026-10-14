@@ -1,0 +1,23 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme with Natural Mineral branding -->
+    <style name="Theme.ProjectFlow" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/deep_sage</item>
+        <item name="colorPrimaryVariant">@color/deep_sage_dark</item>
+        <item name="colorOnPrimary">@color/limestone_ivory</item>
+
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/mineral_sage</item>
+        <item name="colorSecondaryVariant">@color/mineral_sage</item>
+        <item name="colorOnSecondary">@color/warm_white</item>
+
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/warm_white</item>
+        <item name="android:windowLightStatusBar">true</item>
+
+        <!-- Background & Surface -->
+        <item name="android:windowBackground">@color/limestone_ivory</item>
+        <item name="colorSurface">@color/warm_white</item>
+        <item name="colorOnSurface">@color/charcoal</item>
+    </style>
+</resources>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_dashboard"
+        android:icon="@drawable/ic_dashboard"
+        android:title="@string/title_dashboard" />
+    <item
+        android:id="@+id/nav_projects"
+        android:icon="@drawable/ic_projects"
+        android:title="@string/title_projects" />
+    <item
+        android:id="@+id/nav_kanban"
+        android:icon="@drawable/ic_kanban"
+        android:title="@string/title_kanban" />
+    <item
+        android:id="@+id/nav_risk_radar"
+        android:icon="@drawable/ic_risk"
+        android:title="@string/title_risk_radar" />
+    <item
+        android:id="@+id/nav_sync"
+        android:icon="@drawable/ic_sync"
+        android:title="@string/title_sync" />
+</menu>

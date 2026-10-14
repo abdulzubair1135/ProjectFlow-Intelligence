@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Natural Mineral Design System Palette -->
+    <color name="deep_sage">#56664C</color>
+    <color name="deep_sage_dark">#485640</color>
+    <color name="mineral_sage">#78866B</color>
+    <color name="limestone_ivory">#F4F2E9</color>
+    <color name="warm_white">#FAFAF7</color>
+    <color name="charcoal">#292D28</color>
+    <color name="muted_slate">#5A6258</color>
+    <color name="stone_border">#E2E0D8</color>
+    
+    <!-- Status & Alerts -->
+    <color name="alert_red">#C84B31</color>
+    <color name="alert_red_light">#FDEEE9</color>
+    <color name="alert_amber">#D97706</color>
+    <color name="alert_amber_light">#FEF3C7</color>
+    <color name="status_green">#56664C</color>
+    <color name="status_green_light">#EEF2EC</color>
+
+    <!-- Standard Android Fallbacks -->
+    <color name="black">#292D28</color>
+    <color name="white">#FAFAF7</color>
+</resources>
