@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/chalk_white"
+    android:background="@color/earth_bg"
     android:fillViewport="true">
 
     <LinearLayout
@@ -11,47 +11,66 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Top AppBar -->
-        <RelativeLayout
+        <!-- Top Toolbar with Animated Floating Leaves -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="58dp"
             android:background="@color/chalk_white"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp">
+            android:elevation="2dp">
 
-            <ImageView
-                android:id="@+id/btnBack"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Back"
-                android:padding="6dp"
-                android:src="@drawable/ic_kanban"
-                app:tint="@color/charcoal" />
+            <com.projectflow.android.ui.view.FlowLeafHeaderView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:layout_marginStart="16dp"
-                android:layout_toEndOf="@id/btnBack"
-                android:text="@string/title_task_details"
-                android:textColor="@color/charcoal"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
 
-            <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:contentDescription="Options"
-                android:padding="6dp"
-                android:src="@drawable/ic_dashboard"
-                app:tint="@color/charcoal" />
-        </RelativeLayout>
+                <ImageView
+                    android:id="@+id/btnBack"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/bg_neu_circle"
+                    android:contentDescription="Back"
+                    android:elevation="1dp"
+                    android:padding="9dp"
+                    android:src="@drawable/ic_kanban"
+                    app:tint="@color/text_main" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="14dp"
+                    android:layout_toEndOf="@id/btnBack"
+                    android:letterSpacing="0.015"
+                    android:text="Task Overview"
+                    android:textColor="@color/text_main"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvDetailStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/bg_online_pill"
+                    android:drawableStart="@drawable/bg_dot_progress"
+                    android:drawablePadding="6dp"
+                    android:letterSpacing="0.04"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="5dp"
+                    android:text="IN PROGRESS"
+                    android:textColor="@color/chart_progress"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </RelativeLayout>
+        </FrameLayout>
 
         <View
             android:layout_width="match_parent"
@@ -62,264 +81,290 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:padding="16dp">
 
-            <!-- Priority Badge -->
-            <TextView
-                android:id="@+id/tvDetailPriorityBadge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@color/alert_red_light"
-                android:paddingStart="10dp"
-                android:paddingTop="4dp"
-                android:paddingEnd="10dp"
-                android:paddingBottom="4dp"
-                android:text="High Priority"
-                android:textColor="@color/alert_red"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <!-- Task Title -->
-            <TextView
-                android:id="@+id/tvDetailTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Design Login Screen"
-                android:textColor="@color/charcoal"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <!-- Task Description -->
-            <TextView
-                android:id="@+id/tvDetailDesc"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:lineSpacingExtra="3dp"
-                android:text="Create modern and responsive login screen as per new brand guidelines."
-                android:textColor="@color/stone_grey"
-                android:textSize="14sp" />
-
-            <!-- Metadata Table/Card -->
-            <androidx.cardview.widget.CardView
+            <!-- Hero Task Card -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                app:cardBackgroundColor="@color/limestone_ivory"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="0dp">
+                android:background="@drawable/bg_neu_card"
+                android:elevation="2dp"
+                android:orientation="vertical"
+                android:padding="18dp">
 
+                <!-- Priority & Project Row -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                    <RelativeLayout
-                        android:layout_width="match_parent"
+                    <TextView
+                        android:id="@+id/tvDetailPriorityBadge"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
+                        android:background="@drawable/bg_neu_chip_pill"
+                        android:drawableStart="@drawable/bg_dot_progress"
+                        android:drawablePadding="6dp"
+                        android:letterSpacing="0.04"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
+                        android:text="HIGH PRIORITY"
+                        android:textColor="@color/chart_progress"
+                        android:textSize="10.5sp"
+                        android:textStyle="bold" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Project"
-                            android:textColor="@color/stone_grey"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/tvDetailProject"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:text="Mobile App Development"
-                            android:textColor="@color/charcoal"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-                    </RelativeLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginBottom="6dp"
-                        android:background="@color/natural_border" />
-
-                    <RelativeLayout
-                        android:layout_width="match_parent"
+                    <TextView
+                        android:id="@+id/tvDetailProject"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Assigned to"
-                            android:textColor="@color/stone_grey"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/tvDetailAssignee"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:text="Priya Sharma"
-                            android:textColor="@color/charcoal"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-                    </RelativeLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginBottom="6dp"
-                        android:background="@color/natural_border" />
-
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Due Date"
-                            android:textColor="@color/stone_grey"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/tvDetailDueDate"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:text="25 Apr 2025"
-                            android:textColor="@color/charcoal"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-                    </RelativeLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginBottom="6dp"
-                        android:background="@color/natural_border" />
-
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Status"
-                            android:textColor="@color/stone_grey"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/tvDetailStatus"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:background="@color/status_green_light"
-                            android:paddingStart="8dp"
-                            android:paddingTop="2dp"
-                            android:paddingEnd="8dp"
-                            android:paddingBottom="2dp"
-                            android:text="In Progress"
-                            android:textColor="@color/deep_sage"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-                    </RelativeLayout>
-
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_neu_pill"
+                        android:paddingHorizontal="9dp"
+                        android:paddingVertical="4dp"
+                        android:text="PRJ-PF-CORE"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10.5sp" />
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
 
-            <!-- Subtasks Section -->
+                <!-- Task Title -->
+                <TextView
+                    android:id="@+id/tvDetailTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:letterSpacing="0.01"
+                    android:text="Design System &amp; Neumorphic Polish"
+                    android:textColor="@color/text_main"
+                    android:textSize="21sp"
+                    android:textStyle="bold" />
+
+                <!-- Task Description -->
+                <TextView
+                    android:id="@+id/tvDetailDesc"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Review and enhance all mobile components with natural mineral earth tones, 3D neumorphic lighting, and high-performance canvas animations."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13.5sp" />
+
+                <!-- Progress Header & Bar -->
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Progress Delivery"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tvProgressPercent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:text="75%"
+                        android:textColor="@color/chart_progress"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </RelativeLayout>
+
+                <ProgressBar
+                    android:id="@+id/pbTaskProgress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:layout_marginTop="6dp"
+                    android:max="100"
+                    android:progress="75"
+                    android:progressDrawable="@drawable/bg_bar_accent" />
+            </LinearLayout>
+
+            <!-- Metadata 2x2 Grid -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="horizontal">
+
+                <!-- Assignee Card -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_neu_card"
+                    android:elevation="1dp"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_profile"
+                        app:tint="@color/chart_progress" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Assignee"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/tvDetailAssignee"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Rahul Verma"
+                        android:textColor="@color/text_main"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Due Date Card -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_neu_card"
+                    android:elevation="1dp"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_calendar"
+                        app:tint="@color/chart_done" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Due Date"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/tvDetailDueDate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="28 Apr 2026"
+                        android:textColor="@color/text_main"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Checklist & Subtasks Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="Subtasks (3/4)"
-                android:textColor="@color/charcoal"
-                android:textSize="16sp"
+                android:layout_marginTop="20dp"
+                android:text="Milestone Checklist"
+                android:textColor="@color/text_main"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="vertical">
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_neu_card"
+                android:elevation="1dp"
+                android:orientation="vertical"
+                android:padding="14dp">
 
                 <CheckBox
+                    android:id="@+id/cbSubtask1"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:buttonTint="@color/deep_sage"
+                    android:buttonTint="@color/chart_progress"
                     android:checked="true"
-                    android:text="Create wireframe"
-                    android:textColor="@color/charcoal" />
+                    android:text="1. Design System &amp; Palette Harmonization"
+                    android:textColor="@color/text_main"
+                    android:textSize="13sp" />
 
                 <CheckBox
+                    android:id="@+id/cbSubtask2"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:buttonTint="@color/deep_sage"
+                    android:layout_marginTop="4dp"
+                    android:buttonTint="@color/chart_progress"
                     android:checked="true"
-                    android:text="UI design"
-                    android:textColor="@color/charcoal" />
+                    android:text="2. 3D Neumorphic Components &amp; Animations"
+                    android:textColor="@color/text_main"
+                    android:textSize="13sp" />
 
                 <CheckBox
+                    android:id="@+id/cbSubtask3"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:buttonTint="@color/deep_sage"
+                    android:layout_marginTop="4dp"
+                    android:buttonTint="@color/chart_progress"
                     android:checked="true"
-                    android:text="Implement in code"
-                    android:textColor="@color/charcoal" />
+                    android:text="3. Physical Device Hardware Verification"
+                    android:textColor="@color/text_main"
+                    android:textSize="13sp" />
 
                 <CheckBox
+                    android:id="@+id/cbSubtask4"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:buttonTint="@color/deep_sage"
+                    android:layout_marginTop="4dp"
+                    android:buttonTint="@color/chart_progress"
                     android:checked="false"
-                    android:text="Test on devices"
-                    android:textColor="@color/charcoal" />
+                    android:text="4. Production Release &amp; Distribution"
+                    android:textColor="@color/text_main"
+                    android:textSize="13sp" />
             </LinearLayout>
 
             <!-- Status Transition Actions -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="32dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="28dp"
                 android:orientation="horizontal">
 
-                <Button
+                <TextView
                     android:id="@+id/btnSetInProgress"
                     android:layout_width="0dp"
-                    android:layout_height="46dp"
-                    android:layout_marginEnd="6dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="8dp"
                     android:layout_weight="1"
-                    android:background="@drawable/bg_badge_warning"
+                    android:background="@drawable/bg_neu_card"
+                    android:clickable="true"
+                    android:elevation="2dp"
+                    android:focusable="true"
+                    android:gravity="center"
                     android:text="In Progress"
-                    android:textColor="@color/earth_warning"
-                    android:textSize="12sp"
+                    android:textColor="@color/chart_progress"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
 
-                <Button
+                <TextView
                     android:id="@+id/btnSetDone"
                     android:layout_width="0dp"
-                    android:layout_height="46dp"
-                    android:layout_marginStart="6dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
                     android:layout_weight="1"
-                    android:background="@drawable/bg_badge_success"
-                    android:text="Mark Done"
-                    android:textColor="@color/earth_success"
-                    android:textSize="12sp"
+                    android:background="@drawable/bg_chip_selected"
+                    android:clickable="true"
+                    android:elevation="3dp"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Mark Completed"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
             </LinearLayout>
 

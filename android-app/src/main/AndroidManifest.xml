@@ -26,11 +26,11 @@
 
         <activity
             android:name=".ui.LoginActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <activity
             android:name=".ui.MainActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <activity
             android:name=".ui.OnboardingActivity"
@@ -38,7 +38,7 @@
 
         <activity
             android:name=".ui.TaskDetailsActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <activity
             android:name=".ui.CreateTaskActivity"

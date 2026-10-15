@@ -1,11 +1,15 @@
 package com.projectflow.android.ui;
 
+import android.graphics.Color;
 import android.os.Bundle;
-import android.widget.Button;
+import android.view.View;
+import android.widget.CheckBox;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import com.projectflow.android.R;
 import com.projectflow.android.data.local.AppDatabase;
 import com.projectflow.android.data.local.TaskEntity;
@@ -19,6 +23,11 @@ public class TaskDetailsActivity extends AppCompatActivity {
     private String taskPriority = "";
     private String taskDue = "";
 
+    private TextView tvStatus;
+    private TextView tvProgressPercent;
+    private ProgressBar pbTaskProgress;
+    private CheckBox cbSubtask1, cbSubtask2, cbSubtask3, cbSubtask4;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,10 +38,18 @@ public class TaskDetailsActivity extends AppCompatActivity {
         TextView tvDesc = findViewById(R.id.tvDetailDesc);
         TextView tvPriorityBadge = findViewById(R.id.tvDetailPriorityBadge);
         TextView tvDueDate = findViewById(R.id.tvDetailDueDate);
-        TextView tvStatus = findViewById(R.id.tvDetailStatus);
+        TextView tvProject = findViewById(R.id.tvDetailProject);
+        tvStatus = findViewById(R.id.tvDetailStatus);
+        tvProgressPercent = findViewById(R.id.tvProgressPercent);
+        pbTaskProgress = findViewById(R.id.pbTaskProgress);
 
-        Button btnSetInProgress = findViewById(R.id.btnSetInProgress);
-        Button btnSetDone = findViewById(R.id.btnSetDone);
+        cbSubtask1 = findViewById(R.id.cbSubtask1);
+        cbSubtask2 = findViewById(R.id.cbSubtask2);
+        cbSubtask3 = findViewById(R.id.cbSubtask3);
+        cbSubtask4 = findViewById(R.id.cbSubtask4);
+
+        View btnSetInProgress = findViewById(R.id.btnSetInProgress);
+        View btnSetDone = findViewById(R.id.btnSetDone);
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -47,25 +64,88 @@ public class TaskDetailsActivity extends AppCompatActivity {
 
         if (taskTitle != null && !taskTitle.isEmpty()) tvTitle.setText(taskTitle);
         if (taskDesc != null && !taskDesc.isEmpty()) tvDesc.setText(taskDesc);
-        if (taskPriority != null && !taskPriority.isEmpty()) tvPriorityBadge.setText(taskPriority + " Priority");
-        if (taskDue != null && !taskDue.isEmpty()) tvDueDate.setText(taskDue.split("T")[0]);
-        if (currentStatus != null && !currentStatus.isEmpty()) tvStatus.setText(currentStatus);
 
-        btnSetInProgress.setOnClickListener(v -> updateTaskStatus("IN_PROGRESS", tvStatus));
-        btnSetDone.setOnClickListener(v -> updateTaskStatus("DONE", tvStatus));
+        if (taskPriority != null && !taskPriority.isEmpty()) {
+            tvPriorityBadge.setText(taskPriority.toUpperCase() + " PRIORITY");
+            if (taskPriority.toUpperCase().contains("HIGH") || taskPriority.toUpperCase().contains("CRIT")) {
+                tvPriorityBadge.setTextColor(Color.parseColor("#E05D52"));
+            } else if (taskPriority.toUpperCase().contains("MED")) {
+                tvPriorityBadge.setTextColor(ContextCompat.getColor(this, R.color.chart_progress));
+            } else {
+                tvPriorityBadge.setTextColor(ContextCompat.getColor(this, R.color.chart_done));
+            }
+        }
+
+        if (taskDue != null && !taskDue.isEmpty()) {
+            tvDueDate.setText(taskDue.contains("T") ? taskDue.split("T")[0] : taskDue);
+        }
+
+        if (taskProjectId != null && !taskProjectId.isEmpty()) {
+            tvProject.setText("PRJ-" + taskProjectId);
+        }
+
+        if (currentStatus != null && !currentStatus.isEmpty()) {
+            updateStatusBadge(currentStatus);
+        }
+
+        // Subtasks listener to dynamically adjust progress
+        View.OnClickListener subtaskListener = v -> recalculateProgress();
+        cbSubtask1.setOnClickListener(subtaskListener);
+        cbSubtask2.setOnClickListener(subtaskListener);
+        cbSubtask3.setOnClickListener(subtaskListener);
+        cbSubtask4.setOnClickListener(subtaskListener);
+
+        btnSetInProgress.setOnClickListener(v -> updateTaskStatus("IN_PROGRESS"));
+        btnSetDone.setOnClickListener(v -> {
+            cbSubtask1.setChecked(true);
+            cbSubtask2.setChecked(true);
+            cbSubtask3.setChecked(true);
+            cbSubtask4.setChecked(true);
+            recalculateProgress();
+            updateTaskStatus("DONE");
+        });
     }
 
-    private void updateTaskStatus(String newStatus, TextView tvStatus) {
-        tvStatus.setText(newStatus);
+    private void recalculateProgress() {
+        int count = 0;
+        if (cbSubtask1.isChecked()) count++;
+        if (cbSubtask2.isChecked()) count++;
+        if (cbSubtask3.isChecked()) count++;
+        if (cbSubtask4.isChecked()) count++;
+
+        int percent = (int) ((count / 4.0f) * 100);
+        pbTaskProgress.setProgress(percent);
+        tvProgressPercent.setText(percent + "%");
+
+        if (percent == 100) {
+            updateStatusBadge("DONE");
+        } else if (percent > 0) {
+            updateStatusBadge("IN_PROGRESS");
+        }
+    }
+
+    private void updateStatusBadge(String status) {
+        tvStatus.setText(status.replace("_", " ").toUpperCase());
+        if ("DONE".equalsIgnoreCase(status)) {
+            tvStatus.setTextColor(ContextCompat.getColor(this, R.color.earth_success));
+            tvStatus.setCompoundDrawablesWithIntrinsicBounds(R.drawable.bg_dot_done, 0, 0, 0);
+        } else {
+            tvStatus.setTextColor(ContextCompat.getColor(this, R.color.chart_progress));
+            tvStatus.setCompoundDrawablesWithIntrinsicBounds(R.drawable.bg_dot_progress, 0, 0, 0);
+        }
+    }
+
+    private void updateTaskStatus(String newStatus) {
+        updateStatusBadge(newStatus);
         new Thread(() -> {
             AppDatabase db = AppDatabase.getInstance(this);
             String pId = (taskProjectId != null && !taskProjectId.isEmpty()) ? taskProjectId : "10000000-0000-0000-0000-000000000001";
-            int progress = "DONE".equalsIgnoreCase(newStatus) ? 100 : 50;
+            int progress = "DONE".equalsIgnoreCase(newStatus) ? 100 : pbTaskProgress.getProgress();
             TaskEntity updated = new TaskEntity(taskId != null ? taskId : java.util.UUID.randomUUID().toString(),
                     pId, taskTitle, taskDesc, taskPriority, newStatus, progress, taskDue);
             db.taskDao().insert(updated);
 
-            runOnUiThread(() -> Toast.makeText(this, "Task status updated to " + newStatus, Toast.LENGTH_SHORT).show());
+            runOnUiThread(() -> Toast.makeText(this, "Task status updated: " + newStatus, Toast.LENGTH_SHORT).show());
         }).start();
     }
 }
