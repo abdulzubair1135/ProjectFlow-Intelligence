@@ -72,58 +72,11 @@ public class ProjectFlowFirebaseMessagingService extends FirebaseMessagingServic
             }
         }
 
-        sendNotification(title, messageBody, taskId, priority);
-    }
-
-    private void sendNotification(String title, String messageBody, String taskId, String priority) {
-        Intent intent;
-        if (taskId != null && !taskId.isEmpty()) {
-            intent = new Intent(this, TaskDetailsActivity.class);
-            intent.putExtra("task_id", taskId);
-            intent.putExtra("task_title", title);
-            intent.putExtra("task_desc", messageBody);
-            intent.putExtra("task_priority", priority);
+        String type = remoteMessage.getData().get("type");
+        if ("RISK_ALERT".equalsIgnoreCase(type) || "CRITICAL".equalsIgnoreCase(priority)) {
+            ProjectFlowNotificationHelper.showRiskNotification(this, title, messageBody, priority);
         } else {
-            intent = new Intent(this, MainActivity.class);
+            ProjectFlowNotificationHelper.showTaskNotification(this, title, messageBody, taskId, priority);
         }
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this,
-                0,
-                intent,
-                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-
-        NotificationCompat.Builder notificationBuilder =
-                new NotificationCompat.Builder(this, CHANNEL_ID)
-                        .setSmallIcon(R.mipmap.ic_launcher)
-                        .setContentTitle(title)
-                        .setContentText(messageBody)
-                        .setStyle(new NotificationCompat.BigTextStyle().bigText(messageBody))
-                        .setAutoCancel(true)
-                        .setSound(defaultSoundUri)
-                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        .setContentIntent(pendingIntent);
-
-        NotificationManager notificationManager =
-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        // Notification Channel for Android O (API 26) and above
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_HIGH
-            );
-            channel.setDescription("Critical notifications, task delegations, and risk alerts");
-            channel.enableVibration(true);
-            notificationManager.createNotificationChannel(channel);
-        }
-
-        int notificationId = (int) System.currentTimeMillis();
-        notificationManager.notify(notificationId, notificationBuilder.build());
     }
 }

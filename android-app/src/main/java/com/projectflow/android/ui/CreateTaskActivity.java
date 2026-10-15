@@ -80,6 +80,14 @@ public class CreateTaskActivity extends AppCompatActivity {
                 repository.createTask(projectId, title, desc, finalPriority, dueDate,
                         () -> runOnUiThread(() -> {
                             Toast.makeText(this, "Task Created Successfully", Toast.LENGTH_SHORT).show();
+                            // Fire system tray notification with sound and vibration
+                            com.projectflow.android.service.ProjectFlowNotificationHelper.showTaskNotification(
+                                    getApplicationContext(),
+                                    "New Task: " + title,
+                                    "Priority: " + finalPriority + (dueDate != null && !dueDate.isEmpty() ? " • Due: " + dueDate : ""),
+                                    null,
+                                    finalPriority
+                            );
                             finish();
                         }),
                         () -> runOnUiThread(() -> Toast.makeText(this, "Failed creating task", Toast.LENGTH_SHORT).show())

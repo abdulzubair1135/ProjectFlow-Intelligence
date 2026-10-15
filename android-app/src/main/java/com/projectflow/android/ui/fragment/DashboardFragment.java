@@ -20,6 +20,7 @@ import com.projectflow.android.R;
 import com.projectflow.android.data.local.AppDatabase;
 import com.projectflow.android.data.local.ProjectEntity;
 import com.projectflow.android.data.local.TaskEntity;
+import com.projectflow.android.data.remote.model.DtoModels.NotificationDto;
 import com.projectflow.android.data.repository.ProjectFlowRepository;
 import com.projectflow.android.ui.CreateTaskActivity;
 import com.projectflow.android.ui.MainActivity;
@@ -220,6 +221,9 @@ public class DashboardFragment extends Fragment {
             }
         });
 
+        // Load real unread notifications badge
+        loadNotificationBadge();
+
         // Initial data sync
         repository.refreshWorkspaces();
         repository.refreshProjects();
@@ -231,7 +235,46 @@ public class DashboardFragment extends Fragment {
             repository.refreshWorkspaces();
             repository.refreshProjects();
             repository.refreshAllTasks();
+            loadNotificationBadge();
             swipeRefresh.setRefreshing(false);
+        });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        loadNotificationBadge();
+    }
+
+    private void loadNotificationBadge() {
+        if (tvNotifBadge == null) return;
+        repository.fetchNotifications(new ProjectFlowRepository.DataCallback<List<NotificationDto>>() {
+            @Override
+            public void onData(List<NotificationDto> notifs) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        int unread = 0;
+                        if (notifs != null) {
+                            for (NotificationDto n : notifs) {
+                                if (!n.read) unread++;
+                            }
+                        }
+                        if (unread > 0) {
+                            tvNotifBadge.setVisibility(View.VISIBLE);
+                            tvNotifBadge.setText(unread > 9 ? "9+" : String.valueOf(unread));
+                        } else {
+                            tvNotifBadge.setVisibility(View.GONE);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onError(String message) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> tvNotifBadge.setVisibility(View.GONE));
+                }
+            }
         });
     }
 }

@@ -99,6 +99,8 @@ public class DtoModels {
         public String title;
         public String message;
         public String type;
+        public String taskId;
+        public String priority;
         public boolean read;
         public String createdAt;
     }

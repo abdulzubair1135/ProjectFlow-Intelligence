@@ -61,6 +61,13 @@ public class NotificationsFragment extends Fragment {
                 adapter.notifyDataSetChanged();
                 repository.markNotificationRead(notif.id, null);
             }
+            if (notif.taskId != null && !notif.taskId.isEmpty()) {
+                android.content.Intent intent = new android.content.Intent(requireContext(), com.projectflow.android.ui.TaskDetailsActivity.class);
+                intent.putExtra("task_id", notif.taskId);
+                intent.putExtra("task_title", notif.title);
+                intent.putExtra("task_desc", notif.message);
+                startActivity(intent);
+            }
         });
 
         rvNotifications.setLayoutManager(new LinearLayoutManager(requireContext()));

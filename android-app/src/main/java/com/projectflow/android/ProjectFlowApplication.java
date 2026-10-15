@@ -23,5 +23,8 @@ public class ProjectFlowApplication extends Application {
             // Default to Light Mode!
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         }
+
+        // Initialize Enterprise Notification Channels
+        com.projectflow.android.service.ProjectFlowNotificationHelper.initChannels(this);
     }
 }

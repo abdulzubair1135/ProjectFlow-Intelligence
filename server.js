@@ -232,6 +232,50 @@ app.post('/api/v1/users/fcm-token', (req, res) => {
   res.json({ success: true, count: store.fcmTokens.length });
 });
 
+// Broadcast Push Notification Dispatcher
+async function dispatchPushNotification(title, message, extraData = {}) {
+  console.log(`[PUSH] Dispatching to ${store.fcmTokens.length} mobile devices: "${title}" - "${message}"`);
+  const record = {
+    id: uuidv4(),
+    title,
+    message,
+    recipients: store.fcmTokens.length,
+    timestamp: new Date().toISOString()
+  };
+  (store.pushLogs = store.pushLogs || []).unshift(record);
+}
+
+app.post('/api/v1/notifications/send-push', async (req, res) => {
+  const { title, message, taskId, priority, type } = req.body;
+  const notif = {
+    id: uuidv4(),
+    title: title || 'Workspace Alert',
+    message: message || 'You have a new update in ProjectFlow.',
+    type: type || 'PUSH_ALERT',
+    taskId: taskId || null,
+    priority: priority || 'HIGH',
+    read: false,
+    createdAt: new Date().toISOString()
+  };
+  (store.notifications = store.notifications || []).unshift(notif);
+  if (supabase) {
+    try {
+      await supabase.from('notifications').upsert({
+        id: notif.id,
+        title: notif.title,
+        message: notif.message,
+        type: notif.type,
+        read: false,
+        created_at: notif.createdAt
+      });
+    } catch (e) {
+      console.warn('[NOTIF] Supabase sync:', e.message);
+    }
+  }
+  await dispatchPushNotification(notif.title, notif.message, { taskId: notif.taskId, priority: notif.priority });
+  res.json({ success: true, notification: notif, deliveredDevices: store.fcmTokens.length });
+});
+
 app.get('/api/v1/me', (req, res) => {
   const auth = req.headers.authorization || '';
   let email = 'admin@projectflow.io';
@@ -489,6 +533,29 @@ app.patch('/api/v1/tasks/:id/status', (req, res) => {
     }
   }
   saveTaskToSupabase(task);
+
+  const statusNotif = {
+    id: uuidv4(),
+    title: task.statusCategory === 'DONE' ? 'Task Completed 🎉' : 'Task Status Updated',
+    message: `"${task.title}" has been updated to ${task.statusCategory}.`,
+    type: 'TASK_STATUS_CHANGED',
+    taskId: task.id,
+    read: false,
+    createdAt: new Date().toISOString()
+  };
+  (store.notifications = store.notifications || []).unshift(statusNotif);
+  if (supabase) {
+    supabase.from('notifications').upsert({
+      id: statusNotif.id,
+      title: statusNotif.title,
+      message: statusNotif.message,
+      type: statusNotif.type,
+      read: false,
+      created_at: statusNotif.createdAt
+    }).then(() => {}).catch(err => console.warn('[NOTIF] Status notif error:', err.message));
+  }
+  dispatchPushNotification(statusNotif.title, statusNotif.message, { taskId: task.id });
+
   res.json(task);
 });
 
