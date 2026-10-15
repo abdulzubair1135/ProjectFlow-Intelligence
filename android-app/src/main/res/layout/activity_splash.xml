@@ -1,17 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootSplashLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/limestone_ivory"
-    android:padding="24dp">
+    android:background="#F4F2E9">
 
-    <!-- Center Content: Original Logo & Brand Name -->
+    <!-- 1. Background Video Animation View (Centered 720x1280 9:16 aspect ratio) -->
+    <VideoView
+        android:id="@+id/videoViewSplash"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true" />
+
+    <!-- 2. Fallback Static Brand Container (in case video cannot play on legacy drivers) -->
     <LinearLayout
+        android:id="@+id/llFallbackLogo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
         android:gravity="center"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:visibility="gone">
 
         <ImageView
             android:id="@+id/ivSplashLogo"
@@ -34,27 +43,48 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Bottom: Loading bar and text -->
+    <!-- 3. Top Right Skip Button -->
+    <TextView
+        android:id="@+id/btnSkip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="42dp"
+        android:layout_marginEnd="20dp"
+        android:background="@drawable/bg_neu_pill"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="6dp"
+        android:text="Skip ➔"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:elevation="4dp" />
+
+    <!-- 4. Subtle Bottom Branding / Loading Indicator -->
     <LinearLayout
+        android:id="@+id/llBottomIndicator"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_marginBottom="48dp"
+        android:layout_marginBottom="28dp"
         android:gravity="center"
         android:orientation="vertical">
 
         <TextView
+            android:id="@+id/tvLoadingStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/loading"
-            android:textColor="@color/stone_grey"
-            android:textSize="13sp" />
+            android:text="Initializing Intelligence Platform..."
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:letterSpacing="0.04" />
 
         <ProgressBar
             style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="160dp"
-            android:layout_height="4dp"
-            android:layout_marginTop="8dp"
+            android:layout_width="120dp"
+            android:layout_height="3dp"
+            android:layout_marginTop="6dp"
             android:indeterminate="true"
             android:indeterminateTint="@color/deep_sage" />
     </LinearLayout>
