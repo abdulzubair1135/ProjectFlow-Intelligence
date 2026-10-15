@@ -28,6 +28,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        StatusBarUtils.applyLightStatusBar(this);
         setContentView(R.layout.activity_project_details);
 
         repository = new ProjectFlowRepository(this);

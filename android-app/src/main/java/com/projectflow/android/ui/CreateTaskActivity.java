@@ -21,6 +21,7 @@ public class CreateTaskActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        StatusBarUtils.applyLightStatusBar(this);
         setContentView(R.layout.activity_create_task);
 
         View btnBack = findViewById(R.id.btnBack);
