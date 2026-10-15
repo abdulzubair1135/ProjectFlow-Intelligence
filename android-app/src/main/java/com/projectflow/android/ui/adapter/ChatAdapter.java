@@ -42,6 +42,18 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         notifyDataSetChanged();
     }
 
+    public boolean setMessagesSilently(List<ChatMessageDto> newMessages) {
+        if (newMessages == null) return false;
+        boolean countChanged = (newMessages.size() != this.messages.size());
+        if (countChanged) {
+            this.messages.clear();
+            this.messages.addAll(newMessages);
+            notifyDataSetChanged();
+            return true;
+        }
+        return false;
+    }
+
     public void addMessage(ChatMessageDto message) {
         if (message != null) {
             this.messages.add(message);

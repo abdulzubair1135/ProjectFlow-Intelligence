@@ -145,7 +145,12 @@ app.post('/api/v1/auth/signup', async (req, res) => {
     createdAt: new Date().toISOString()
   };
 
-  store.users.push(user);
+  const existingIdx = store.users.findIndex(u => u.email.toLowerCase() === email);
+  if (existingIdx >= 0) {
+    store.users[existingIdx] = user;
+  } else {
+    store.users.push(user);
+  }
 
   // 2. Persist to Supabase profiles
   if (supabase) {
@@ -157,12 +162,26 @@ app.post('/api/v1/auth/signup', async (req, res) => {
         global_role: user.role,
         active: true
       });
+      console.log('[AUTH] Upserted Supabase profile for:', user.email);
     } catch (err) {
       console.error('[AUTH] Profile upsert err:', err.message);
     }
   }
 
-  // 3. Create default workspace if specified
+  // 3. Log audit trail for Web Admin Panel
+  (store.auditLogs = store.auditLogs || []).unshift({
+    id: uuidv4(),
+    userId: user.id,
+    userEmail: user.email,
+    action: 'USER_REGISTERED',
+    entityType: 'USER',
+    entityId: user.id,
+    details: `User ${user.fullName} (${user.email}) registered from shared mobile application.`,
+    ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1',
+    createdAt: new Date().toISOString()
+  });
+
+  // 4. Create default workspace if specified
   if (workspaceName) {
     const ws = {
       id: uuidv4(),
@@ -300,7 +319,30 @@ app.get('/api/v1/admin/overview', (req, res) => {
   });
 });
 
-app.get('/api/v1/admin/users', (req, res) => {
+app.get('/api/v1/admin/users', async (req, res) => {
+  if (supabase) {
+    try {
+      const { data: profiles, error } = await supabase.from('profiles').select('*');
+      if (!error && profiles) {
+        profiles.forEach(p => {
+          const exists = store.users.find(u => u.id === p.id || (u.email && u.email.toLowerCase() === (p.email || '').toLowerCase()));
+          if (!exists) {
+            store.users.push({
+              id: p.id,
+              email: p.email,
+              fullName: p.full_name || (p.email ? p.email.split('@')[0] : 'Member'),
+              role: p.global_role || 'MEMBER',
+              active: p.active !== false,
+              createdAt: p.created_at || new Date().toISOString()
+            });
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('[ADMIN] Profiles live sync error:', e.message);
+    }
+  }
+
   const query = (req.query.query || '').toLowerCase();
   let filtered = store.users;
   if (query) {
@@ -310,7 +352,7 @@ app.get('/api/v1/admin/users', (req, res) => {
     content: filtered,
     totalElements: filtered.length,
     totalPages: 1,
-    size: 20,
+    size: 50,
     number: 0
   });
 });
@@ -630,7 +672,27 @@ app.post('/api/v1/teams', (req, res) => {
   res.status(201).json(newTeam);
 });
 
-app.get('/api/v1/team', (req, res) => {
+app.get('/api/v1/team', async (req, res) => {
+  if (supabase) {
+    try {
+      const { data: profiles, error } = await supabase.from('profiles').select('*');
+      if (!error && profiles) {
+        profiles.forEach(p => {
+          const exists = store.users.find(u => u.id === p.id || (u.email && u.email.toLowerCase() === (p.email || '').toLowerCase()));
+          if (!exists) {
+            store.users.push({
+              id: p.id,
+              email: p.email,
+              fullName: p.full_name || (p.email ? p.email.split('@')[0] : 'Member'),
+              role: p.global_role || 'MEMBER',
+              active: p.active !== false,
+              createdAt: p.created_at || new Date().toISOString()
+            });
+          }
+        });
+      }
+    } catch (e) {}
+  }
   const team = store.users.map(u => ({
     id: u.id,
     email: u.email,

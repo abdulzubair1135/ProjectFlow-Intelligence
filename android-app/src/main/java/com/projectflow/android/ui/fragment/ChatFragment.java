@@ -221,4 +221,49 @@ public class ChatFragment extends Fragment {
             }
         });
     }
+
+    private final android.os.Handler pollHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable pollRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isAdded() && activeChannel != null) {
+                loadMessagesSilently(activeChannel);
+                pollHandler.postDelayed(this, 3000);
+            }
+        }
+    };
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        pollHandler.post(pollRunnable);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        pollHandler.removeCallbacks(pollRunnable);
+    }
+
+    private void loadMessagesSilently(String channel) {
+        if (repository == null) return;
+        repository.fetchChatMessagesByChannel(channel, new ProjectFlowRepository.DataCallback<List<ChatMessageDto>>() {
+            @Override
+            public void onData(List<ChatMessageDto> data) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        if (data != null && !data.isEmpty()) {
+                            llEmptyChat.setVisibility(View.GONE);
+                            boolean changed = chatAdapter.setMessagesSilently(data);
+                            if (changed) {
+                                rvChatMessages.scrollToPosition(data.size() - 1);
+                            }
+                        }
+                    });
+                }
+            }
+
+            @Override public void onError(String message) {}
+        });
+    }
 }

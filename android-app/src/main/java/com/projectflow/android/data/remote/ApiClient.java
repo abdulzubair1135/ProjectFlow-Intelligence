@@ -16,8 +16,8 @@ public class ApiClient {
     private static final String PREF_NAME = "projectflow_prefs";
     private static final String KEY_BASE_URL = "api_base_url";
     private static final String KEY_TOKEN = "auth_token";
-    // Default to 127.0.0.1 for ADB reverse or 10.0.2.2 for emulator
-    public static final String DEFAULT_URL = "http://127.0.0.1:8082/api/v1/";
+    // Live Public Cloud URL accessible worldwide (WhatsApp shared APKs & remote devices)
+    public static final String DEFAULT_URL = "https://istanbul-folding-irrigation-lan.trycloudflare.com/api/v1/";
 
     public static ApiService getService(Context context) {
         if (INSTANCE == null) {
@@ -37,6 +37,11 @@ public class ApiClient {
     private static ApiService createService(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         String baseUrl = prefs.getString(KEY_BASE_URL, DEFAULT_URL);
+        // Automatically migrate legacy localhost URLs to public Cloudflare tunnel
+        if (baseUrl.contains("127.0.0.1") || baseUrl.contains("localhost")) {
+            baseUrl = DEFAULT_URL;
+            prefs.edit().putString(KEY_BASE_URL, DEFAULT_URL).apply();
+        }
         if (!baseUrl.endsWith("/")) {
             baseUrl += "/";
         }
@@ -54,8 +59,10 @@ public class ApiClient {
         };
 
         OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(5, TimeUnit.SECONDS)
-                .readTimeout(8, TimeUnit.SECONDS)
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(20, TimeUnit.SECONDS)
+                .writeTimeout(20, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true)
                 .addInterceptor(authInterceptor)
                 .addInterceptor(logging)
                 .build();
