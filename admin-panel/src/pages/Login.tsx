@@ -42,7 +42,7 @@ export const Login: React.FC = () => {
     <div className="min-h-screen bg-[#F4F2E9] flex flex-col items-center justify-center p-4 select-none">
       <div className="w-full max-w-md bg-[#FAFAF7] border border-[#E2E0D8] rounded-xl shadow-lg p-8">
         <div className="flex items-center gap-3 mb-6">
-          <img src="/logo.jpg" alt="ProjectFlow Logo" className="w-12 h-12 rounded-xl object-contain bg-white border border-[#E2E0D8] shadow-sm" />
+          <img src="/logo.jpg" alt="ProjectFlow Logo" style={{ width: '48px', height: '48px', maxWidth: '48px', maxHeight: '48px' }} className="w-12 h-12 rounded-xl object-contain bg-white border border-[#E2E0D8] shadow-sm shrink-0" />
           <div>
             <h1 className="text-xl font-bold text-[#292D28]">ProjectFlow Intelligence</h1>
             <p className="text-xs text-[#78866B] font-medium uppercase tracking-wider">Admin Control Panel</p>

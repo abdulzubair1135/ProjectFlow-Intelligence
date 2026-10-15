@@ -7,9 +7,9 @@ const { evaluateProjectRisks } = require('./src/engine/deterministicRiskEngine')
 const { evaluateScenario } = require('./src/engine/whatIfSchedulingEngine');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8082;
 
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
 // Serve static logo and public assets

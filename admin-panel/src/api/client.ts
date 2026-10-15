@@ -1,6 +1,6 @@
 import { AdminOverview, AppRelease, AuditLog, ErrorLogEntry, PageResponse, Project, RiskFinding, SystemHealth, Task, UserProfile, Workspace } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem('projectflow_token') || 'dev-admin-token';
