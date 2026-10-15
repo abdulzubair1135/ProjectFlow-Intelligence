@@ -122,18 +122,32 @@
         </FrameLayout>
     </LinearLayout>
 
-    <!-- Side Navigation Drawer with Neumorphic Selection -->
-    <com.google.android.material.navigation.NavigationView
-        android:id="@+id/navigation_view"
+    <!-- Side Navigation Drawer Container with Ambient Grass & Wave Stream Animation -->
+    <FrameLayout
         android:layout_width="300dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="@color/chalk_white"
-        android:fitsSystemWindows="true"
-        app:headerLayout="@layout/drawer_header"
-        app:itemBackground="@drawable/selector_drawer_item"
-        app:itemIconTint="@color/selector_drawer_icon"
-        app:itemTextColor="@color/selector_drawer_text"
-        app:menu="@menu/drawer_menu" />
+        android:fitsSystemWindows="true">
+
+        <!-- Ambient Grass Blades & Stream Waves Animation -->
+        <com.projectflow.android.ui.view.AmbientGrassWaveView
+            android:id="@+id/ambientGrassWaveView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- Side Navigation Drawer with Neumorphic Selection -->
+        <com.google.android.material.navigation.NavigationView
+            android:id="@+id/navigation_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            app:elevation="0dp"
+            app:headerLayout="@layout/drawer_header"
+            app:itemBackground="@drawable/selector_drawer_item"
+            app:itemIconTint="@color/selector_drawer_icon"
+            app:itemTextColor="@color/selector_drawer_text"
+            app:menu="@menu/drawer_menu" />
+    </FrameLayout>
 
 </androidx.drawerlayout.widget.DrawerLayout>
