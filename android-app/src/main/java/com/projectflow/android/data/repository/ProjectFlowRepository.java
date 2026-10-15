@@ -126,7 +126,25 @@ public class ProjectFlowRepository {
 
     // Tasks
     public LiveData<List<TaskEntity>> getAllTasks() {
+        refreshAllTasks();
         return db.taskDao().getAllLive();
+    }
+
+    public void refreshAllTasks() {
+        executor.execute(() -> {
+            try {
+                Response<List<TaskDto>> resp = api.getAllTasks().execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    List<TaskEntity> entities = new ArrayList<>();
+                    for (TaskDto dto : resp.body()) {
+                        entities.add(new TaskEntity(dto.id, dto.projectId, dto.title, dto.description, dto.priority, dto.statusCategory, dto.progressPercent, dto.dueDate));
+                    }
+                    db.taskDao().insertAll(entities);
+                }
+            } catch (Exception e) {
+                // Offline fallback
+            }
+        });
     }
 
     public LiveData<List<TaskEntity>> getTasks(String projectId) {
@@ -152,13 +170,16 @@ public class ProjectFlowRepository {
         });
     }
 
-    public void createTask(String projectId, String title, String description, String priority, Runnable onSuccess, Runnable onError) {
+    public void createTask(String projectId, String title, String description, String priority, String dueDate, Runnable onSuccess, Runnable onError) {
         executor.execute(() -> {
             try {
                 Map<String, Object> body = new HashMap<>();
                 body.put("title", title);
                 body.put("description", description);
                 body.put("priority", priority);
+                if (dueDate != null && !dueDate.isEmpty()) {
+                    body.put("dueDate", dueDate);
+                }
                 Response<TaskDto> resp = api.createTask(projectId, body).execute();
                 if (resp.isSuccessful() && resp.body() != null) {
                     TaskDto dto = resp.body();
@@ -168,13 +189,17 @@ public class ProjectFlowRepository {
                 }
             } catch (Exception e) {
                 String id = UUID.randomUUID().toString();
-                db.taskDao().insert(new TaskEntity(id, projectId, title, description, priority, "TODO", 0, null));
+                db.taskDao().insert(new TaskEntity(id, projectId, title, description, priority, "TODO", 0, dueDate));
                 db.syncQueueDao().insert(new SyncQueueEntity(UUID.randomUUID().toString(), "CREATE", "TASK", id, "{}", "PENDING", new Date().toString()));
                 if (onSuccess != null) onSuccess.run();
                 return;
             }
             if (onError != null) onError.run();
         });
+    }
+
+    public void createTask(String projectId, String title, String description, String priority, Runnable onSuccess, Runnable onError) {
+        createTask(projectId, title, description, priority, null, onSuccess, onError);
     }
 
     // Risks

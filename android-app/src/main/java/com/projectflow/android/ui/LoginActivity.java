@@ -138,14 +138,28 @@ public class LoginActivity extends AppCompatActivity {
             body.put("password", password);
         }
 
-        api.devLogin(body).enqueue(new Callback<AuthResponse>() {
+        Call<AuthResponse> authCall;
+        if (isSignUpMode) {
+            String name = etName.getText() != null ? etName.getText().toString().trim() : "";
+            String workspace = etWorkspace.getText() != null ? etWorkspace.getText().toString().trim() : "";
+            if (!name.isEmpty()) body.put("fullName", name);
+            if (!workspace.isEmpty()) body.put("workspaceName", workspace);
+            authCall = api.signup(body);
+        } else {
+            authCall = api.login(body);
+        }
+
+        authCall.enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                 progressBar.setVisibility(View.GONE);
                 btnSignIn.setEnabled(true);
 
-                if (response.isSuccessful() && response.body() != null) {
-                    saveSessionAndNavigate(response.body().token, response.body().user.email);
+                if (response.isSuccessful() && response.body() != null && response.body().token != null) {
+                    String userEmail = response.body().user != null ? response.body().user.email : email;
+                    String userName = response.body().user != null ? response.body().user.fullName : null;
+                    String userRole = response.body().user != null ? response.body().user.role : "MEMBER";
+                    saveSessionAndNavigate(response.body().token, userEmail, userName, userRole);
                 } else {
                     fallbackLocalLogin(email);
                 }
@@ -162,25 +176,47 @@ public class LoginActivity extends AppCompatActivity {
 
     private void fallbackLocalLogin(String email) {
         String token = "dev-admin-token";
-        if (email.contains("manager")) token = "dev-manager-token";
-        if (email.contains("member")) token = "dev-member-token";
-        saveSessionAndNavigate(token, email);
+        String role = "ADMINISTRATOR";
+        if (email.contains("manager")) { token = "dev-manager-token"; role = "MANAGER"; }
+        if (email.contains("member")) { token = "dev-member-token"; role = "MEMBER"; }
+        saveSessionAndNavigate(token, email, null, role);
     }
 
-    private void saveSessionAndNavigate(String token, String email) {
-        String displayName = (etName.getText() != null && !etName.getText().toString().trim().isEmpty())
-                ? etName.getText().toString().trim()
-                : (email.split("@")[0]);
+    private void saveSessionAndNavigate(String token, String email, String fullName, String role) {
+        String displayName = (fullName != null && !fullName.isEmpty()) 
+                ? fullName 
+                : ((etName.getText() != null && !etName.getText().toString().trim().isEmpty())
+                    ? etName.getText().toString().trim()
+                    : (email.split("@")[0]));
 
         SharedPreferences prefs = getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
         prefs.edit()
                 .putString("auth_token", token)
                 .putString("user_email", email)
                 .putString("user_display_name", displayName)
+                .putString("user_role", role)
                 .putBoolean("remember_me", cbRememberMe.isChecked())
                 .apply();
 
-        String msg = isSignUpMode ? "Welcome to ProjectFlow, " + displayName + "!" : "Signed in as " + email;
+        // Register FCM Push Notification Token with backend
+        String fcmToken = prefs.getString("fcm_token", null);
+        if (fcmToken != null && !fcmToken.isEmpty()) {
+            Map<String, String> fcmBody = new HashMap<>();
+            fcmBody.put("fcmToken", fcmToken);
+            fcmBody.put("email", email);
+            ApiClient.getService(this).registerFcmToken(fcmBody).enqueue(new Callback<Map<String, Object>>() {
+                @Override
+                public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
+                    android.util.Log.d("ProjectFlowAuth", "FCM token synced to server");
+                }
+                @Override
+                public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                    android.util.Log.w("ProjectFlowAuth", "FCM token sync postponed: " + t.getMessage());
+                }
+            });
+        }
+
+        String msg = isSignUpMode ? "Welcome to ProjectFlow, " + displayName + "!" : "Signed in as " + displayName;
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
         startActivity(new Intent(LoginActivity.this, MainActivity.class));
         finish();

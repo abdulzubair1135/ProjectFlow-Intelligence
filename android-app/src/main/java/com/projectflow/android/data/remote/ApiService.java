@@ -12,6 +12,15 @@ public interface ApiService {
     @POST("auth/dev-login")
     Call<AuthResponse> devLogin(@Body Map<String, String> body);
 
+    @POST("auth/login")
+    Call<AuthResponse> login(@Body Map<String, String> body);
+
+    @POST("auth/signup")
+    Call<AuthResponse> signup(@Body Map<String, String> body);
+
+    @POST("users/fcm-token")
+    Call<Map<String, Object>> registerFcmToken(@Body Map<String, String> body);
+
     @GET("workspaces")
     Call<List<WorkspaceDto>> getWorkspaces();
 

@@ -171,9 +171,15 @@ public class DashboardFragment extends Fragment {
                 pieChartView.setTaskData(doneCount, inProgressCount, reviewCount, todoCount);
             }
 
-            // Update 3D Velocity Bar Chart
+            // Update 3D Velocity Bar Chart with live tasks
             if (barChartView != null) {
-                barChartView.setSampleData();
+                List<NeumorphicBarChartView.BarItem> barItems = new ArrayList<>();
+                int max = Math.max(total, 5);
+                barItems.add(new NeumorphicBarChartView.BarItem("Completed Delivery", doneCount, max, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.chart_done)));
+                barItems.add(new NeumorphicBarChartView.BarItem("In Active Sprint", inProgressCount, max, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.chart_progress)));
+                barItems.add(new NeumorphicBarChartView.BarItem("Quality & Review", reviewCount, max, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.chart_review)));
+                barItems.add(new NeumorphicBarChartView.BarItem("Backlog & To-Do", todoCount, max, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.chart_todo)));
+                barChartView.setData(barItems);
             }
         });
 
@@ -212,11 +218,17 @@ public class DashboardFragment extends Fragment {
             }
         });
 
+        // Initial data sync
+        repository.refreshWorkspaces();
+        repository.refreshProjects();
+        repository.refreshAllTasks();
+
         // Swipe Refresh
         swipeRefresh.setColorSchemeResources(R.color.primary_earth, R.color.muted_clay);
         swipeRefresh.setOnRefreshListener(() -> {
             repository.refreshWorkspaces();
             repository.refreshProjects();
+            repository.refreshAllTasks();
             swipeRefresh.setRefreshing(false);
         });
     }

@@ -1,6 +1,7 @@
 package com.projectflow.android.ui;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -22,12 +23,12 @@ public class CreateTaskActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_task);
 
-        ImageView btnBack = findViewById(R.id.btnBack);
+        View btnBack = findViewById(R.id.btnBack);
         EditText etTitle = findViewById(R.id.etTaskTitle);
         EditText etDesc = findViewById(R.id.etTaskDesc);
         EditText etDueDate = findViewById(R.id.etTaskDueDate);
         RadioGroup rgPriority = findViewById(R.id.rgPriority);
-        Button btnSubmit = findViewById(R.id.btnSubmitCreateTask);
+        View btnSubmit = findViewById(R.id.btnSubmitCreateTask);
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -75,7 +76,8 @@ public class CreateTaskActivity extends AppCompatActivity {
                 String projectId = (intentProjectId != null && !intentProjectId.isEmpty()) ? intentProjectId :
                         ((projects != null && !projects.isEmpty()) ? projects.get(0).id : "10000000-0000-0000-0000-000000000001");
 
-                repository.createTask(projectId, title, desc, finalPriority,
+                String dueDate = etDueDate.getText() != null ? etDueDate.getText().toString().trim() : null;
+                repository.createTask(projectId, title, desc, finalPriority, dueDate,
                         () -> runOnUiThread(() -> {
                             Toast.makeText(this, "Task Created Successfully", Toast.LENGTH_SHORT).show();
                             finish();

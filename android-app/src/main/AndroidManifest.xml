@@ -42,11 +42,11 @@
 
         <activity
             android:name=".ui.CreateTaskActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <activity
             android:name=".ui.ProjectDetailsActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <!-- Secure Content Provider for Native APK Sharing -->
         <provider

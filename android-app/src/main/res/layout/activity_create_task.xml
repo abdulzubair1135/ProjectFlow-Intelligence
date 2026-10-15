@@ -1,179 +1,234 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/chalk_white"
-    android:fillViewport="true">
+    android:background="#1C1917">
+
+    <!-- Top Flow Leaf Header Animation -->
+    <com.projectflow.android.ui.view.FlowLeafHeaderView
+        android:layout_width="match_parent"
+        android:layout_height="110dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- Top AppBar -->
+        <!-- Toolbar -->
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:background="@color/chalk_white"
             android:paddingStart="16dp"
             android:paddingEnd="16dp">
 
-            <ImageView
+            <FrameLayout
                 android:id="@+id/btnBack"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Back"
-                android:padding="6dp"
-                android:src="@drawable/ic_kanban"
-                app:tint="@color/charcoal" />
+                android:background="@drawable/bg_neu_card">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_kanban"
+                    app:tint="#D6D1C7" />
+            </FrameLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
-                android:layout_marginStart="16dp"
+                android:layout_marginStart="14dp"
                 android:layout_toEndOf="@id/btnBack"
-                android:text="@string/title_create_task"
-                android:textColor="@color/charcoal"
+                android:text="New Assignment"
+                android:textColor="#F4F1EA"
                 android:textSize="18sp"
                 android:textStyle="bold" />
         </RelativeLayout>
 
-        <View
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/natural_border" />
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Task Title"
-                android:textColor="@color/charcoal"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/etTaskTitle"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/ic_kanban"
-                android:backgroundTint="@color/limestone_ivory"
-                android:hint="Enter task title"
-                android:padding="12dp"
-                android:textColor="@color/charcoal"
-                android:textColorHint="@color/stone_grey"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Description"
-                android:textColor="@color/charcoal"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/etTaskDesc"
-                android:layout_width="match_parent"
-                android:layout_height="100dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/ic_kanban"
-                android:backgroundTint="@color/limestone_ivory"
-                android:gravity="top|start"
-                android:hint="Enter description"
-                android:padding="12dp"
-                android:textColor="@color/charcoal"
-                android:textColorHint="@color/stone_grey"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Due Date"
-                android:textColor="@color/charcoal"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/etTaskDueDate"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/ic_kanban"
-                android:backgroundTint="@color/limestone_ivory"
-                android:hint="25 Apr 2025"
-                android:padding="12dp"
-                android:textColor="@color/charcoal"
-                android:textColorHint="@color/stone_grey"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Priority"
-                android:textColor="@color/charcoal"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <RadioGroup
-                android:id="@+id/rgPriority"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="32dp">
 
-                <RadioButton
-                    android:id="@+id/rbLow"
+                <!-- Task Title -->
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:buttonTint="@color/status_green"
-                    android:text="Low" />
+                    android:text="TASK TITLE"
+                    android:textColor="#A89F91"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.08"
+                    android:textStyle="bold" />
 
-                <RadioButton
-                    android:id="@+id/rbMedium"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_neu_card"
+                    android:gravity="center_vertical"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp">
+
+                    <EditText
+                        android:id="@+id/etTaskTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@null"
+                        android:hint="e.g. Implement Security Gateway"
+                        android:textColor="#F4F1EA"
+                        android:textColorHint="#6B6255"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <!-- Description -->
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:buttonTint="@color/alert_amber"
-                    android:checked="true"
-                    android:text="Medium" />
+                    android:layout_marginTop="18dp"
+                    android:text="DESCRIPTION &amp; SCOPE"
+                    android:textColor="#A89F91"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.08"
+                    android:textStyle="bold" />
 
-                <RadioButton
-                    android:id="@+id/rbHigh"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="110dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_neu_card"
+                    android:padding="14dp">
+
+                    <EditText
+                        android:id="@+id/etTaskDesc"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@null"
+                        android:gravity="top|start"
+                        android:hint="Provide explicit implementation guidelines and deliverables..."
+                        android:textColor="#F4F1EA"
+                        android:textColorHint="#6B6255"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <!-- Due Date -->
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:buttonTint="@color/alert_red"
-                    android:text="High" />
-            </RadioGroup>
+                    android:layout_marginTop="18dp"
+                    android:text="DELIVERY DEADLINE"
+                    android:textColor="#A89F91"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.08"
+                    android:textStyle="bold" />
 
-            <Button
-                android:id="@+id/btnSubmitCreateTask"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="32dp"
-                android:backgroundTint="@color/deep_sage"
-                android:text="@string/title_create_task"
-                android:textColor="@color/chalk_white"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                app:cornerRadius="12dp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_neu_card"
+                    android:gravity="center_vertical"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp">
 
-        </LinearLayout>
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_calendar"
+                        app:tint="#C8A27A" />
+
+                    <EditText
+                        android:id="@+id/etTaskDueDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:background="@null"
+                        android:focusable="false"
+                        android:clickable="true"
+                        android:hint="Select Due Date"
+                        android:textColor="#F4F1EA"
+                        android:textColorHint="#6B6255"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <!-- Priority -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:text="PRIORITY LEVEL"
+                    android:textColor="#A89F91"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.08"
+                    android:textStyle="bold" />
+
+                <RadioGroup
+                    android:id="@+id/rgPriority"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/rbLow"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:buttonTint="#4E9B66"
+                        android:text="Low"
+                        android:textColor="#D6D1C7"
+                        android:textSize="13sp" />
+
+                    <RadioButton
+                        android:id="@+id/rbMedium"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="24dp"
+                        android:buttonTint="#D9822B"
+                        android:checked="true"
+                        android:text="Medium"
+                        android:textColor="#D6D1C7"
+                        android:textSize="13sp" />
+
+                    <RadioButton
+                        android:id="@+id/rbHigh"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="24dp"
+                        android:buttonTint="#E05D52"
+                        android:text="High"
+                        android:textColor="#D6D1C7"
+                        android:textSize="13sp" />
+                </RadioGroup>
+
+                <!-- Submit Button -->
+                <TextView
+                    android:id="@+id/btnSubmitCreateTask"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="32dp"
+                    android:background="@drawable/bg_chip_selected"
+                    android:gravity="center"
+                    android:text="CREATE &amp; DISPATCH TASK"
+                    android:textColor="#1C1917"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04" />
+
+            </LinearLayout>
+        </ScrollView>
     </LinearLayout>
-
-</ScrollView>
+</FrameLayout>

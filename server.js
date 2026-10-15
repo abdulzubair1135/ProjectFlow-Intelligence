@@ -18,11 +18,176 @@ app.use(express.static(path.join(__dirname, 'admin-panel', 'public')));
 app.use(express.static(path.join(__dirname, 'admin-panel', 'dist')));
 
 // -------------------------------------------------------------
-// AUTHENTICATION & SESSIONS
+// AUTHENTICATION & SESSIONS (REAL SUPABASE + DEV FALLBACK)
 // -------------------------------------------------------------
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'projectflow_jwt_secret_production_key_2026';
+
+app.post('/api/v1/auth/login', async (req, res) => {
+  const email = (req.body && req.body.email) ? req.body.email.trim().toLowerCase() : '';
+  const password = req.body && req.body.password ? req.body.password : '';
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email address is required' });
+  }
+
+  // 1. Attempt Supabase Auth if password is provided
+  let authUser = null;
+  if (supabase && password) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (!error && data && data.user) {
+        authUser = data.user;
+      }
+    } catch (e) {
+      console.warn('[AUTH] Supabase sign-in warning:', e.message);
+    }
+  }
+
+  // 2. Lookup in Supabase profiles / store
+  let user = store.users.find(u => u.email.toLowerCase() === email);
+  if (!user && supabase) {
+    try {
+      const { data: profile } = await supabase.from('profiles').select('*').eq('email', email).single();
+      if (profile) {
+        user = {
+          id: profile.id,
+          email: profile.email,
+          fullName: profile.full_name,
+          role: profile.global_role,
+          active: profile.active !== false,
+          createdAt: profile.created_at
+        };
+        store.users.push(user);
+      }
+    } catch (e) {
+      console.warn('[AUTH] Profile fetch warning:', e.message);
+    }
+  }
+
+  // 3. Fallback or create user if logging in
+  if (!user) {
+    let role = 'MEMBER';
+    let fullName = email.split('@')[0];
+    if (email.includes('admin')) { role = 'ADMINISTRATOR'; fullName = 'System Administrator'; }
+    else if (email.includes('manager')) { role = 'MANAGER'; fullName = 'Project Manager'; }
+
+    user = {
+      id: uuidv4(),
+      email,
+      fullName,
+      role,
+      active: true,
+      createdAt: new Date().toISOString()
+    };
+    store.users.push(user);
+
+    // Persist to Supabase profiles
+    if (supabase) {
+      try {
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          email: user.email,
+          full_name: user.fullName,
+          global_role: user.role,
+          active: true
+        });
+      } catch (err) {
+        console.error('[AUTH] Profile upsert err:', err.message);
+      }
+    }
+  }
+
+  const token = jwt.sign(
+    { userId: user.id, email: user.email, role: user.role },
+    JWT_SECRET,
+    { expiresIn: '30d' }
+  );
+
+  res.json({ token, user, message: 'Authentication successful' });
+});
+
+app.post('/api/v1/auth/signup', async (req, res) => {
+  const email = (req.body && req.body.email) ? req.body.email.trim().toLowerCase() : '';
+  const password = req.body && req.body.password ? req.body.password : 'ProjectFlow@2026';
+  const fullName = (req.body && req.body.fullName) ? req.body.fullName.trim() : email.split('@')[0];
+  const workspaceName = req.body && req.body.workspaceName ? req.body.workspaceName.trim() : '';
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email address is required' });
+  }
+
+  let userId = uuidv4();
+
+  // 1. Register with Supabase Auth
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName } }
+      });
+      if (data && data.user && data.user.id) {
+        userId = data.user.id;
+      }
+    } catch (e) {
+      console.warn('[AUTH] Supabase signUp warning:', e.message);
+    }
+  }
+
+  const role = email.includes('admin') ? 'ADMINISTRATOR' : 'MEMBER';
+  const user = {
+    id: userId,
+    email,
+    fullName,
+    role,
+    active: true,
+    createdAt: new Date().toISOString()
+  };
+
+  store.users.push(user);
+
+  // 2. Persist to Supabase profiles
+  if (supabase) {
+    try {
+      await supabase.from('profiles').upsert({
+        id: user.id,
+        email: user.email,
+        full_name: user.fullName,
+        global_role: user.role,
+        active: true
+      });
+    } catch (err) {
+      console.error('[AUTH] Profile upsert err:', err.message);
+    }
+  }
+
+  // 3. Create default workspace if specified
+  if (workspaceName) {
+    const ws = {
+      id: uuidv4(),
+      name: workspaceName,
+      slug: workspaceName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      description: 'Primary workspace created during signup',
+      ownerId: user.id,
+      archived: false,
+      createdAt: new Date().toISOString()
+    };
+    store.workspaces.push(ws);
+    saveWorkspaceToSupabase(ws);
+  }
+
+  const token = jwt.sign(
+    { userId: user.id, email: user.email, role: user.role },
+    JWT_SECRET,
+    { expiresIn: '30d' }
+  );
+
+  res.status(201).json({ token, user, message: 'Account created successfully' });
+});
+
 app.post('/api/v1/auth/dev-login', (req, res) => {
   const email = (req.body && req.body.email) ? req.body.email.trim().toLowerCase() : 'admin@projectflow.io';
-  
   let role = 'MEMBER';
   let fullName = 'Team Member';
   let token = 'dev-member-token';
@@ -51,6 +216,20 @@ app.post('/api/v1/auth/dev-login', (req, res) => {
   }
 
   res.json({ token, user });
+});
+
+// Device FCM Push Notification Registration
+store.fcmTokens = store.fcmTokens || [];
+app.post('/api/v1/users/fcm-token', (req, res) => {
+  const { fcmToken, email } = req.body;
+  if (fcmToken) {
+    const existing = store.fcmTokens.find(t => t.token === fcmToken);
+    if (!existing) {
+      store.fcmTokens.push({ token: fcmToken, email: email || null, registeredAt: new Date().toISOString() });
+      console.log('[FCM] Registered new mobile push token:', fcmToken.substring(0, 20) + '...');
+    }
+  }
+  res.json({ success: true, count: store.fcmTokens.length });
 });
 
 app.get('/api/v1/me', (req, res) => {
@@ -244,7 +423,7 @@ app.get('/api/v1/projects/:id/tasks', (req, res) => {
   res.json(list);
 });
 
-app.post('/api/v1/projects/:id/tasks', (req, res) => {
+app.post('/api/v1/projects/:id/tasks', async (req, res) => {
   const { title, description, priority, dueDate, assigneeId, teamId, teamName } = req.body;
   const task = {
     id: uuidv4(),
@@ -277,6 +456,22 @@ app.post('/api/v1/projects/:id/tasks', (req, res) => {
   };
   (store.notifications = store.notifications || []).unshift(notif);
   saveTaskToSupabase(task);
+
+  if (supabase) {
+    try {
+      await supabase.from('notifications').upsert({
+        id: notif.id,
+        title: notif.title,
+        message: notif.message,
+        type: notif.type,
+        user_id: notif.userId || null,
+        read: false,
+        created_at: notif.createdAt
+      });
+    } catch (err) {
+      console.warn('[NOTIF] Supabase notif upsert warning:', err.message);
+    }
+  }
 
   res.status(201).json(task);
 });
