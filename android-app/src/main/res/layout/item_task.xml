@@ -3,31 +3,34 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
-    app:cardBackgroundColor="@color/chalk_white"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="0dp">
+    android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="@color/earth_surface"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp"
+    app:strokeColor="@color/earth_border"
+    app:strokeWidth="1dp">
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="14dp">
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="14dp">
 
-        <!-- Checkbox -->
+        <!-- Checkbox with smooth touch ripple -->
         <CheckBox
             android:id="@+id/cbTaskComplete"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
-            android:buttonTint="@color/deep_sage" />
+            android:buttonTint="@color/primary_earth" />
 
-        <!-- Title & Priority/Date Pill -->
+        <!-- Title & Metadata -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="10dp"
             android:layout_toStartOf="@+id/ivTaskCategory"
             android:layout_toEndOf="@id/cbTaskComplete"
             android:orientation="vertical">
@@ -36,15 +39,16 @@
                 android:id="@+id/tvTaskTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:letterSpacing="0.01"
                 android:text="Design Login Screen"
-                android:textColor="@color/charcoal"
-                android:textSize="14sp"
+                android:textColor="@color/text_main"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
+                android:layout_marginTop="5dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -52,44 +56,45 @@
                     android:id="@+id/tvTaskPriority"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@color/alert_red_light"
-                    android:paddingStart="6dp"
-                    android:paddingTop="2dp"
-                    android:paddingEnd="6dp"
-                    android:paddingBottom="2dp"
-                    android:text="High"
-                    android:textColor="@color/alert_red"
+                    android:background="@drawable/bg_neu_pill"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp"
+                    android:text="HIGH"
+                    android:textColor="@color/earth_warning"
                     android:textSize="10sp"
+                    android:letterSpacing="0.04"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="8dp"
                     android:text="•"
-                    android:textColor="@color/stone_grey"
-                    android:textSize="10sp" />
+                    android:textColor="@color/text_muted"
+                    android:textSize="11sp" />
 
                 <TextView
                     android:id="@+id/tvTaskDueDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="8dp"
                     android:text="25 Apr"
-                    android:textColor="@color/stone_grey"
-                    android:textSize="11sp" />
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Category Icon Badge -->
-        <FrameLayout
+        <!-- Right Neumorphic Category / Status Disc -->
+        <ImageView
             android:id="@+id/ivTaskCategory"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:background="@drawable/ic_kanban"
-            android:backgroundTint="@color/status_green_light" />
+            android:background="@drawable/bg_neu_circle"
+            android:padding="9dp"
+            android:src="@drawable/ic_tasks"
+            app:tint="@color/primary_earth" />
 
     </RelativeLayout>
 

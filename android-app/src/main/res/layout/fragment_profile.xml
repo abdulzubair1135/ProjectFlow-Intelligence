@@ -28,9 +28,9 @@
                 android:padding="20dp">
 
                 <FrameLayout
-                    android:layout_width="72dp"
-                    android:layout_height="72dp"
-                    android:background="@drawable/bg_chip_selected">
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:background="@drawable/bg_neu_avatar">
 
                     <TextView
                         android:id="@+id/tvProfileInitial"
@@ -38,8 +38,8 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:text="R"
-                        android:textColor="@color/white"
-                        android:textSize="28sp"
+                        android:textColor="@color/primary_earth"
+                        android:textSize="32sp"
                         android:textStyle="bold" />
                 </FrameLayout>
 
@@ -47,17 +47,18 @@
                     android:id="@+id/tvProfileName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="14dp"
+                    android:letterSpacing="0.015"
                     android:text="Rahul Verma"
                     android:textColor="@color/text_main"
-                    android:textSize="20sp"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tvProfileEmail"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
+                    android:layout_marginTop="3dp"
                     android:text="admin@projectflow.io"
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
@@ -66,22 +67,27 @@
                     android:id="@+id/tvProfileRole"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:background="@drawable/bg_badge_info"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="3dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_neu_pill"
+                    android:drawableStart="@drawable/bg_dot_done"
+                    android:drawablePadding="6dp"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="5dp"
                     android:text="ADMINISTRATOR"
-                    android:textColor="@color/earth_info"
+                    android:textColor="@color/earth_success"
                     android:textSize="11sp"
+                    android:letterSpacing="0.04"
                     android:textStyle="bold" />
 
-                <Button
+                <TextView
                     android:id="@+id/btnEditProfile"
                     android:layout_width="wrap_content"
-                    android:layout_height="38dp"
-                    android:layout_marginTop="14dp"
-                    android:background="@drawable/bg_chip_unselected"
-                    android:paddingHorizontal="18dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_neu_pill"
+                    android:elevation="2dp"
+                    android:paddingHorizontal="22dp"
+                    android:paddingVertical="9dp"
                     android:text="Edit Display Name"
                     android:textColor="@color/text_main"
                     android:textSize="12sp"

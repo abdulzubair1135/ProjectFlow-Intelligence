@@ -27,7 +27,8 @@ import com.projectflow.android.ui.LoginActivity;
 public class ProfileFragment extends Fragment {
 
     private TextView tvProfileName, tvProfileEmail, tvProfileRole, tvProfileInitial;
-    private Button btnEditProfile, btnLogout;
+    private View btnEditProfile;
+    private Button btnLogout;
     private TextView btnThemeLight, btnThemeDark, btnThemeSystem;
     private ProjectFlowRepository repository;
     private SharedPreferences prefs;

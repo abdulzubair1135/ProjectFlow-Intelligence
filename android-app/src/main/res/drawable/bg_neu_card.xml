@@ -8,7 +8,7 @@
         android:bottom="0dp">
         <shape android:shape="rectangle">
             <corners android:radius="18dp" />
-            <solid android:color="#24BFAFA0" />
+            <solid android:color="@color/neu_shadow_deep" />
         </shape>
     </item>
 
@@ -20,11 +20,11 @@
         android:bottom="0dp">
         <shape android:shape="rectangle">
             <corners android:radius="18dp" />
-            <solid android:color="#36D5C9B8" />
+            <solid android:color="@color/neu_shadow_soft" />
         </shape>
     </item>
 
-    <!-- Top-left subtle white highlight -->
+    <!-- Top-left subtle highlight -->
     <item
         android:left="0dp"
         android:top="0dp"
@@ -32,16 +32,16 @@
         android:bottom="2dp">
         <shape android:shape="rectangle">
             <corners android:radius="18dp" />
-            <solid android:color="#80FFFFFF" />
+            <solid android:color="@color/neu_highlight" />
         </shape>
     </item>
 
     <!-- Main surface plate -->
     <item
-        android:left="1dp"
-        android:top="1dp"
-        android:right="1dp"
-        android:bottom="1dp">
+        android:left="1.5dp"
+        android:top="1.5dp"
+        android:right="1.5dp"
+        android:bottom="1.5dp">
         <shape android:shape="rectangle">
             <corners android:radius="17dp" />
             <solid android:color="@color/neu_surface" />

@@ -119,6 +119,10 @@ public class NeumorphicBarChartView extends View {
         super.onDraw(canvas);
         if (items.isEmpty()) return;
 
+        barTrackPaint.setColor(ContextCompat.getColor(getContext(), R.color.neu_surface_pressed));
+        textLabelPaint.setColor(ContextCompat.getColor(getContext(), R.color.text_secondary));
+        textValuePaint.setColor(ContextCompat.getColor(getContext(), R.color.text_main));
+
         float density = getResources().getDisplayMetrics().density;
         float startX = density * 8f;
         float endX = getWidth() - (density * 8f);

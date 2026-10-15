@@ -49,4 +49,11 @@
         <item name="android:textColor">@color/text_main</item>
         <item name="android:textSize">13sp</item>
     </style>
+
+    <!-- Splash Theme with instant seamless limestone background to prevent black flicker -->
+    <style name="Theme.ProjectFlow.Splash" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">#F4F2E9</item>
+        <item name="android:statusBarColor">#F4F2E9</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
 </resources>

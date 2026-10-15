@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -14,7 +15,6 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.VideoView;
 import androidx.appcompat.app.AppCompatActivity;
 import com.projectflow.android.R;
@@ -24,8 +24,8 @@ public class SplashActivity extends AppCompatActivity {
     private static final String TAG = "SplashActivity";
     private VideoView videoViewSplash;
     private View rootSplashLayout;
+    private View vSplashCover;
     private LinearLayout llFallbackLogo;
-    private TextView btnSkip;
     private boolean hasNavigated = false;
     private final Handler timeoutHandler = new Handler(Looper.getMainLooper());
     private Runnable timeoutRunnable;
@@ -34,7 +34,7 @@ public class SplashActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Elegant light status bar matching limestone mineral theme #F4F2E9
+        // Seamless light status bar matching limestone mineral theme #F4F2E9
         Window window = getWindow();
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
@@ -47,18 +47,21 @@ public class SplashActivity extends AppCompatActivity {
 
         videoViewSplash = findViewById(R.id.videoViewSplash);
         rootSplashLayout = findViewById(R.id.rootSplashLayout);
+        vSplashCover = findViewById(R.id.vSplashCover);
         llFallbackLogo = findViewById(R.id.llFallbackLogo);
-        btnSkip = findViewById(R.id.btnSkip);
 
-        // Tap to skip
-        if (btnSkip != null) {
-            btnSkip.setOnClickListener(v -> navigateNext());
-        }
+        // Tap anywhere on screen to skip/proceed immediately
         if (rootSplashLayout != null) {
             rootSplashLayout.setOnClickListener(v -> navigateNext());
         }
+        if (videoViewSplash != null) {
+            videoViewSplash.setOnClickListener(v -> navigateNext());
+        }
+        if (vSplashCover != null) {
+            vSplashCover.setOnClickListener(v -> navigateNext());
+        }
 
-        // Safety fallback timeout (11.5 seconds) in case of any media driver freeze
+        // Safety fallback timeout (11.5s) in case of system media decoder hang
         timeoutRunnable = this::navigateNext;
         timeoutHandler.postDelayed(timeoutRunnable, 11500);
 
@@ -71,13 +74,30 @@ public class SplashActivity extends AppCompatActivity {
             videoViewSplash.setVideoURI(videoUri);
 
             videoViewSplash.setOnPreparedListener(mp -> {
-                Log.d(TAG, "Startup video prepared, playing...");
+                Log.d(TAG, "Startup video prepared.");
                 mp.setLooping(false);
+
+                // Anti-flicker: hide cover view only when video rendering has physically started!
+                mp.setOnInfoListener((mediaPlayer, what, extra) -> {
+                    if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) {
+                        Log.d(TAG, "Video rendering started on screen -> smoothly revealing video.");
+                        if (vSplashCover != null) {
+                            vSplashCover.animate()
+                                    .alpha(0f)
+                                    .setDuration(120)
+                                    .withEndAction(() -> vSplashCover.setVisibility(View.GONE))
+                                    .start();
+                        }
+                        return true;
+                    }
+                    return false;
+                });
+
                 videoViewSplash.start();
             });
 
             videoViewSplash.setOnCompletionListener(mp -> {
-                Log.d(TAG, "Startup video playback completed.");
+                Log.d(TAG, "Startup video playback completed -> navigating.");
                 navigateNext();
             });
 
@@ -93,6 +113,9 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     private void showFallbackAndProceed() {
+        if (vSplashCover != null) {
+            vSplashCover.setVisibility(View.GONE);
+        }
         if (llFallbackLogo != null) {
             llFallbackLogo.setVisibility(View.VISIBLE);
         }

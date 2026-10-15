@@ -62,15 +62,15 @@
     <color name="neu_inset_border">#D8CDBE</color>
 
     <!-- ============================================================== -->
-    <!-- VIBRANT 3D CHART MULTI-COLOR PALETTE -->
+    <!-- VIBRANT 3D CHART MULTI-COLOR PALETTE (COLLAB WITH MITTI / EARTH) -->
     <!-- ============================================================== -->
-    <color name="chart_done">#388E3C</color>        <!-- Done - Vivid Forest Green -->
-    <color name="chart_progress">#F59E0B</color>    <!-- In Progress - Amber Gold -->
-    <color name="chart_review">#8B5CF6</color>      <!-- Review - Electric Violet -->
-    <color name="chart_todo">#78866B</color>        <!-- Todo - Mineral Sage -->
-    <color name="chart_critical">#EF4444</color>    <!-- Critical - Coral Crimson -->
-    <color name="chart_accent_cyan">#06B6D4</color> <!-- Velocity - Cyan Accent -->
-    <color name="chart_accent_pink">#EC4899</color> <!-- Engagement - Rose Accent -->
+    <color name="chart_done">#3E8E55</color>        <!-- Done - Forest Jade -->
+    <color name="chart_progress">#D9822B</color>    <!-- In Progress - Terracotta Gold -->
+    <color name="chart_review">#8758C4</color>      <!-- Review - Mineral Violet -->
+    <color name="chart_todo">#6B7A63</color>        <!-- Todo - Olive Earth -->
+    <color name="chart_critical">#D9534F</color>    <!-- Critical - Rust Red -->
+    <color name="chart_accent_cyan">#2E8B99</color> <!-- Velocity - Turquoise Accent -->
+    <color name="chart_accent_pink">#C4587A</color> <!-- Engagement - Rose Clay -->
 
     <!-- ============================================================== -->
     <!-- CHAT EMOJI REACTION TOKENS -->

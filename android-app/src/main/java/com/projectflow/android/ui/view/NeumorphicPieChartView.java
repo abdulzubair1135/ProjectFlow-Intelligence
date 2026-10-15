@@ -154,8 +154,16 @@ public class NeumorphicPieChartView extends View {
 
         if (radius <= 0) return;
 
+        innerCirclePaint.setColor(ContextCompat.getColor(getContext(), R.color.neu_surface));
+        textPrimaryPaint.setColor(ContextCompat.getColor(getContext(), R.color.text_main));
+        textSecondaryPaint.setColor(ContextCompat.getColor(getContext(), R.color.text_secondary));
+
         // Draw soft 3D outer ambient ring
         canvas.drawCircle(centerX, centerY, radius + 2f, outerShadowPaint);
+
+        // Draw debossed 3D background track
+        slicePaint.setColor(ContextCompat.getColor(getContext(), R.color.neu_surface_pressed));
+        canvas.drawCircle(centerX, centerY, radius, slicePaint);
 
         float totalVal = 0f;
         for (Slice s : slices) totalVal += s.value;

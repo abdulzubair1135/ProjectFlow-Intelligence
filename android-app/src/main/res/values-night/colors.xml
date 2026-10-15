@@ -48,4 +48,36 @@
 
     <color name="black">#211C17</color>
     <color name="white">#F5EEE4</color>
+
+    <!-- ============================================================== -->
+    <!-- NEUMORPHIC 3D SURFACE & SHADOW TOKENS (DARK BROWN MITTI THEME) -->
+    <!-- ============================================================== -->
+    <color name="neu_bg">#211C17</color>
+    <color name="neu_surface">#2B241E</color>
+    <color name="neu_surface_pressed">#241E19</color>
+    <color name="neu_highlight">#3D342C</color>
+    <color name="neu_shadow_soft">#16120E</color>
+    <color name="neu_shadow_deep">#0D0B09</color>
+    <color name="neu_border">#3D3228</color>
+    <color name="neu_inset_border">#352B22</color>
+
+    <!-- ============================================================== -->
+    <!-- VIBRANT 3D CHART PALETTE (COLLABORATING WITH WARM BROWN / MITTI) -->
+    <!-- ============================================================== -->
+    <color name="chart_done">#4E9B66</color>        <!-- Emerald Jade -->
+    <color name="chart_progress">#E5933A</color>    <!-- Terracotta Amber / Gold -->
+    <color name="chart_review">#9F75D8</color>      <!-- Amethyst Slate -->
+    <color name="chart_todo">#85927D</color>        <!-- Riverstone Olive -->
+    <color name="chart_critical">#E05D52</color>    <!-- Burnt Coral -->
+    <color name="chart_accent_cyan">#38A3B2</color> <!-- Mineral Turquoise -->
+    <color name="chart_accent_pink">#D9658B</color> <!-- Rose Quartz -->
+
+    <!-- ============================================================== -->
+    <!-- CHAT EMOJI REACTION TOKENS (DARK) -->
+    <!-- ============================================================== -->
+    <color name="reaction_pill_bg">#342A22</color>
+    <color name="reaction_pill_border">#493A2D</color>
+    <color name="reaction_pill_active">#42352B</color>
+    <color name="chat_bubble_received">#2B241E</color>
+    <color name="chat_bubble_sent">#382E25</color>
 </resources>

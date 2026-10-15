@@ -3,16 +3,25 @@
     android:id="@+id/rootSplashLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F4F2E9">
+    android:background="#F4F2E9"
+    android:clickable="true"
+    android:focusable="true">
 
-    <!-- 1. Background Video Animation View (Centered 720x1280 9:16 aspect ratio) -->
+    <!-- 1. Background Video Animation View (720x1280 9:16 portrait) -->
     <VideoView
         android:id="@+id/videoViewSplash"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_centerInParent="true" />
 
-    <!-- 2. Fallback Static Brand Container (in case video cannot play on legacy drivers) -->
+    <!-- 2. Seamless Cover: prevents native SurfaceView black flicker until video rendering actually begins -->
+    <View
+        android:id="@+id/vSplashCover"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#F4F2E9" />
+
+    <!-- 3. Fallback Static Brand Container (in case of media driver failure) -->
     <LinearLayout
         android:id="@+id/llFallbackLogo"
         android:layout_width="wrap_content"
@@ -43,25 +52,7 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- 3. Top Right Skip Button -->
-    <TextView
-        android:id="@+id/btnSkip"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginTop="42dp"
-        android:layout_marginEnd="20dp"
-        android:background="@drawable/bg_neu_pill"
-        android:paddingHorizontal="14dp"
-        android:paddingVertical="6dp"
-        android:text="Skip ➔"
-        android:textColor="@color/text_secondary"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:elevation="4dp" />
-
-    <!-- 4. Subtle Bottom Branding / Loading Indicator -->
+    <!-- 4. Subtle Bottom Loading Indicator -->
     <LinearLayout
         android:id="@+id/llBottomIndicator"
         android:layout_width="match_parent"
