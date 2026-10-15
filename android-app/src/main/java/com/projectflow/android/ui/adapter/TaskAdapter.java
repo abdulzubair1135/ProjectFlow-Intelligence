@@ -72,17 +72,24 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
         holder.cbComplete.setOnCheckedChangeListener((btn, checked) -> {
             t.statusCategory = checked ? "DONE" : "IN_PROGRESS";
+            t.progressPercent = checked ? 100 : 50;
             applyCompletionStyle(holder, checked);
+            new Thread(() -> {
+                com.projectflow.android.data.local.AppDatabase.getInstance(holder.itemView.getContext()).taskDao().insert(t);
+                if (t.id != null && !t.id.isEmpty()) {
+                    new com.projectflow.android.data.repository.ProjectFlowRepository(holder.itemView.getContext())
+                            .updateTaskStatus(t.id, t.statusCategory, t.progressPercent, null);
+                }
+            }).start();
         });
 
-        holder.itemView.setOnClickListener(v -> {
+        View.OnClickListener clickListener = v -> {
             if (listener != null) listener.onTaskClick(t);
-        });
-
+        };
+        holder.itemView.setOnClickListener(clickListener);
+        holder.tvTitle.setOnClickListener(clickListener);
         if (holder.ivAction != null) {
-            holder.ivAction.setOnClickListener(v -> {
-                if (listener != null) listener.onTaskClick(t);
-            });
+            holder.ivAction.setOnClickListener(clickListener);
         }
     }
 

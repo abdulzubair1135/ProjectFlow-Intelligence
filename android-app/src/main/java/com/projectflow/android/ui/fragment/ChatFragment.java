@@ -52,7 +52,9 @@ public class ChatFragment extends Fragment {
 
         repository = new ProjectFlowRepository(requireContext());
         SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
-        currentUserName = prefs.getString("user_name", "Rahul Verma");
+        String defaultName = prefs.getString("user_email", "ProjectFlow User");
+        if (defaultName.contains("@")) defaultName = defaultName.split("@")[0];
+        currentUserName = prefs.getString("user_name", prefs.getString("user_display_name", defaultName));
 
         rvChatMessages = view.findViewById(R.id.rvChatMessages);
         etChatMessage = view.findViewById(R.id.etChatMessage);

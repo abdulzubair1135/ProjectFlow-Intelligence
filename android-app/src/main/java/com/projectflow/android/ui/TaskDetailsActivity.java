@@ -84,12 +84,29 @@ public class TaskDetailsActivity extends AppCompatActivity {
             tvProject.setText("PRJ-" + taskProjectId);
         }
 
+        int initialProgress = getIntent().getIntExtra("task_progress", 0);
+        if (currentStatus != null && "DONE".equalsIgnoreCase(currentStatus)) {
+            initialProgress = 100;
+        }
+        if (initialProgress >= 25) cbSubtask1.setChecked(true);
+        if (initialProgress >= 50) cbSubtask2.setChecked(true);
+        if (initialProgress >= 75) cbSubtask3.setChecked(true);
+        if (initialProgress >= 100) cbSubtask4.setChecked(true);
+        pbTaskProgress.setProgress(initialProgress);
+        tvProgressPercent.setText(initialProgress + "%");
+
         if (currentStatus != null && !currentStatus.isEmpty()) {
             updateStatusBadge(currentStatus);
+        } else if (initialProgress == 100) {
+            updateStatusBadge("DONE");
+        } else if (initialProgress > 0) {
+            updateStatusBadge("IN_PROGRESS");
+        } else {
+            updateStatusBadge("TODO");
         }
 
-        // Subtasks listener to dynamically adjust progress
-        View.OnClickListener subtaskListener = v -> recalculateProgress();
+        // Subtasks listener to dynamically adjust progress & persist
+        View.OnClickListener subtaskListener = v -> recalculateProgressAndSave();
         cbSubtask1.setOnClickListener(subtaskListener);
         cbSubtask2.setOnClickListener(subtaskListener);
         cbSubtask3.setOnClickListener(subtaskListener);
@@ -101,12 +118,11 @@ public class TaskDetailsActivity extends AppCompatActivity {
             cbSubtask2.setChecked(true);
             cbSubtask3.setChecked(true);
             cbSubtask4.setChecked(true);
-            recalculateProgress();
-            updateTaskStatus("DONE");
+            recalculateProgressAndSave();
         });
     }
 
-    private void recalculateProgress() {
+    private void recalculateProgressAndSave() {
         int count = 0;
         if (cbSubtask1.isChecked()) count++;
         if (cbSubtask2.isChecked()) count++;
@@ -117,11 +133,15 @@ public class TaskDetailsActivity extends AppCompatActivity {
         pbTaskProgress.setProgress(percent);
         tvProgressPercent.setText(percent + "%");
 
+        String newStatus;
         if (percent == 100) {
-            updateStatusBadge("DONE");
+            newStatus = "DONE";
         } else if (percent > 0) {
-            updateStatusBadge("IN_PROGRESS");
+            newStatus = "IN_PROGRESS";
+        } else {
+            newStatus = "TODO";
         }
+        updateTaskStatus(newStatus);
     }
 
     private void updateStatusBadge(String status) {
@@ -144,6 +164,12 @@ public class TaskDetailsActivity extends AppCompatActivity {
             TaskEntity updated = new TaskEntity(taskId != null ? taskId : java.util.UUID.randomUUID().toString(),
                     pId, taskTitle, taskDesc, taskPriority, newStatus, progress, taskDue);
             db.taskDao().insert(updated);
+
+            // Sync with backend API & Supabase in real-time
+            if (taskId != null && !taskId.isEmpty()) {
+                new com.projectflow.android.data.repository.ProjectFlowRepository(this)
+                        .updateTaskStatus(taskId, newStatus, progress, null);
+            }
 
             runOnUiThread(() -> Toast.makeText(this, "Task status updated: " + newStatus, Toast.LENGTH_SHORT).show());
         }).start();

@@ -202,6 +202,18 @@ public class ProjectFlowRepository {
         createTask(projectId, title, description, priority, null, onSuccess, onError);
     }
 
+    public void updateTaskStatus(String taskId, String statusCategory, int progressPercent, Runnable onDone) {
+        executor.execute(() -> {
+            try {
+                Map<String, Object> body = new HashMap<>();
+                body.put("statusCategory", statusCategory);
+                body.put("progressPercent", progressPercent);
+                api.updateTaskStatus(taskId, body).execute();
+            } catch (Exception ignored) {}
+            if (onDone != null) onDone.run();
+        });
+    }
+
     // Risks
     public LiveData<List<RiskEntity>> getRisks(String projectId) {
         evaluateRisks(projectId);

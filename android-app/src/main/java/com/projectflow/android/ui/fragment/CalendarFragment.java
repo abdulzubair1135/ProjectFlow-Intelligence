@@ -80,6 +80,8 @@ public class CalendarFragment extends Fragment {
             intent.putExtra("task_priority", task.priority);
             intent.putExtra("task_status", task.statusCategory);
             intent.putExtra("task_due", task.dueDate);
+            intent.putExtra("task_progress", task.progressPercent);
+            intent.putExtra("task_project_id", task.projectId);
             startActivity(intent);
         });
         rvDayTasks.setLayoutManager(new LinearLayoutManager(requireContext()));
