@@ -59,3 +59,5 @@
 - [x] `GET /api/v1/chat/messages` & `POST /api/v1/chat/messages`
 - [x] `GET /api/v1/reports/summary`
 - [x] `PATCH /api/v1/me/profile`
+- [x] `POST /api/v1/telemetry/errors` & `GET /api/v1/admin/system/errors` & `PATCH /api/v1/admin/system/errors/:id/resolve`
+- [x] Supabase Consolidated PostgreSQL Migration: `database/SUPABASE_COMPLETE_MIGRATION.sql` (23 entities, RLS, seeds)

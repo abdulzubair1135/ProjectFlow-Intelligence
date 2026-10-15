@@ -130,3 +130,16 @@ export interface AppRelease {
   publishedAt?: string;
   createdAt: string;
 }
+
+export interface ErrorLogEntry {
+  id: string;
+  severity: 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL';
+  message: string;
+  stack?: string | null;
+  source: string;
+  userId?: string | null;
+  metadata?: Record<string, any>;
+  resolved: boolean;
+  resolvedAt?: string | null;
+  timestamp: string;
+}

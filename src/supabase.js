@@ -186,6 +186,28 @@ const store = {
       channel: 'general',
       createdAt: new Date(Date.now() - 60 * 60000).toISOString()
     }
+  ],
+  errors: [
+    {
+      id: '80000000-0000-0000-0000-000000000001',
+      severity: 'WARNING',
+      message: 'Network socket timeout during background sync (auto-retried successfully)',
+      stack: 'SocketTimeoutException: timeout after 10000ms\n  at OkHttpClient.newCall\n  at ProjectFlowSyncManager.syncNow',
+      source: 'ANDROID_APP',
+      userId: '00000000-0000-0000-0000-000000000001',
+      resolved: false,
+      timestamp: new Date(Date.now() - 45 * 60000).toISOString()
+    },
+    {
+      id: '80000000-0000-0000-0000-000000000002',
+      severity: 'INFO',
+      message: 'Room SQLite database migration V1 verified cleanly',
+      stack: null,
+      source: 'ANDROID_APP',
+      userId: '00000000-0000-0000-0000-000000000001',
+      resolved: true,
+      timestamp: new Date(Date.now() - 180 * 60000).toISOString()
+    }
   ]
 };
 

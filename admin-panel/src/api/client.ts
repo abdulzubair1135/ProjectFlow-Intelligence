@@ -1,4 +1,4 @@
-import { AdminOverview, AppRelease, AuditLog, PageResponse, Project, RiskFinding, SystemHealth, Task, UserProfile, Workspace } from '../types';
+import { AdminOverview, AppRelease, AuditLog, ErrorLogEntry, PageResponse, Project, RiskFinding, SystemHealth, Task, UserProfile, Workspace } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -192,5 +192,36 @@ export const api = {
 
   getDownloadUrl(id: string) {
     return `${API_BASE}/releases/${id}/download`;
+  },
+
+  // Error Telemetry & Diagnostics
+  async getSystemErrors(severity?: string, status?: string) {
+    let query = '';
+    const params: string[] = [];
+    if (severity) params.push(`severity=${encodeURIComponent(severity)}`);
+    if (status) params.push(`status=${encodeURIComponent(status)}`);
+    if (params.length > 0) query = `?${params.join('&')}`;
+
+    const res = await fetch(`${API_BASE}/admin/system/errors${query}`, {
+      headers: getAuthHeaders()
+    });
+    return handleResponse<PageResponse<ErrorLogEntry>>(res);
+  },
+
+  async reportError(data: { severity?: string; message: string; stack?: string; source?: string; metadata?: any }) {
+    const res = await fetch(`${API_BASE}/telemetry/errors`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse<ErrorLogEntry>(res);
+  },
+
+  async resolveError(id: string) {
+    const res = await fetch(`${API_BASE}/admin/system/errors/${id}/resolve`, {
+      method: 'PATCH',
+      headers: getAuthHeaders()
+    });
+    return handleResponse<ErrorLogEntry>(res);
   }
 };

@@ -131,6 +131,51 @@ app.get('/api/v1/admin/audit-events', (req, res) => {
 });
 
 // -------------------------------------------------------------
+// TELEMETRY & ERROR MONITORING
+// -------------------------------------------------------------
+app.post('/api/v1/telemetry/errors', (req, res) => {
+  const { severity, message, stack, source, userId, metadata } = req.body;
+  const errorEntry = {
+    id: uuidv4(),
+    severity: severity || 'ERROR',
+    message: message || 'Unknown error occurred',
+    stack: stack || null,
+    source: source || 'CLIENT_TELEMETRY',
+    userId: userId || null,
+    metadata: metadata || {},
+    resolved: false,
+    resolvedAt: null,
+    timestamp: new Date().toISOString()
+  };
+  (store.errors = store.errors || []).unshift(errorEntry);
+  res.status(201).json(errorEntry);
+});
+
+app.get('/api/v1/admin/system/errors', (req, res) => {
+  const severity = req.query.severity;
+  const status = req.query.status;
+  let list = store.errors || [];
+  if (severity) list = list.filter(e => e.severity.toUpperCase() === severity.toUpperCase());
+  if (status === 'open') list = list.filter(e => !e.resolved);
+  if (status === 'resolved') list = list.filter(e => e.resolved);
+  res.json({
+    content: list,
+    totalElements: list.length,
+    totalPages: 1,
+    size: 25,
+    number: 0
+  });
+});
+
+app.patch('/api/v1/admin/system/errors/:id/resolve', (req, res) => {
+  const err = (store.errors || []).find(e => e.id === req.params.id);
+  if (!err) return res.status(404).json({ error: 'Error log entry not found' });
+  err.resolved = true;
+  err.resolvedAt = new Date().toISOString();
+  res.json(err);
+});
+
+// -------------------------------------------------------------
 // WORKSPACES & PROJECTS
 // -------------------------------------------------------------
 app.get('/api/v1/workspaces', (req, res) => {
