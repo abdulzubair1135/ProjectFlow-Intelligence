@@ -193,6 +193,7 @@ public class LoginActivity extends AppCompatActivity {
         prefs.edit()
                 .putString("auth_token", token)
                 .putString("user_email", email)
+                .putString("user_name", displayName)
                 .putString("user_display_name", displayName)
                 .putString("user_role", role)
                 .putBoolean("remember_me", cbRememberMe.isChecked())

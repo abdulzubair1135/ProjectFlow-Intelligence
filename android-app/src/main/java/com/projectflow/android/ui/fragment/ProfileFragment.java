@@ -112,10 +112,19 @@ public class ProfileFragment extends Fragment {
                     .setTitle("Sign Out")
                     .setMessage("Are you sure you want to log out of ProjectFlow Intelligence on this device?")
                     .setPositiveButton("Sign Out", (dialog, which) -> {
-                        prefs.edit().remove("auth_token").remove("user_email").apply();
+                        prefs.edit()
+                                .remove("auth_token")
+                                .remove("user_email")
+                                .remove("user_name")
+                                .remove("user_display_name")
+                                .remove("user_role")
+                                .apply();
                         Intent intent = new Intent(requireContext(), LoginActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         startActivity(intent);
+                        if (getActivity() != null) {
+                            getActivity().finish();
+                        }
                     })
                     .setNegativeButton("Cancel", null)
                     .show();
@@ -123,8 +132,9 @@ public class ProfileFragment extends Fragment {
     }
 
     private void loadUserData() {
-        String name = prefs.getString("user_name", "Rahul Verma");
         String email = prefs.getString("user_email", "admin@projectflow.io");
+        String defaultName = email.contains("@") ? email.split("@")[0] : "ProjectFlow User";
+        String name = prefs.getString("user_name", prefs.getString("user_display_name", defaultName));
         String role = prefs.getString("user_role", "ADMINISTRATOR");
 
         tvProfileName.setText(name);

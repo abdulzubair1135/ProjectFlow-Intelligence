@@ -105,7 +105,9 @@ public class DashboardFragment extends Fragment {
 
         // Set user info from SharedPreferences
         SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
-        String savedName = prefs.getString("user_name", "Rahul Verma");
+        String userEmail = prefs.getString("user_email", "admin@projectflow.io");
+        String defaultName = userEmail.contains("@") ? userEmail.split("@")[0] : "ProjectFlow User";
+        String savedName = prefs.getString("user_name", prefs.getString("user_display_name", defaultName));
         String savedRole = prefs.getString("user_role", "ADMINISTRATOR");
         tvUserName.setText(savedName);
         tvUserRole.setText(savedRole);
