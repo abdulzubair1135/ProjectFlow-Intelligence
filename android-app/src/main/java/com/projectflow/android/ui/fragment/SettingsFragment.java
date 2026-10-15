@@ -34,17 +34,27 @@ public class SettingsFragment extends Fragment {
         TextView btnDark = v.findViewById(R.id.btnThemeDark);
         TextView btnSystem = v.findViewById(R.id.btnThemeSystem);
 
+        android.content.SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", android.content.Context.MODE_PRIVATE);
+        String currentTheme = prefs.getString("app_theme", "light");
+        updateThemeButtons(btnLight, btnDark, btnSystem, currentTheme);
+
         btnLight.setOnClickListener(view -> {
+            prefs.edit().putString("app_theme", "light").apply();
+            updateThemeButtons(btnLight, btnDark, btnSystem, "light");
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
             Toast.makeText(requireContext(), "Light Mode activated", Toast.LENGTH_SHORT).show();
         });
 
         btnDark.setOnClickListener(view -> {
+            prefs.edit().putString("app_theme", "dark").apply();
+            updateThemeButtons(btnLight, btnDark, btnSystem, "dark");
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-            Toast.makeText(requireContext(), "Dark Mode activated (Screen 16)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Dark Mode activated", Toast.LENGTH_SHORT).show();
         });
 
         btnSystem.setOnClickListener(view -> {
+            prefs.edit().putString("app_theme", "system").apply();
+            updateThemeButtons(btnLight, btnDark, btnSystem, "system");
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
             Toast.makeText(requireContext(), "System Mode activated", Toast.LENGTH_SHORT).show();
         });
@@ -138,5 +148,21 @@ public class SettingsFragment extends Fragment {
                 }
             }
         });
+    }
+
+    private void updateThemeButtons(TextView btnLight, TextView btnDark, TextView btnSystem, String activeTheme) {
+        if (!isAdded()) return;
+        boolean isLight = "light".equalsIgnoreCase(activeTheme);
+        boolean isDark = "dark".equalsIgnoreCase(activeTheme);
+        boolean isSystem = "system".equalsIgnoreCase(activeTheme);
+
+        btnLight.setBackgroundResource(isLight ? R.drawable.bg_chip_selected : R.drawable.bg_chip_unselected);
+        btnLight.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), isLight ? R.color.white : R.color.charcoal));
+
+        btnDark.setBackgroundResource(isDark ? R.drawable.bg_chip_selected : R.drawable.bg_chip_unselected);
+        btnDark.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), isDark ? R.color.white : R.color.charcoal));
+
+        btnSystem.setBackgroundResource(isSystem ? R.drawable.bg_chip_selected : R.drawable.bg_chip_unselected);
+        btnSystem.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), isSystem ? R.color.white : R.color.charcoal));
     }
 }

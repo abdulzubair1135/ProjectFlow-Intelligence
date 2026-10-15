@@ -32,6 +32,17 @@ public class SplashActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Enforce default Light Mode on launch
+        SharedPreferences themePrefs = getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
+        String theme = themePrefs.getString("app_theme", "light");
+        if ("dark".equalsIgnoreCase(theme)) {
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES);
+        } else if ("system".equalsIgnoreCase(theme)) {
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+        } else {
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO);
+        }
+
         super.onCreate(savedInstanceState);
 
         // Seamless light status bar matching limestone mineral theme #F4F2E9
