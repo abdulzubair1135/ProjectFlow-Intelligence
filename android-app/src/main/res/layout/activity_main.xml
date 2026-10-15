@@ -95,16 +95,31 @@
             android:layout_height="1dp"
             android:background="@color/natural_border" />
 
-        <!-- Sleek Icon-Only Bottom Navigation Dock (No Text Labels) -->
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/bottom_nav"
+        <!-- Bottom Bar Container with Flow Leaf Canvas Animation -->
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="58dp"
             android:background="@color/chalk_white"
-            app:itemActiveIndicatorStyle="@style/Widget.ProjectFlow.BottomNavIndicator"
-            app:itemIconTint="@color/selector_bottom_nav_icon"
-            app:labelVisibilityMode="unlabeled"
-            app:menu="@menu/bottom_nav_menu" />
+            android:elevation="4dp">
+
+            <!-- Organic Flowing Leaf Background Animation for Footer -->
+            <com.projectflow.android.ui.view.FlowLeafHeaderView
+                android:id="@+id/flowLeafFooter"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <!-- Sleek Icon-Only Bottom Navigation Dock (No Text Labels) -->
+            <com.google.android.material.bottomnavigation.BottomNavigationView
+                android:id="@+id/bottom_nav"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/transparent"
+                app:elevation="0dp"
+                app:itemActiveIndicatorStyle="@style/Widget.ProjectFlow.BottomNavIndicator"
+                app:itemIconTint="@color/selector_bottom_nav_icon"
+                app:labelVisibilityMode="unlabeled"
+                app:menu="@menu/bottom_nav_menu" />
+        </FrameLayout>
     </LinearLayout>
 
     <!-- Side Navigation Drawer with Neumorphic Selection -->
