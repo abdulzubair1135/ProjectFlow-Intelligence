@@ -56,4 +56,11 @@
         <item name="android:statusBarColor">#F4F2E9</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
+
+    <!-- Bottom Navigation Active Indicator -->
+    <style name="Widget.ProjectFlow.BottomNavIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/neu_surface_pressed</item>
+        <item name="android:width">48dp</item>
+        <item name="android:height">32dp</item>
+    </style>
 </resources>

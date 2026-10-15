@@ -16,6 +16,8 @@ public class TaskEntity {
     public String statusCategory;
     public int progressPercent;
     public String dueDate;
+    @androidx.room.Ignore
+    public TaskEntity() {}
 
     public TaskEntity(@NonNull String id, String projectId, String title, String description, String priority, String statusCategory, int progressPercent, String dueDate) {
         this.id = id;

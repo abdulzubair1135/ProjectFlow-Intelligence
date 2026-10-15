@@ -103,7 +103,7 @@
             </LinearLayout>
         </HorizontalScrollView>
 
-        <!-- Tasks List with smooth scrolling -->
+        <!-- Tasks List with smooth scrolling & staggered entrance animation -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvTasks"
             android:layout_width="match_parent"
@@ -111,6 +111,7 @@
             android:layout_marginTop="14dp"
             android:layout_weight="1"
             android:clipToPadding="false"
+            android:layoutAnimation="@anim/layout_animation_tasks"
             android:paddingBottom="72dp" />
 
     </LinearLayout>

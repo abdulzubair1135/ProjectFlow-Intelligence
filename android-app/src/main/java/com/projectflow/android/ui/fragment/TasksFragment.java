@@ -90,7 +90,52 @@ public class TasksFragment extends Fragment {
 
         repository.getAllTasks().observe(getViewLifecycleOwner(), list -> {
             allTasks.clear();
-            if (list != null) allTasks.addAll(list);
+            if (list != null && !list.isEmpty()) {
+                allTasks.addAll(list);
+            }
+            if (allTasks.size() < 2) {
+                // Ensure rich sample tasks
+                TaskEntity t1 = new TaskEntity();
+                t1.id = "sample_1";
+                t1.title = "Design System & 3D Neumorphic Polish";
+                t1.priority = "HIGH";
+                t1.statusCategory = "IN_PROGRESS";
+                t1.dueDate = isoDateFormat.format(new Date());
+                t1.projectId = "PF-CORE";
+
+                TaskEntity t2 = new TaskEntity();
+                t2.id = "sample_2";
+                t2.title = "Risk Radar Telemetry Engine";
+                t2.priority = "CRITICAL";
+                t2.statusCategory = "TODO";
+                Calendar c = Calendar.getInstance();
+                c.add(Calendar.DAY_OF_YEAR, 2);
+                t2.dueDate = isoDateFormat.format(c.getTime());
+                t2.projectId = "RADAR-01";
+
+                TaskEntity t3 = new TaskEntity();
+                t3.id = "sample_3";
+                t3.title = "Real-Time Multi-Device WebSocket Sync";
+                t3.priority = "MEDIUM";
+                t3.statusCategory = "DONE";
+                c.add(Calendar.DAY_OF_YEAR, -1);
+                t3.dueDate = isoDateFormat.format(c.getTime());
+                t3.projectId = "WS-SYNC";
+
+                TaskEntity t4 = new TaskEntity();
+                t4.id = "sample_4";
+                t4.title = "Admin Panel Control & Flow Analytics";
+                t4.priority = "LOW";
+                t4.statusCategory = "IN_PROGRESS";
+                c.add(Calendar.DAY_OF_YEAR, 4);
+                t4.dueDate = isoDateFormat.format(c.getTime());
+                t4.projectId = "ADMIN";
+
+                allTasks.add(t1);
+                allTasks.add(t2);
+                allTasks.add(t3);
+                allTasks.add(t4);
+            }
             applyFilter();
         });
 
@@ -139,5 +184,6 @@ public class TasksFragment extends Fragment {
         }
 
         adapter.setTasks(filtered);
+        rvTasks.scheduleLayoutAnimation();
     }
 }

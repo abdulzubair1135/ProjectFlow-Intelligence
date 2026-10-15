@@ -2,10 +2,7 @@ package com.projectflow.android.ui.view;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.RectF;
+import android.graphics.*;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
@@ -32,10 +29,17 @@ public class NeumorphicBarChartView extends View {
     }
 
     private final List<BarItem> items = new ArrayList<>();
-    private Paint barTrackPaint;
-    private Paint barFillPaint;
-    private Paint textLabelPaint;
-    private Paint textValuePaint;
+    private final Paint barTrackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint barFillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint textLabelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint textBadgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint badgeBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint badgeStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    private final RectF badgeRect = new RectF();
+    private final RectF trackRect = new RectF();
+    private final RectF fillRect = new RectF();
+
     private float animationProgress = 0f;
     private ValueAnimator animator;
 
@@ -55,24 +59,16 @@ public class NeumorphicBarChartView extends View {
     }
 
     private void init() {
-        barTrackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         barTrackPaint.setStyle(Paint.Style.FILL);
-        barTrackPaint.setColor(ContextCompat.getColor(getContext(), R.color.neu_surface_pressed));
-
-        barFillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         barFillPaint.setStyle(Paint.Style.FILL);
 
-        textLabelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        textLabelPaint.setTextSize(getResources().getDisplayMetrics().density * 12f);
-        textLabelPaint.setColor(ContextCompat.getColor(getContext(), R.color.text_secondary));
+        textLabelPaint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
+        textBadgePaint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
+        textBadgePaint.setTextAlign(Paint.Align.CENTER);
 
-        textValuePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        textValuePaint.setTextSize(getResources().getDisplayMetrics().density * 12f);
-        textValuePaint.setFakeBoldText(true);
-        textValuePaint.setColor(ContextCompat.getColor(getContext(), R.color.text_main));
-        textValuePaint.setTextAlign(Paint.Align.RIGHT);
+        badgeBgPaint.setStyle(Paint.Style.FILL);
+        badgeStrokePaint.setStyle(Paint.Style.STROKE);
 
-        // Sample items
         setSampleData();
     }
 
@@ -97,8 +93,8 @@ public class NeumorphicBarChartView extends View {
             animator.cancel();
         }
         animator = ValueAnimator.ofFloat(0f, 1f);
-        animator.setDuration(800);
-        animator.setInterpolator(new DecelerateInterpolator());
+        animator.setDuration(850);
+        animator.setInterpolator(new DecelerateInterpolator(1.5f));
         animator.addUpdateListener(a -> {
             animationProgress = (float) a.getAnimatedValue();
             invalidate();
@@ -109,8 +105,8 @@ public class NeumorphicBarChartView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         float density = getResources().getDisplayMetrics().density;
-        int rowHeight = (int) (density * 36f);
-        int totalHeight = Math.max(120, items.size() * rowHeight + (int) (density * 16f));
+        int rowHeight = (int) (density * 44f);
+        int totalHeight = Math.max(120, items.size() * rowHeight + (int) (density * 12f));
         setMeasuredDimension(getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec), totalHeight);
     }
 
@@ -119,35 +115,65 @@ public class NeumorphicBarChartView extends View {
         super.onDraw(canvas);
         if (items.isEmpty()) return;
 
-        barTrackPaint.setColor(ContextCompat.getColor(getContext(), R.color.neu_surface_pressed));
-        textLabelPaint.setColor(ContextCompat.getColor(getContext(), R.color.text_secondary));
-        textValuePaint.setColor(ContextCompat.getColor(getContext(), R.color.text_main));
-
         float density = getResources().getDisplayMetrics().density;
-        float startX = density * 8f;
-        float endX = getWidth() - (density * 8f);
+
+        // Dynamic theme resolution
+        barTrackPaint.setColor(ContextCompat.getColor(getContext(), R.color.neu_surface_pressed));
+        textLabelPaint.setColor(ContextCompat.getColor(getContext(), R.color.text_main));
+        textLabelPaint.setTextSize(density * 13f);
+        textBadgePaint.setTextSize(density * 10.5f);
+        badgeStrokePaint.setStrokeWidth(density * 1f);
+
+        float startX = density * 4f;
+        float endX = getWidth() - (density * 4f);
         float currentY = density * 18f;
         float barHeight = density * 10f;
         float radius = barHeight / 2f;
 
         for (BarItem item : items) {
-            // Draw Label and Value
-            canvas.drawText(item.label, startX, currentY - (density * 4f), textLabelPaint);
-            canvas.drawText(item.count + " tasks", endX, currentY - (density * 4f), textValuePaint);
+            // 1. Draw Section Title Label
+            canvas.drawText(item.label, startX, currentY - (density * 5f), textLabelPaint);
 
-            // Draw Track (Debossed groove)
-            RectF trackRect = new RectF(startX, currentY, endX, currentY + barHeight);
+            // 2. Draw 3D Capsule Badge on Right (e.g. "8 TASKS")
+            String badgeText = item.count + " TASKS";
+            float textWidth = textBadgePaint.measureText(badgeText);
+            float badgePaddingH = density * 8f;
+            float badgePaddingV = density * 3f;
+            float badgeW = textWidth + (badgePaddingH * 2f);
+            float badgeH = density * 18f;
+            float badgeLeft = endX - badgeW;
+            float badgeTop = currentY - (density * 16f);
+            badgeRect.set(badgeLeft, badgeTop, endX, badgeTop + badgeH);
+
+            // Semi-transparent badge background
+            badgeBgPaint.setColor(item.color);
+            badgeBgPaint.setAlpha(36);
+            canvas.drawRoundRect(badgeRect, density * 9f, density * 9f, badgeBgPaint);
+
+            // Badge border
+            badgeStrokePaint.setColor(item.color);
+            badgeStrokePaint.setAlpha(120);
+            canvas.drawRoundRect(badgeRect, density * 9f, density * 9f, badgeStrokePaint);
+
+            // Badge Text
+            textBadgePaint.setColor(item.color);
+            Paint.FontMetrics fm = textBadgePaint.getFontMetrics();
+            float textY = badgeRect.centerY() - (fm.ascent + fm.descent) / 2f;
+            canvas.drawText(badgeText, badgeRect.centerX(), textY, textBadgePaint);
+
+            // 3. Draw Track Groove
+            trackRect.set(startX, currentY, endX, currentY + barHeight);
             canvas.drawRoundRect(trackRect, radius, radius, barTrackPaint);
 
-            // Draw Fill (3D Raised progress)
+            // 4. Draw Animated Bar Fill
             float fillWidth = (endX - startX) * ((float) item.count / item.max) * animationProgress;
             if (fillWidth > 0) {
-                RectF fillRect = new RectF(startX, currentY, startX + Math.max(radius * 2f, fillWidth), currentY + barHeight);
+                fillRect.set(startX, currentY, startX + Math.max(radius * 2f, fillWidth), currentY + barHeight);
                 barFillPaint.setColor(item.color);
                 canvas.drawRoundRect(fillRect, radius, radius, barFillPaint);
             }
 
-            currentY += density * 34f;
+            currentY += density * 42f;
         }
     }
 }

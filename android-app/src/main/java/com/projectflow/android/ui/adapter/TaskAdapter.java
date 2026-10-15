@@ -1,15 +1,18 @@
 package com.projectflow.android.ui.adapter;
 
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import com.projectflow.android.R;
 import com.projectflow.android.data.local.TaskEntity;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,19 +44,56 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     @Override
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
         TaskEntity t = tasks.get(position);
-        holder.tvTitle.setText(t.title);
+        holder.tvTitle.setText(t.title != null ? t.title : "Untitled Task");
 
-        String priority = t.priority != null ? t.priority : "Medium";
+        String priority = (t.priority != null) ? t.priority.toUpperCase() : "MEDIUM";
         holder.tvPriority.setText(priority);
 
-        String dueDate = t.dueDate != null ? t.dueDate.split("T")[0] : "28 Apr";
+        // Dynamic priority coloring
+        if (priority.contains("HIGH") || priority.contains("CRIT")) {
+            holder.tvPriority.setTextColor(Color.parseColor("#E05D52"));
+        } else if (priority.contains("MED")) {
+            holder.tvPriority.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.chart_progress));
+        } else {
+            holder.tvPriority.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.chart_done));
+        }
+
+        String dueDate = (t.dueDate != null && t.dueDate.contains("T")) ? t.dueDate.split("T")[0] : (t.dueDate != null ? t.dueDate : "28 Apr");
         holder.tvDueDate.setText(dueDate);
 
-        holder.cbComplete.setChecked("DONE".equalsIgnoreCase(t.statusCategory));
+        String prj = (t.projectId != null && !t.projectId.isEmpty()) ? "PRJ-" + t.projectId : "PF-CORE";
+        holder.tvProject.setText(prj);
+
+        boolean isDone = "DONE".equalsIgnoreCase(t.statusCategory);
+        holder.cbComplete.setOnCheckedChangeListener(null);
+        holder.cbComplete.setChecked(isDone);
+
+        applyCompletionStyle(holder, isDone);
+
+        holder.cbComplete.setOnCheckedChangeListener((btn, checked) -> {
+            t.statusCategory = checked ? "DONE" : "IN_PROGRESS";
+            applyCompletionStyle(holder, checked);
+        });
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onTaskClick(t);
         });
+
+        if (holder.ivAction != null) {
+            holder.ivAction.setOnClickListener(v -> {
+                if (listener != null) listener.onTaskClick(t);
+            });
+        }
+    }
+
+    private void applyCompletionStyle(TaskViewHolder holder, boolean isDone) {
+        if (isDone) {
+            holder.tvTitle.setPaintFlags(holder.tvTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+            holder.tvTitle.setAlpha(0.55f);
+        } else {
+            holder.tvTitle.setPaintFlags(holder.tvTitle.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+            holder.tvTitle.setAlpha(1.0f);
+        }
     }
 
     @Override
@@ -62,15 +102,18 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvPriority, tvDueDate;
+        TextView tvTitle, tvPriority, tvDueDate, tvProject;
         CheckBox cbComplete;
+        ImageView ivAction;
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tvTaskTitle);
             tvPriority = itemView.findViewById(R.id.tvTaskPriority);
             tvDueDate = itemView.findViewById(R.id.tvTaskDueDate);
+            tvProject = itemView.findViewById(R.id.tvTaskProject);
             cbComplete = itemView.findViewById(R.id.cbTaskComplete);
+            ivAction = itemView.findViewById(R.id.ivTaskAction);
         }
     }
 }
