@@ -252,4 +252,139 @@ const store = {
   ]
 };
 
-module.exports = { supabase, store };
+async function loadFromSupabase() {
+  if (!supabase) return;
+  try {
+    const { data: profiles, error: pErr } = await supabase.from('profiles').select('*');
+    if (!pErr && profiles && profiles.length > 0) {
+      store.users = profiles.map(p => ({
+        id: p.id,
+        email: p.email,
+        fullName: p.full_name,
+        role: p.global_role,
+        active: p.active !== false,
+        createdAt: p.created_at
+      }));
+    }
+
+    const { data: workspaces, error: wErr } = await supabase.from('workspaces').select('*');
+    if (!wErr && workspaces && workspaces.length > 0) {
+      store.workspaces = workspaces.map(w => ({
+        id: w.id,
+        name: w.name,
+        slug: w.slug,
+        description: w.description || '',
+        ownerId: w.owner_id,
+        archived: w.archived,
+        createdAt: w.created_at
+      }));
+    }
+
+    const { data: projects, error: prjErr } = await supabase.from('projects').select('*');
+    if (!prjErr && projects && projects.length > 0) {
+      store.projects = projects.map(p => ({
+        id: p.id,
+        workspaceId: p.workspace_id,
+        name: p.name,
+        code: p.code,
+        description: p.description || '',
+        status: p.status,
+        health: p.health,
+        startDate: p.start_date,
+        targetDate: p.target_date,
+        createdAt: p.created_at
+      }));
+    }
+
+    const { data: tasks, error: tErr } = await supabase.from('tasks').select('*');
+    if (!tErr && tasks && tasks.length > 0) {
+      store.tasks = tasks.map(t => ({
+        id: t.id,
+        projectId: t.project_id,
+        title: t.title,
+        description: t.description || '',
+        priority: t.priority,
+        statusCategory: t.status_category,
+        progressPercent: t.progress_percent,
+        completedAt: t.completed_at,
+        dueDate: t.due_date,
+        assigneeId: t.assignee_id,
+        createdAt: t.created_at
+      }));
+    }
+
+    console.log('[SUPABASE] Synced live data from Supabase PostgreSQL successfully! Total profiles:', store.users.length, 'Total tasks:', store.tasks.length);
+  } catch (err) {
+    console.warn('[SUPABASE] Data sync warning:', err.message);
+  }
+}
+
+// Initial sync on module load
+loadFromSupabase();
+
+async function saveTaskToSupabase(task) {
+  if (!supabase) return;
+  try {
+    await supabase.from('tasks').upsert({
+      id: task.id,
+      project_id: task.projectId,
+      title: task.title,
+      description: task.description || '',
+      priority: task.priority || 'MEDIUM',
+      status_category: task.statusCategory || 'TODO',
+      progress_percent: task.progressPercent || 0,
+      due_date: task.dueDate || null,
+      assignee_id: task.assigneeId || null,
+      created_at: task.createdAt,
+      completed_at: task.completedAt || null
+    });
+  } catch (err) {
+    console.error('[SUPABASE] saveTask error:', err.message);
+  }
+}
+
+async function saveProjectToSupabase(project) {
+  if (!supabase) return;
+  try {
+    await supabase.from('projects').upsert({
+      id: project.id,
+      workspace_id: project.workspaceId,
+      name: project.name,
+      code: project.code,
+      description: project.description || '',
+      status: project.status || 'PLANNING',
+      health: project.health || 'ON_TRACK',
+      start_date: project.startDate,
+      target_date: project.targetDate,
+      created_at: project.createdAt
+    });
+  } catch (err) {
+    console.error('[SUPABASE] saveProject error:', err.message);
+  }
+}
+
+async function saveWorkspaceToSupabase(ws) {
+  if (!supabase) return;
+  try {
+    await supabase.from('workspaces').upsert({
+      id: ws.id,
+      name: ws.name,
+      slug: ws.slug,
+      description: ws.description || '',
+      owner_id: ws.ownerId || null,
+      archived: ws.archived || false,
+      created_at: ws.createdAt
+    });
+  } catch (err) {
+    console.error('[SUPABASE] saveWorkspace error:', err.message);
+  }
+}
+
+module.exports = { 
+  supabase, 
+  store, 
+  loadFromSupabase, 
+  saveTaskToSupabase, 
+  saveProjectToSupabase, 
+  saveWorkspaceToSupabase 
+};

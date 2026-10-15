@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const { store, supabase } = require('./src/supabase');
+const { store, supabase, saveTaskToSupabase, saveProjectToSupabase, saveWorkspaceToSupabase } = require('./src/supabase');
 const { evaluateProjectRisks } = require('./src/engine/deterministicRiskEngine');
 const { evaluateScenario } = require('./src/engine/whatIfSchedulingEngine');
 
@@ -199,6 +199,7 @@ app.post('/api/v1/workspaces', (req, res) => {
     createdAt: new Date().toISOString()
   };
   store.workspaces.push(ws);
+  saveWorkspaceToSupabase(ws);
   res.status(201).json(ws);
 });
 
@@ -222,6 +223,7 @@ app.post('/api/v1/workspaces/:id/projects', (req, res) => {
     createdAt: new Date().toISOString()
   };
   store.projects.push(project);
+  saveProjectToSupabase(project);
   res.status(201).json(project);
 });
 
@@ -274,6 +276,7 @@ app.post('/api/v1/projects/:id/tasks', (req, res) => {
     createdAt: new Date().toISOString()
   };
   (store.notifications = store.notifications || []).unshift(notif);
+  saveTaskToSupabase(task);
 
   res.status(201).json(task);
 });
@@ -290,6 +293,7 @@ app.patch('/api/v1/tasks/:id/status', (req, res) => {
       task.progressPercent = req.body.progressPercent || 50;
     }
   }
+  saveTaskToSupabase(task);
   res.json(task);
 });
 
