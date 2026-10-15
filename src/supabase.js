@@ -176,6 +176,7 @@ const store = {
       senderName: 'System Administrator',
       content: 'Welcome to the ProjectFlow engineering channel! Architecture discussions and task updates take place here.',
       channel: 'general',
+      reactions: { '👍': 4, '🚀': 3, '❤️': 2 },
       createdAt: new Date(Date.now() - 240 * 60000).toISOString()
     },
     {
@@ -184,7 +185,46 @@ const store = {
       senderName: 'Project Manager',
       content: 'The v2.0.0 APK release is verified with SHA-256 integrity check and ready for team distribution.',
       channel: 'general',
+      reactions: { '🔥': 5, '🎯': 3 },
       createdAt: new Date(Date.now() - 60 * 60000).toISOString()
+    },
+    {
+      id: '70000000-0000-0000-0000-000000000003',
+      senderId: '00000000-0000-0000-0000-000000000003',
+      senderName: 'Team Member',
+      content: 'Neumorphic 3D UI components and multi-color charts are rendering smoothly on the mobile device!',
+      channel: 'engineering',
+      reactions: { '🚀': 6, '👍': 2 },
+      createdAt: new Date(Date.now() - 15 * 60000).toISOString()
+    }
+  ],
+  teams: [
+    {
+      id: 'team-0000-0001',
+      name: 'Core Engineering',
+      slug: 'engineering',
+      description: 'Full-stack architecture, backend APIs, and Android platform development.',
+      memberCount: 5,
+      channel: 'engineering',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'team-0000-0002',
+      name: 'UI/UX Design Squad',
+      slug: 'design-squad',
+      description: 'Neumorphism 3D visual language, design tokens, and fluid animations.',
+      memberCount: 3,
+      channel: 'design-squad',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'team-0000-0003',
+      name: 'Risk & Quality Assurance',
+      slug: 'risk-qa',
+      description: 'Deterministic risk engine auditing, stress testing, and hardware verification.',
+      memberCount: 2,
+      channel: 'risk-qa',
+      createdAt: new Date().toISOString()
     }
   ],
   errors: [

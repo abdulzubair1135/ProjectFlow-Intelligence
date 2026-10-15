@@ -32,6 +32,9 @@ public class DtoModels {
         public String statusCategory;
         public int progressPercent;
         public String dueDate;
+        public String assigneeId;
+        public String teamId;
+        public String teamName;
     }
 
     public static class RiskDto {
@@ -81,6 +84,16 @@ public class DtoModels {
         public int assignedTasksCount;
     }
 
+    public static class TeamGroupDto {
+        public String id;
+        public String name;
+        public String slug;
+        public String description;
+        public int memberCount;
+        public String channel;
+        public String createdAt;
+    }
+
     public static class NotificationDto {
         public String id;
         public String title;
@@ -96,6 +109,7 @@ public class DtoModels {
         public String senderName;
         public String content;
         public String channel;
+        public java.util.Map<String, Integer> reactions;
         public String createdAt;
     }
 

@@ -24,8 +24,10 @@ import com.projectflow.android.data.repository.ProjectFlowRepository;
 import com.projectflow.android.ui.CreateTaskActivity;
 import com.projectflow.android.ui.MainActivity;
 import com.projectflow.android.ui.adapter.ProjectAdapter;
-import com.projectflow.android.ui.view.CircularProgressView;
+import com.projectflow.android.ui.view.NeumorphicPieChartView;
+import com.projectflow.android.ui.view.NeumorphicBarChartView;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -33,8 +35,9 @@ public class DashboardFragment extends Fragment {
 
     private TextView tvGreeting, tvUserName, tvUserRole;
     private TextView tvTotalProjects, tvTotalTasks, tvCompletedTasks, tvPendingTasks;
-    private TextView badgeDone, badgeActive, tvProgressSubtitle, tvEmptyProjects;
-    private CircularProgressView progressView;
+    private TextView chipDone, chipProgress, chipReview, chipTodo, tvEmptyProjects;
+    private NeumorphicPieChartView pieChartView;
+    private NeumorphicBarChartView barChartView;
     private RecyclerView rvRecentProjects;
     private ProjectAdapter projectAdapter;
     private SwipeRefreshLayout swipeRefresh;
@@ -70,11 +73,13 @@ public class DashboardFragment extends Fragment {
         tvCompletedTasks = view.findViewById(R.id.tvCompletedTasks);
         tvPendingTasks = view.findViewById(R.id.tvPendingTasks);
 
-        // Progress
-        progressView = view.findViewById(R.id.progressView);
-        badgeDone = view.findViewById(R.id.badgeDone);
-        badgeActive = view.findViewById(R.id.badgeActive);
-        tvProgressSubtitle = view.findViewById(R.id.tvProgressSubtitle);
+        // 3D Neumorphic Charts & Chips
+        pieChartView = view.findViewById(R.id.pieChartView);
+        barChartView = view.findViewById(R.id.barChartView);
+        chipDone = view.findViewById(R.id.chipDone);
+        chipProgress = view.findViewById(R.id.chipProgress);
+        chipReview = view.findViewById(R.id.chipReview);
+        chipTodo = view.findViewById(R.id.chipTodo);
 
         // Quick Actions
         qaCreateTask = view.findViewById(R.id.qaCreateTask);
@@ -131,29 +136,45 @@ public class DashboardFragment extends Fragment {
 
         db.taskDao().getAllLive().observe(getViewLifecycleOwner(), tasks -> {
             int total = (tasks != null) ? tasks.size() : 0;
-            int completed = 0;
-            int pending = 0;
+            int doneCount = 0;
+            int inProgressCount = 0;
+            int reviewCount = 0;
+            int todoCount = 0;
 
             if (tasks != null) {
                 for (TaskEntity t : tasks) {
-                    if ("DONE".equalsIgnoreCase(t.statusCategory)) {
-                        completed++;
+                    String cat = (t.statusCategory != null) ? t.statusCategory.toUpperCase() : "TODO";
+                    if ("DONE".equals(cat)) {
+                        doneCount++;
+                    } else if ("IN_PROGRESS".equals(cat)) {
+                        inProgressCount++;
+                    } else if ("REVIEW".equals(cat)) {
+                        reviewCount++;
                     } else {
-                        pending++;
+                        todoCount++;
                     }
                 }
             }
 
+            int activeSum = inProgressCount + reviewCount + todoCount;
             tvTotalTasks.setText(String.valueOf(total));
-            tvCompletedTasks.setText(String.valueOf(completed));
-            tvPendingTasks.setText(String.valueOf(pending));
+            tvCompletedTasks.setText(String.valueOf(doneCount));
+            tvPendingTasks.setText(String.valueOf(activeSum));
 
-            badgeDone.setText(completed + " Done");
-            badgeActive.setText(pending + " Active");
+            if (chipDone != null) chipDone.setText(doneCount + " Done");
+            if (chipProgress != null) chipProgress.setText(inProgressCount + " In Progress");
+            if (chipReview != null) chipReview.setText(reviewCount + " Review");
+            if (chipTodo != null) chipTodo.setText(todoCount + " To Do");
 
-            int percent = total > 0 ? Math.round((completed * 100f) / total) : 0;
-            progressView.setProgress(percent);
-            tvProgressSubtitle.setText(percent + "% tasks completed across active milestones");
+            // Update 3D Neumorphic Multi-Color Pie Chart
+            if (pieChartView != null) {
+                pieChartView.setTaskData(doneCount, inProgressCount, reviewCount, todoCount);
+            }
+
+            // Update 3D Velocity Bar Chart
+            if (barChartView != null) {
+                barChartView.setSampleData();
+            }
         });
 
         // Quick Actions listeners

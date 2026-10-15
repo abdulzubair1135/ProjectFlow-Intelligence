@@ -17,7 +17,7 @@ public class ApiClient {
     private static final String KEY_BASE_URL = "api_base_url";
     private static final String KEY_TOKEN = "auth_token";
     // Default to 127.0.0.1 for ADB reverse or 10.0.2.2 for emulator
-    public static final String DEFAULT_URL = "http://127.0.0.1:8080/api/v1/";
+    public static final String DEFAULT_URL = "http://127.0.0.1:8082/api/v1/";
 
     public static ApiService getService(Context context) {
         if (INSTANCE == null) {

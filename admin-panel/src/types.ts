@@ -51,6 +51,9 @@ export interface Task {
   priority: TaskPriority;
   statusCategory: string;
   assigneeId?: string;
+  assigneeName?: string;
+  teamId?: string;
+  teamName?: string;
   creatorId?: string;
   storyPoints?: number;
   progressPercent: number;
@@ -59,6 +62,15 @@ export interface Task {
   completedAt?: string;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  description?: string;
+  channelName?: string;
+  membersCount?: number;
+  createdAt?: string;
 }
 
 export type RiskSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';

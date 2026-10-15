@@ -5,33 +5,78 @@
     android:layout_height="match_parent"
     android:background="@color/earth_bg">
 
-    <!-- Top Channel Subheader -->
+    <!-- Top Channel Subheader & Horizontal Group Selector -->
     <LinearLayout
         android:id="@+id/llChatHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:background="@color/earth_surface"
-        android:elevation="1dp"
+        android:background="@drawable/bg_neu_card"
+        android:elevation="2dp"
         android:orientation="vertical"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="10dp">
+        android:padding="12dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="#general &#8226; Engineering Discussions"
-            android:textColor="@color/text_main"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-        <TextView
-            android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvActiveChannelTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="#general • Team Discussion"
+                    android:textColor="@color/text_main"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvActiveChannelSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Real-time multi-channel collaboration"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvChannelOnlineBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:background="@drawable/bg_badge_success"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:text="SYNC LIVE"
+                android:textColor="@color/earth_success"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
+
+        <!-- Horizontal Channels Chip Bar -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="Team collaboration channel with real-time sync"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp" />
+            android:layout_marginTop="10dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/llChannelsContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <!-- Dynamic channel chips populated in ChatFragment -->
+            </LinearLayout>
+        </HorizontalScrollView>
     </LinearLayout>
 
     <!-- Chat Messages RecyclerView -->
@@ -42,7 +87,7 @@
         android:layout_above="@id/llMessageComposer"
         android:layout_below="@id/llChatHeader"
         android:clipToPadding="false"
-        android:paddingVertical="12dp" />
+        android:paddingVertical="10dp" />
 
     <!-- Empty State -->
     <LinearLayout
@@ -55,18 +100,30 @@
         android:visibility="gone">
 
         <ImageView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="54dp"
+            android:layout_height="54dp"
+            android:background="@drawable/bg_neu_circle"
+            android:padding="12dp"
             android:src="@drawable/ic_chat"
-            app:tint="@color/muted_clay" />
+            app:tint="@color/primary_earth" />
+
+        <TextView
+            android:id="@+id/tvEmptyChannelName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="No messages yet in this group."
+            android:textColor="@color/text_main"
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="No messages yet in this discussion."
+            android:layout_marginTop="4dp"
+            android:text="Send a message below to kickstart the conversation!"
             android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
+            android:textSize="12sp" />
     </LinearLayout>
 
     <!-- Bottom Message Composer -->
@@ -75,7 +132,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:background="@color/earth_surface"
+        android:background="@drawable/bg_neu_card"
         android:elevation="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -86,8 +143,8 @@
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_weight="1"
-            android:background="@drawable/bg_edit_text"
-            android:hint="Type a project update..."
+            android:background="@drawable/bg_neu_input"
+            android:hint="Type a team update or question..."
             android:importantForAutofill="no"
             android:inputType="textCapSentences|textMultiLine"
             android:maxLines="3"
@@ -109,7 +166,7 @@
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_tasks"
+                android:src="@drawable/ic_send"
                 app:tint="@color/white" />
         </FrameLayout>
     </LinearLayout>

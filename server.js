@@ -106,6 +106,10 @@ app.get('/api/v1/admin/projects', (req, res) => {
   res.json(store.projects);
 });
 
+app.get('/api/v1/projects', (req, res) => {
+  res.json(store.projects);
+});
+
 app.get('/api/v1/admin/system/health', (req, res) => {
   const mem = process.memoryUsage();
   res.json({
@@ -221,15 +225,24 @@ app.post('/api/v1/workspaces/:id/projects', (req, res) => {
 });
 
 // -------------------------------------------------------------
+// -------------------------------------------------------------
 // TASKS & DEPENDENCIES
 // -------------------------------------------------------------
+app.get('/api/v1/tasks', (req, res) => {
+  let list = store.tasks;
+  if (req.query.projectId) list = list.filter(t => t.projectId === req.query.projectId);
+  if (req.query.assigneeId) list = list.filter(t => t.assigneeId === req.query.assigneeId);
+  if (req.query.teamId) list = list.filter(t => t.teamId === req.query.teamId);
+  res.json(list);
+});
+
 app.get('/api/v1/projects/:id/tasks', (req, res) => {
   const list = store.tasks.filter(t => t.projectId === req.params.id);
   res.json(list);
 });
 
 app.post('/api/v1/projects/:id/tasks', (req, res) => {
-  const { title, description, priority, dueDate } = req.body;
+  const { title, description, priority, dueDate, assigneeId, teamId, teamName } = req.body;
   const task = {
     id: uuidv4(),
     projectId: req.params.id,
@@ -239,10 +252,44 @@ app.post('/api/v1/projects/:id/tasks', (req, res) => {
     statusCategory: 'TODO',
     progressPercent: 0,
     dueDate: dueDate ? dueDate.split('T')[0] : null,
+    assigneeId: assigneeId || null,
+    teamId: teamId || null,
+    teamName: teamName || null,
     createdAt: new Date().toISOString()
   };
   store.tasks.push(task);
+
+  // Automatically generate notification for user or team
+  const targetLabel = teamName ? `Team "${teamName}"` : 'You';
+  const notif = {
+    id: uuidv4(),
+    title: 'New Task Assigned',
+    message: `${targetLabel} received task: "${task.title}" (Priority: ${task.priority})`,
+    type: 'TASK_ASSIGNED',
+    userId: assigneeId || null,
+    teamId: teamId || null,
+    taskId: task.id,
+    read: false,
+    createdAt: new Date().toISOString()
+  };
+  (store.notifications = store.notifications || []).unshift(notif);
+
   res.status(201).json(task);
+});
+
+app.patch('/api/v1/tasks/:id/status', (req, res) => {
+  const task = store.tasks.find(t => t.id === req.params.id);
+  if (!task) return res.status(404).json({ error: 'Task not found' });
+  if (req.body.statusCategory) {
+    task.statusCategory = req.body.statusCategory;
+    if (task.statusCategory === 'DONE') {
+      task.progressPercent = 100;
+      task.completedAt = new Date().toISOString();
+    } else if (task.statusCategory === 'IN_PROGRESS') {
+      task.progressPercent = req.body.progressPercent || 50;
+    }
+  }
+  res.json(task);
 });
 
 // -------------------------------------------------------------
@@ -270,8 +317,52 @@ app.post('/api/v1/projects/:id/scenarios/evaluate', (req, res) => {
 });
 
 // -------------------------------------------------------------
-// TEAM MEMBERS
+// TEAMS & GROUPS MANAGEMENT
 // -------------------------------------------------------------
+app.get('/api/v1/teams', (req, res) => {
+  res.json(store.teams || []);
+});
+
+app.post('/api/v1/teams', (req, res) => {
+  const { name, description, memberCount } = req.body;
+  if (!name) return res.status(400).json({ error: 'Team name is required' });
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const channel = slug;
+  const newTeam = {
+    id: uuidv4(),
+    name,
+    slug,
+    description: description || '',
+    memberCount: memberCount || 1,
+    channel,
+    createdAt: new Date().toISOString()
+  };
+  (store.teams = store.teams || []).push(newTeam);
+
+  // Auto-create team welcome message in dedicated channel
+  (store.messages = store.messages || []).push({
+    id: uuidv4(),
+    senderId: store.users[0].id,
+    senderName: 'System Administrator',
+    content: `🎉 Welcome to #${channel}! This dedicated discussion group was created for "${name}".`,
+    channel: channel,
+    reactions: { '🎉': 3, '🚀': 2 },
+    createdAt: new Date().toISOString()
+  });
+
+  // Post notification
+  (store.notifications = store.notifications || []).unshift({
+    id: uuidv4(),
+    title: 'New Team & Group Created',
+    message: `Team "${name}" and chat channel #${channel} are now active.`,
+    type: 'TEAM_CREATED',
+    read: false,
+    createdAt: new Date().toISOString()
+  });
+
+  res.status(201).json(newTeam);
+});
+
 app.get('/api/v1/team', (req, res) => {
   const team = store.users.map(u => ({
     id: u.id,
@@ -305,22 +396,45 @@ app.post('/api/v1/notifications/mark-all-read', (req, res) => {
 // -------------------------------------------------------------
 // CHAT & DISCUSSIONS
 // -------------------------------------------------------------
+app.get('/api/v1/chat/channels', (req, res) => {
+  const dynamicChannels = (store.teams || []).map(t => t.channel);
+  const msgChannels = (store.messages || []).map(m => m.channel);
+  const uniqueChannels = Array.from(new Set(['general', ...dynamicChannels, ...msgChannels])).filter(Boolean);
+  res.json(uniqueChannels);
+});
+
 app.get('/api/v1/chat/messages', (req, res) => {
-  res.json(store.messages || []);
+  const channel = req.query.channel;
+  let list = store.messages || [];
+  if (channel && channel !== 'all') {
+    list = list.filter(m => m.channel === channel);
+  }
+  res.json(list);
 });
 
 app.post('/api/v1/chat/messages', (req, res) => {
-  const { content, channel, senderName } = req.body;
+  const { content, channel, senderName, senderId } = req.body;
   const msg = {
     id: uuidv4(),
-    senderId: req.body.senderId || store.users[0].id,
+    senderId: senderId || store.users[0].id,
     senderName: senderName || 'User',
     content: content || '',
     channel: channel || 'general',
+    reactions: { '👍': 0, '❤️': 0, '🚀': 0, '🔥': 0, '🎯': 0 },
     createdAt: new Date().toISOString()
   };
   (store.messages = store.messages || []).push(msg);
   res.status(201).json(msg);
+});
+
+app.post('/api/v1/chat/messages/:id/react', (req, res) => {
+  const { emoji } = req.body;
+  const msg = (store.messages || []).find(m => m.id === req.params.id);
+  if (!msg) return res.status(404).json({ error: 'Message not found' });
+  msg.reactions = msg.reactions || {};
+  const emo = emoji || '👍';
+  msg.reactions[emo] = (msg.reactions[emo] || 0) + 1;
+  res.json(msg);
 });
 
 // -------------------------------------------------------------

@@ -260,10 +260,29 @@ public class ProjectFlowRepository {
         });
     }
 
-    public void fetchChatMessages(DataCallback<List<ChatMessageDto>> callback) {
+    public void fetchChatChannels(DataCallback<List<String>> callback) {
         executor.execute(() -> {
             try {
-                Response<List<ChatMessageDto>> resp = api.getChatMessages().execute();
+                Response<List<String>> resp = api.getChatChannels().execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    if (callback != null) callback.onData(resp.body());
+                } else {
+                    if (callback != null) callback.onError("Failed to load channels");
+                }
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        });
+    }
+
+    public void fetchChatMessages(DataCallback<List<ChatMessageDto>> callback) {
+        fetchChatMessagesByChannel("general", callback);
+    }
+
+    public void fetchChatMessagesByChannel(String channel, DataCallback<List<ChatMessageDto>> callback) {
+        executor.execute(() -> {
+            try {
+                Response<List<ChatMessageDto>> resp = api.getChatMessagesByChannel(channel).execute();
                 if (resp.isSuccessful() && resp.body() != null) {
                     if (callback != null) callback.onData(resp.body());
                 } else {
@@ -276,17 +295,53 @@ public class ProjectFlowRepository {
     }
 
     public void sendChatMessage(String content, String senderName, DataCallback<ChatMessageDto> callback) {
+        sendChatMessage(content, senderName, "general", callback);
+    }
+
+    public void sendChatMessage(String content, String senderName, String channel, DataCallback<ChatMessageDto> callback) {
         executor.execute(() -> {
             try {
                 Map<String, String> body = new HashMap<>();
                 body.put("content", content);
                 body.put("senderName", senderName != null ? senderName : "You");
-                body.put("channel", "general");
+                body.put("channel", channel != null ? channel : "general");
                 Response<ChatMessageDto> resp = api.sendChatMessage(body).execute();
                 if (resp.isSuccessful() && resp.body() != null) {
                     if (callback != null) callback.onData(resp.body());
                 } else {
                     if (callback != null) callback.onError("Failed sending message");
+                }
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        });
+    }
+
+    public void reactToMessage(String messageId, String emoji, DataCallback<ChatMessageDto> callback) {
+        executor.execute(() -> {
+            try {
+                Map<String, String> body = new HashMap<>();
+                body.put("emoji", emoji != null ? emoji : "👍");
+                Response<ChatMessageDto> resp = api.reactToMessage(messageId, body).execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    if (callback != null) callback.onData(resp.body());
+                } else {
+                    if (callback != null) callback.onError("Failed to react to message");
+                }
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        });
+    }
+
+    public void fetchTeams(DataCallback<List<TeamGroupDto>> callback) {
+        executor.execute(() -> {
+            try {
+                Response<List<TeamGroupDto>> resp = api.getTeams().execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    if (callback != null) callback.onData(resp.body());
+                } else {
+                    if (callback != null) callback.onError("Failed to load teams");
                 }
             } catch (Exception e) {
                 if (callback != null) callback.onError(e.getMessage());

@@ -1,4 +1,4 @@
-import { AdminOverview, AppRelease, AuditLog, ErrorLogEntry, PageResponse, Project, RiskFinding, SystemHealth, Task, UserProfile, Workspace } from '../types';
+import { AdminOverview, AppRelease, AuditLog, ErrorLogEntry, PageResponse, Project, RiskFinding, SystemHealth, Task, Team, UserProfile, Workspace } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -132,13 +132,39 @@ export const api = {
     return handleResponse<Task[]>(res);
   },
 
-  async createTask(projectId: string, data: { title: string; description?: string; priority?: string; dueDate?: string }) {
+  async createTask(projectId: string, data: {
+    title: string;
+    description?: string;
+    priority?: string;
+    dueDate?: string;
+    assigneeId?: string;
+    assigneeName?: string;
+    teamId?: string;
+    teamName?: string;
+  }) {
     const res = await fetch(`${API_BASE}/projects/${projectId}/tasks`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
     return handleResponse<Task>(res);
+  },
+
+  // Teams & Squads
+  async getTeams() {
+    const res = await fetch(`${API_BASE}/teams`, {
+      headers: getAuthHeaders()
+    });
+    return handleResponse<Team[]>(res);
+  },
+
+  async createTeam(data: { name: string; description?: string }) {
+    const res = await fetch(`${API_BASE}/teams`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse<Team>(res);
   },
 
   // Risks

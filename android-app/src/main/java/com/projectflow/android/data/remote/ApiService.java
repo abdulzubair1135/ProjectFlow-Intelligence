@@ -43,6 +43,18 @@ public interface ApiService {
     @GET("team")
     Call<List<TeamMemberDto>> getTeam();
 
+    @GET("teams")
+    Call<List<TeamGroupDto>> getTeams();
+
+    @POST("teams")
+    Call<TeamGroupDto> createTeam(@Body Map<String, Object> body);
+
+    @GET("tasks")
+    Call<List<TaskDto>> getAllTasks();
+
+    @PATCH("tasks/{id}/status")
+    Call<TaskDto> updateTaskStatus(@Path("id") String taskId, @Body Map<String, Object> body);
+
     @GET("notifications")
     Call<List<NotificationDto>> getNotifications();
 
@@ -52,11 +64,20 @@ public interface ApiService {
     @POST("notifications/mark-all-read")
     Call<Map<String, Object>> markAllNotificationsRead();
 
+    @GET("chat/channels")
+    Call<List<String>> getChatChannels();
+
     @GET("chat/messages")
     Call<List<ChatMessageDto>> getChatMessages();
 
+    @GET("chat/messages")
+    Call<List<ChatMessageDto>> getChatMessagesByChannel(@Query("channel") String channel);
+
     @POST("chat/messages")
     Call<ChatMessageDto> sendChatMessage(@Body Map<String, String> body);
+
+    @POST("chat/messages/{id}/react")
+    Call<ChatMessageDto> reactToMessage(@Path("id") String messageId, @Body Map<String, String> body);
 
     @PATCH("me/profile")
     Call<UserDto> updateProfile(@Body Map<String, String> body);

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import { Project, Task, TaskPriority } from '../types';
-import { CheckSquare, Plus, RefreshCw, Calendar, AlertCircle } from 'lucide-react';
+import { Project, Task, TaskPriority, Team, UserProfile } from '../types';
+import { CheckSquare, Plus, RefreshCw, Calendar, AlertCircle, Users, User, Hash, Check } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
 export const Tasks: React.FC = () => {
@@ -9,6 +9,8 @@ export const Tasks: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>(searchParams.get('projectId') || '');
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,21 +20,37 @@ export const Tasks: React.FC = () => {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
   const [dueDate, setDueDate] = useState('');
+  const [assignType, setAssignType] = useState<'USER' | 'TEAM' | 'NONE'>('NONE');
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedTeamId, setSelectedTeamId] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Create Team Modal
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [newTeamName, setNewTeamName] = useState('');
+  const [newTeamDesc, setNewTeamDesc] = useState('');
+  const [teamSubmitting, setTeamSubmitting] = useState(false);
+  const [teamSuccessMsg, setTeamSuccessMsg] = useState<string | null>(null);
+
   useEffect(() => {
-    async function loadProjects() {
+    async function loadInitialData() {
       try {
-        const prjs = await api.getProjects();
+        const [prjs, tms, usrs] = await Promise.all([
+          api.getProjects().catch(() => []),
+          api.getTeams().catch(() => []),
+          api.getUsers('', 0, 50).catch(() => ({ content: [] }))
+        ]);
         setProjects(prjs);
+        setTeams(tms);
+        setUsers(usrs.content || []);
         if (prjs.length > 0 && !selectedProjectId) {
           setSelectedProjectId(prjs[0].id);
         }
       } catch (err: any) {
-        console.warn('Failed loading projects', err);
+        console.warn('Failed loading initial data', err);
       }
     }
-    loadProjects();
+    loadInitialData();
   }, []);
 
   const fetchTasks = async (projId: string) => {
@@ -65,21 +83,67 @@ export const Tasks: React.FC = () => {
     if (!selectedProjectId) return;
     setSubmitting(true);
     try {
+      let assigneeId: string | undefined;
+      let assigneeName: string | undefined;
+      let teamId: string | undefined;
+      let teamName: string | undefined;
+
+      if (assignType === 'USER' && selectedUserId) {
+        const found = users.find(u => u.id === selectedUserId);
+        assigneeId = selectedUserId;
+        assigneeName = found ? found.fullName : undefined;
+      } else if (assignType === 'TEAM' && selectedTeamId) {
+        const found = teams.find(t => t.id === selectedTeamId);
+        teamId = selectedTeamId;
+        teamName = found ? found.name : undefined;
+      }
+
       const newTask = await api.createTask(selectedProjectId, {
         title,
         description,
         priority,
-        dueDate: dueDate ? new Date(dueDate).toISOString() : undefined
+        dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        assigneeId,
+        assigneeName,
+        teamId,
+        teamName
       });
       setTasks((prev) => [newTask, ...prev]);
       setShowModal(false);
       setTitle('');
       setDescription('');
       setDueDate('');
+      setAssignType('NONE');
+      setSelectedUserId('');
+      setSelectedTeamId('');
     } catch (err: any) {
       alert(`Task creation failed: ${err.message}`);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCreateTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTeamName.trim()) return;
+    setTeamSubmitting(true);
+    try {
+      const created = await api.createTeam({
+        name: newTeamName.trim(),
+        description: newTeamDesc.trim()
+      });
+      setTeams((prev) => [...prev, created]);
+      setTeamSuccessMsg(`Team "${created.name}" and chat channel #${created.channelName || created.name.toLowerCase().replace(/\\s+/g, '-')} created successfully!`);
+      setNewTeamName('');
+      setNewTeamDesc('');
+      setTimeout(() => {
+        setTeamSuccessMsg(null);
+        setShowTeamModal(false);
+      }, 1500);
+    } catch (err: any) {
+      alert(`Team creation failed: ${err.message}`);
+    } finally {
+      setTeamSubmitting(false);
     }
   };
 
@@ -129,6 +193,14 @@ export const Tasks: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setShowTeamModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#EFECE4] border border-[#E2E0D8] text-xs font-semibold text-[#56664C] hover:bg-[#E2E0D8] transition-colors shadow-sm"
+          >
+            <Users className="w-3.5 h-3.5" />
+            + New Team
+          </button>
+
+          <button
             disabled={!selectedProjectId}
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#56664C] text-[#F4F2E9] text-xs font-semibold hover:bg-[#485640] transition-colors shadow-sm disabled:opacity-50"
@@ -152,6 +224,7 @@ export const Tasks: React.FC = () => {
             <thead className="bg-[#F4F2E9] border-b border-[#E2E0D8] text-[#5A6258] font-semibold uppercase tracking-wider">
               <tr>
                 <th className="px-6 py-3.5">Title</th>
+                <th className="px-6 py-3.5">Assigned To</th>
                 <th className="px-6 py-3.5">Priority</th>
                 <th className="px-6 py-3.5">Status</th>
                 <th className="px-6 py-3.5">Progress</th>
@@ -161,7 +234,7 @@ export const Tasks: React.FC = () => {
             <tbody className="divide-y divide-[#E2E0D8] text-[#292D28]">
               {tasks.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-[#5A6258]">
+                  <td colSpan={6} className="px-6 py-12 text-center text-[#5A6258]">
                     <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-[#E2E0D8] text-[#56664C] flex items-center justify-center">
                       <CheckSquare className="w-5 h-5" />
                     </div>
@@ -177,6 +250,21 @@ export const Tasks: React.FC = () => {
                       <div className="font-semibold text-[#292D28]">{t.title}</div>
                       {t.description && (
                         <div className="text-[11px] text-[#78866B] line-clamp-1">{t.description}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {t.teamName ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-[#56664C]/15 text-[#56664C] border border-[#56664C]/30">
+                          <Users className="w-3 h-3" />
+                          {t.teamName}
+                        </span>
+                      ) : t.assigneeName ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium bg-[#EFECE4] text-[#292D28] border border-[#E2E0D8]">
+                          <User className="w-3 h-3 text-[#5A6258]" />
+                          {t.assigneeName}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-[#78866B] italic">Unassigned</span>
                       )}
                     </td>
                     <td className="px-6 py-4">{getPriorityBadge(t.priority)}</td>
@@ -212,16 +300,16 @@ export const Tasks: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Task Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-[#FAFAF7] border border-[#E2E0D8] rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
             <h3 className="text-base font-bold text-[#292D28]">Add New Task</h3>
             <p className="text-xs text-[#5A6258]">
-              Create an operational task within the selected project.
+              Create an operational task within the selected project and assign it to an individual or team squad.
             </p>
 
-            <form onSubmit={handleCreateTask} className="space-y-4">
+            <form onSubmit={handleCreateTask} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-semibold text-[#5A6258] uppercase tracking-wider mb-1">
                   Task Title
@@ -252,6 +340,82 @@ export const Tasks: React.FC = () => {
                 </select>
               </div>
 
+              {/* Assignment Selector */}
+              <div>
+                <label className="block text-xs font-semibold text-[#5A6258] uppercase tracking-wider mb-1.5">
+                  Assign To
+                </label>
+                <div className="grid grid-cols-3 gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setAssignType('NONE')}
+                    className={`py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                      assignType === 'NONE'
+                        ? 'bg-[#56664C] text-[#F4F2E9] border-[#56664C]'
+                        : 'bg-white text-[#5A6258] border-[#E2E0D8] hover:bg-[#EFECE4]'
+                    }`}
+                  >
+                    Unassigned
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAssignType('TEAM')}
+                    className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                      assignType === 'TEAM'
+                        ? 'bg-[#56664C] text-[#F4F2E9] border-[#56664C]'
+                        : 'bg-white text-[#5A6258] border-[#E2E0D8] hover:bg-[#EFECE4]'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    Team Squad
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAssignType('USER')}
+                    className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                      assignType === 'USER'
+                        ? 'bg-[#56664C] text-[#F4F2E9] border-[#56664C]'
+                        : 'bg-white text-[#5A6258] border-[#E2E0D8] hover:bg-[#EFECE4]'
+                    }`}
+                  >
+                    <User className="w-3.5 h-3.5" />
+                    Member
+                  </button>
+                </div>
+
+                {assignType === 'TEAM' && (
+                  <select
+                    value={selectedTeamId}
+                    onChange={(e) => setSelectedTeamId(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-lg text-xs text-[#292D28] focus:outline-none focus:border-[#56664C]"
+                  >
+                    <option value="">Select Team / Squad...</option>
+                    {teams.map((tm) => (
+                      <option key={tm.id} value={tm.id}>
+                        {tm.name} (#{tm.channelName || tm.name.toLowerCase().replace(/\s+/g, '-')})
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {assignType === 'USER' && (
+                  <select
+                    value={selectedUserId}
+                    onChange={(e) => setSelectedUserId(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-lg text-xs text-[#292D28] focus:outline-none focus:border-[#56664C]"
+                  >
+                    <option value="">Select Member...</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.fullName} ({u.role}) - {u.email}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-[#5A6258] uppercase tracking-wider mb-1">
                   Due Date (Optional)
@@ -269,7 +433,7 @@ export const Tasks: React.FC = () => {
                   Description
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   placeholder="Detailed criteria for completion."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -290,7 +454,86 @@ export const Tasks: React.FC = () => {
                   disabled={submitting}
                   className="px-4 py-1.5 rounded-lg bg-[#56664C] text-[#F4F2E9] text-xs font-semibold hover:bg-[#485640] disabled:opacity-50"
                 >
-                  {submitting ? 'Creating...' : 'Create Task'}
+                  {submitting ? 'Creating & Notifying...' : 'Create Task'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Team Modal */}
+      {showTeamModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#FAFAF7] border border-[#E2E0D8] rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-[#56664C]/15 text-[#56664C] flex items-center justify-center">
+                <Users className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#292D28]">Create New Team</h3>
+                <p className="text-[11px] text-[#78866B]">
+                  Automatically provisions a dedicated discussion channel for the team.
+                </p>
+              </div>
+            </div>
+
+            {teamSuccessMsg && (
+              <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-xs flex items-center gap-2">
+                <Check className="w-4 h-4 text-green-600" />
+                {teamSuccessMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateTeam} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-[#5A6258] uppercase tracking-wider mb-1">
+                  Team Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Mobile Dev Squad, Quality Assurance"
+                  value={newTeamName}
+                  onChange={(e) => setNewTeamName(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-lg text-xs text-[#292D28] focus:outline-none focus:border-[#56664C]"
+                />
+              </div>
+
+              {newTeamName && (
+                <div className="px-3 py-2 bg-[#F4F2E9] rounded-lg text-[11px] text-[#56664C] flex items-center gap-2 border border-[#E2E0D8]">
+                  <Hash className="w-3.5 h-3.5" />
+                  <span>Channel: <strong>#{newTeamName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}</strong></span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-[#5A6258] uppercase tracking-wider mb-1">
+                  Description / Focus Area
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Cross-platform Android and desktop client engineering."
+                  value={newTeamDesc}
+                  onChange={(e) => setNewTeamDesc(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-lg text-xs text-[#292D28] focus:outline-none focus:border-[#56664C]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowTeamModal(false)}
+                  className="px-3.5 py-1.5 rounded-lg border border-[#E2E0D8] text-xs font-semibold text-[#5A6258] hover:bg-[#EFECE4]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={teamSubmitting || !newTeamName.trim()}
+                  className="px-4 py-1.5 rounded-lg bg-[#56664C] text-[#F4F2E9] text-xs font-semibold hover:bg-[#485640] disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {teamSubmitting ? 'Creating Team & Channel...' : 'Create Team'}
                 </button>
               </div>
             </form>

@@ -48,4 +48,36 @@
 
     <color name="black">#30271F</color>
     <color name="white">#FFFDF8</color>
+
+    <!-- ============================================================== -->
+    <!-- NEUMORPHIC 3D SURFACE & SHADOW TOKENS -->
+    <!-- ============================================================== -->
+    <color name="neu_bg">#F3EDE2</color>
+    <color name="neu_surface">#FBF8F1</color>
+    <color name="neu_surface_pressed">#EBE4D5</color>
+    <color name="neu_highlight">#FFFFFFFF</color>
+    <color name="neu_shadow_soft">#D5C9B8</color>
+    <color name="neu_shadow_deep">#C2B3A0</color>
+    <color name="neu_border">#E4DACB</color>
+    <color name="neu_inset_border">#D8CDBE</color>
+
+    <!-- ============================================================== -->
+    <!-- VIBRANT 3D CHART MULTI-COLOR PALETTE -->
+    <!-- ============================================================== -->
+    <color name="chart_done">#388E3C</color>        <!-- Done - Vivid Forest Green -->
+    <color name="chart_progress">#F59E0B</color>    <!-- In Progress - Amber Gold -->
+    <color name="chart_review">#8B5CF6</color>      <!-- Review - Electric Violet -->
+    <color name="chart_todo">#78866B</color>        <!-- Todo - Mineral Sage -->
+    <color name="chart_critical">#EF4444</color>    <!-- Critical - Coral Crimson -->
+    <color name="chart_accent_cyan">#06B6D4</color> <!-- Velocity - Cyan Accent -->
+    <color name="chart_accent_pink">#EC4899</color> <!-- Engagement - Rose Accent -->
+
+    <!-- ============================================================== -->
+    <!-- CHAT EMOJI REACTION TOKENS -->
+    <!-- ============================================================== -->
+    <color name="reaction_pill_bg">#ECE5D8</color>
+    <color name="reaction_pill_border">#DDD2C2</color>
+    <color name="reaction_pill_active">#DFD3C0</color>
+    <color name="chat_bubble_received">#FFFDF8</color>
+    <color name="chat_bubble_sent">#ECE5D8</color>
 </resources>
