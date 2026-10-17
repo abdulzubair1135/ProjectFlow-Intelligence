@@ -36,6 +36,7 @@ public class DashboardFragment extends Fragment {
 
     private TextView tvGreeting, tvUserName, tvUserRole;
     private TextView tvTotalProjects, tvTotalTasks, tvCompletedTasks, tvPendingTasks;
+    private View cardTotalProjects, cardTotalTasks, cardCompletedTasks, cardPendingTasks, ivUserAvatar;
     private TextView chipDone, chipProgress, chipReview, chipTodo, tvEmptyProjects;
     private NeumorphicPieChartView pieChartView;
     private NeumorphicBarChartView barChartView;
@@ -67,12 +68,17 @@ public class DashboardFragment extends Fragment {
         tvUserRole = view.findViewById(R.id.tvUserRole);
         btnNotificationBell = view.findViewById(R.id.btnNotificationBell);
         tvNotifBadge = view.findViewById(R.id.tvNotifBadge);
+        ivUserAvatar = view.findViewById(R.id.ivUserAvatar);
 
         // Metrics
         tvTotalProjects = view.findViewById(R.id.tvTotalProjects);
         tvTotalTasks = view.findViewById(R.id.tvTotalTasks);
         tvCompletedTasks = view.findViewById(R.id.tvCompletedTasks);
         tvPendingTasks = view.findViewById(R.id.tvPendingTasks);
+        cardTotalProjects = view.findViewById(R.id.cardTotalProjects);
+        cardTotalTasks = view.findViewById(R.id.cardTotalTasks);
+        cardCompletedTasks = view.findViewById(R.id.cardCompletedTasks);
+        cardPendingTasks = view.findViewById(R.id.cardPendingTasks);
 
         // 3D Neumorphic Charts & Chips
         pieChartView = view.findViewById(R.id.pieChartView);
@@ -220,6 +226,75 @@ public class DashboardFragment extends Fragment {
                 ((MainActivity) getActivity()).navigateToFragment(new NotificationsFragment(), "Notifications");
             }
         });
+
+        // Top Header Profile Avatar Click
+        if (ivUserAvatar != null) {
+            ivUserAvatar.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).navigateToFragment(new ProfileFragment(), "Profile");
+                }
+            });
+        }
+
+        // Summary Metric Cards Real Navigation
+        if (cardTotalProjects != null) {
+            cardTotalProjects.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).navigateToFragment(new ProjectsFragment(), "Projects");
+                }
+            });
+        }
+
+        if (cardTotalTasks != null) {
+            cardTotalTasks.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).navigateToFragment(new TasksFragment(), "Tasks");
+                }
+            });
+        }
+
+        if (cardCompletedTasks != null) {
+            cardCompletedTasks.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).navigateToFragment(new TasksFragment(), "Tasks");
+                }
+            });
+        }
+
+        if (cardPendingTasks != null) {
+            cardPendingTasks.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).navigateToFragment(new TasksFragment(), "Tasks");
+                }
+            });
+        }
+
+        // Status Chips Click Navigation to Tasks
+        View.OnClickListener openTasks = v -> {
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).navigateToFragment(new TasksFragment(), "Tasks");
+            }
+        };
+        if (chipDone != null) chipDone.setOnClickListener(openTasks);
+        if (chipProgress != null) chipProgress.setOnClickListener(openTasks);
+        if (chipReview != null) chipReview.setOnClickListener(openTasks);
+        if (chipTodo != null) chipTodo.setOnClickListener(openTasks);
+
+        // Chart Clicks to Open Full Reports
+        if (pieChartView != null) {
+            pieChartView.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).navigateToFragment(new ReportsFragment(), "Reports");
+                }
+            });
+        }
+        if (barChartView != null) {
+            barChartView.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).navigateToFragment(new ReportsFragment(), "Reports");
+                }
+            });
+        }
 
         // Load real unread notifications badge
         loadNotificationBadge();

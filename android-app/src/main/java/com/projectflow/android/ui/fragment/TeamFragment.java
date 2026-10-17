@@ -20,6 +20,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.projectflow.android.R;
 import com.projectflow.android.data.remote.model.DtoModels.TeamMemberDto;
 import com.projectflow.android.data.repository.ProjectFlowRepository;
+import com.projectflow.android.ui.MainActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -146,15 +147,19 @@ public class TeamFragment extends Fragment {
         }
     }
 
-    private void showMemberDetailsDialog(TeamMemberDto member) {
+        private void showMemberDetailsDialog(TeamMemberDto member) {
         new AlertDialog.Builder(requireContext())
                 .setTitle(member.fullName)
                 .setMessage("Role: " + member.role + "\n" +
                         "Email: " + member.email + "\n" +
                         "Status: " + (member.active ? "Active Member" : "Inactive") + "\n" +
-                        "Assigned Tasks: " + member.assignedTasksCount + "\n" +
-                        "Workspace: Engineering & Innovation")
-                .setPositiveButton("Close", null)
+                        "Assigned Tasks: " + member.assignedTasksCount)
+                .setPositiveButton("Send Message", (d, w) -> {
+                    if (getActivity() instanceof MainActivity) {
+                        ((MainActivity) getActivity()).navigateToFragment(ChatFragment.newInstance("general"), "Team Discussions");
+                    }
+                })
+                .setNegativeButton("Close", null)
                 .show();
     }
 

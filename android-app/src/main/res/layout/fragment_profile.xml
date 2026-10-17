@@ -103,20 +103,24 @@
             android:orientation="horizontal">
 
             <LinearLayout
+                android:id="@+id/cardStatCompleted"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
                 android:background="@drawable/bg_neu_card"
+                android:clickable="true"
+                android:focusable="true"
                 android:elevation="1dp"
                 android:gravity="center"
                 android:orientation="vertical"
                 android:paddingVertical="14dp">
 
                 <TextView
+                    android:id="@+id/tvProfileCompletedCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="12"
+                    android:text="0"
                     android:textColor="@color/chart_done"
                     android:textSize="20sp"
                     android:textStyle="bold" />
@@ -131,20 +135,24 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/cardStatProjects"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
                 android:background="@drawable/bg_neu_card"
+                android:clickable="true"
+                android:focusable="true"
                 android:elevation="1dp"
                 android:gravity="center"
                 android:orientation="vertical"
                 android:paddingVertical="14dp">
 
                 <TextView
+                    android:id="@+id/tvProfileProjectsCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="4"
+                    android:text="0"
                     android:textColor="@color/chart_progress"
                     android:textSize="20sp"
                     android:textStyle="bold" />
@@ -159,19 +167,23 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/cardStatVelocity"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@drawable/bg_neu_card"
+                android:clickable="true"
+                android:focusable="true"
                 android:elevation="1dp"
                 android:gravity="center"
                 android:orientation="vertical"
                 android:paddingVertical="14dp">
 
                 <TextView
+                    android:id="@+id/tvProfileVelocity"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="98%"
+                    android:text="0%"
                     android:textColor="@color/chart_accent_cyan"
                     android:textSize="20sp"
                     android:textStyle="bold" />
@@ -188,9 +200,12 @@
 
         <!-- Account & Workspace Information Card -->
         <androidx.cardview.widget.CardView
+            android:id="@+id/cardWorkspaceOrg"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
+            android:clickable="true"
+            android:focusable="true"
             app:cardBackgroundColor="@color/earth_surface"
             app:cardCornerRadius="16dp"
             app:cardElevation="2dp">
@@ -223,10 +238,11 @@
                         android:textSize="11sp" />
 
                     <TextView
+                        android:id="@+id/tvProfileOrgName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="ProjectFlow Intelligence Corp."
+                        android:text="ProjectFlow Intelligence"
                         android:textColor="@color/text_main"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -245,10 +261,11 @@
                         android:textSize="11sp" />
 
                     <TextView
+                        android:id="@+id/tvProfileWorkspaceName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Engineering &amp; Innovation"
+                        android:text="Default Workspace"
                         android:textColor="@color/text_main"
                         android:textSize="14sp"
                         android:textStyle="bold" />

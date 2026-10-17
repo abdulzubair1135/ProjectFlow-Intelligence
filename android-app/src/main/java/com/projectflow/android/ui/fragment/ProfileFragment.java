@@ -19,14 +19,20 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.widget.SwitchCompat;
 import com.projectflow.android.R;
+import com.projectflow.android.data.local.TaskEntity;
+import com.projectflow.android.data.local.WorkspaceEntity;
 import com.projectflow.android.data.remote.model.DtoModels.UserDto;
 import com.projectflow.android.data.repository.ProjectFlowRepository;
 import com.projectflow.android.distribution.ApkDistributionManager;
 import com.projectflow.android.ui.LoginActivity;
+import com.projectflow.android.ui.MainActivity;
 
 public class ProfileFragment extends Fragment {
 
     private TextView tvProfileName, tvProfileEmail, tvProfileRole, tvProfileInitial;
+    private TextView tvProfileCompletedCount, tvProfileProjectsCount, tvProfileVelocity;
+    private View cardStatCompleted, cardStatProjects, cardStatVelocity, cardWorkspaceOrg;
+    private TextView tvProfileOrgName, tvProfileWorkspaceName;
     private View btnEditProfile;
     private Button btnLogout;
     private TextView btnThemeLight, btnThemeDark, btnThemeSystem;
@@ -51,6 +57,16 @@ public class ProfileFragment extends Fragment {
         tvProfileRole = view.findViewById(R.id.tvProfileRole);
         tvProfileInitial = view.findViewById(R.id.tvProfileInitial);
 
+        tvProfileCompletedCount = view.findViewById(R.id.tvProfileCompletedCount);
+        tvProfileProjectsCount = view.findViewById(R.id.tvProfileProjectsCount);
+        tvProfileVelocity = view.findViewById(R.id.tvProfileVelocity);
+        cardStatCompleted = view.findViewById(R.id.cardStatCompleted);
+        cardStatProjects = view.findViewById(R.id.cardStatProjects);
+        cardStatVelocity = view.findViewById(R.id.cardStatVelocity);
+        cardWorkspaceOrg = view.findViewById(R.id.cardWorkspaceOrg);
+        tvProfileOrgName = view.findViewById(R.id.tvProfileOrgName);
+        tvProfileWorkspaceName = view.findViewById(R.id.tvProfileWorkspaceName);
+
         btnEditProfile = view.findViewById(R.id.btnEditProfile);
         btnLogout = view.findViewById(R.id.btnLogout);
 
@@ -59,6 +75,80 @@ public class ProfileFragment extends Fragment {
         btnThemeSystem = view.findViewById(R.id.btnThemeSystem);
 
         loadUserData();
+
+        // 1. Observe real LiveData for completed tasks & velocity
+        repository.getAllTasks().observe(getViewLifecycleOwner(), tasks -> {
+            int total = (tasks != null) ? tasks.size() : 0;
+            int done = 0;
+            if (tasks != null) {
+                for (TaskEntity t : tasks) {
+                    if ("DONE".equalsIgnoreCase(t.statusCategory)) {
+                        done++;
+                    }
+                }
+            }
+            if (tvProfileCompletedCount != null) {
+                tvProfileCompletedCount.setText(String.valueOf(done));
+            }
+            if (tvProfileVelocity != null) {
+                int velocity = total > 0 ? (done * 100) / total : 0;
+                tvProfileVelocity.setText(velocity + "%");
+            }
+        });
+
+        // 2. Observe real LiveData for total projects
+        repository.getProjects().observe(getViewLifecycleOwner(), projects -> {
+            int count = (projects != null) ? projects.size() : 0;
+            if (tvProfileProjectsCount != null) {
+                tvProfileProjectsCount.setText(String.valueOf(count));
+            }
+        });
+
+        // 3. Observe real LiveData for active workspace
+        repository.getWorkspaces().observe(getViewLifecycleOwner(), workspaces -> {
+            if (workspaces != null && !workspaces.isEmpty()) {
+                WorkspaceEntity ws = workspaces.get(0);
+                if (tvProfileWorkspaceName != null && ws.name != null && !ws.name.isEmpty()) {
+                    tvProfileWorkspaceName.setText(ws.name);
+                }
+                if (tvProfileOrgName != null && ws.name != null && !ws.name.isEmpty()) {
+                    tvProfileOrgName.setText(ws.name + " Intelligence");
+                }
+            }
+        });
+
+        // 4. Click handlers for real navigation
+        if (cardStatCompleted != null) {
+            cardStatCompleted.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).navigateToFragment(new TasksFragment(), "Tasks");
+                }
+            });
+        }
+        if (cardStatProjects != null) {
+            cardStatProjects.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).navigateToFragment(new ProjectsFragment(), "Projects");
+                }
+            });
+        }
+        if (cardStatVelocity != null) {
+            cardStatVelocity.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).navigateToFragment(new ReportsFragment(), "Reports");
+                }
+            });
+        }
+        if (cardWorkspaceOrg != null) {
+            cardWorkspaceOrg.setOnClickListener(v -> {
+                String wsName = (tvProfileWorkspaceName != null) ? tvProfileWorkspaceName.getText().toString() : "Primary Workspace";
+                new AlertDialog.Builder(requireContext())
+                        .setTitle("Active Workspace")
+                        .setMessage("Workspace: " + wsName + "\nSync Status: Real-time Cloud Connected\nAccess Level: " + prefs.getString("user_role", "ADMINISTRATOR"))
+                        .setPositiveButton("OK", null)
+                        .show();
+            });
+        }
 
         btnEditProfile.setOnClickListener(v -> showEditNameDialog());
 

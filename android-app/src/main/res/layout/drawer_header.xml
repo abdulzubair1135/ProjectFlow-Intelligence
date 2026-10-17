@@ -19,9 +19,12 @@
 
         <!-- 3D Neumorphic Logo Badge with clean transparent emblem -->
         <LinearLayout
+            android:id="@+id/drawerLogoBadge"
             android:layout_width="54dp"
             android:layout_height="54dp"
             android:background="@drawable/bg_drawer_logo_badge"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center"
             android:padding="9dp">
 
@@ -44,10 +47,11 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/tvDrawerWorkspaceName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:text="Workspace: Engineering &amp; Innovation"
+            android:text="Workspace: Default Workspace"
             android:textColor="@color/secondary_sand"
             android:textSize="12sp" />
 
