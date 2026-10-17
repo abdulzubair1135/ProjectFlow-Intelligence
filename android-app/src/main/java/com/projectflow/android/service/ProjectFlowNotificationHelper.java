@@ -24,6 +24,7 @@ public class ProjectFlowNotificationHelper {
     public static final String CHANNEL_TASKS = "projectflow_tasks_channel";
     public static final String CHANNEL_RISKS = "projectflow_risks_channel";
     public static final String CHANNEL_GENERAL = "projectflow_general_channel";
+    public static final String CHANNEL_CHAT = "projectflow_chat_channel";
 
     /**
      * Initializes all enterprise notification channels on app startup.
@@ -59,7 +60,20 @@ public class ProjectFlowNotificationHelper {
             riskChannel.setVibrationPattern(new long[]{0, 350, 200, 350});
             nm.createNotificationChannel(riskChannel);
 
-            // 3. General Workspace Channel
+            // 3. Team Chat & Direct Discussions Channel
+            NotificationChannel chatChannel = new NotificationChannel(
+                    CHANNEL_CHAT,
+                    "Team Discussions & Chat Alerts",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            chatChannel.setDescription("Instant heads-up notifications for team messages and mentions.");
+            chatChannel.enableLights(true);
+            chatChannel.setLightColor(Color.parseColor("#795B43")); // Earth Tone
+            chatChannel.enableVibration(true);
+            chatChannel.setVibrationPattern(new long[]{0, 200, 100, 200});
+            nm.createNotificationChannel(chatChannel);
+
+            // 4. General Workspace Channel
             NotificationChannel generalChannel = new NotificationChannel(
                     CHANNEL_GENERAL,
                     "Workspace & Team Updates",
@@ -154,6 +168,59 @@ public class ProjectFlowNotificationHelper {
         NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) {
             nm.notify((int) System.currentTimeMillis(), builder.build());
+        }
+    }
+
+    /**
+     * Displays an actionable heads-up chat notification with channel deep-linking.
+     */
+    public static void showChatNotification(Context context, String title, String message, String channelName, String senderName) {
+        initChannels(context);
+
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.putExtra("navigate_to", "CHAT");
+        if (channelName != null && !channelName.isEmpty()) {
+            intent.putExtra("chat_channel", channelName);
+        }
+
+        int reqCode = (channelName != null ? channelName.hashCode() : (int) System.currentTimeMillis());
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                reqCode,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        Uri defaultSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+
+        String displayTitle = (title != null && !title.isEmpty()) ? title : ("💬 #" + (channelName != null ? channelName : "general"));
+        String subText = (channelName != null ? "#" + channelName : "Team Chat");
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_CHAT)
+                .setSmallIcon(R.drawable.ic_chat)
+                .setContentTitle(displayTitle)
+                .setContentText(message)
+                .setSubText(subText)
+                .setStyle(new NotificationCompat.BigTextStyle()
+                        .setBigContentTitle(displayTitle)
+                        .bigText(message))
+                .setSound(defaultSound)
+                .setVibrate(new long[]{0, 200, 100, 200})
+                .setColor(Color.parseColor("#47745A"))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent);
+
+        if (channelName != null && !channelName.isEmpty()) {
+            builder.addAction(R.drawable.ic_chat, "Open #" + channelName, pendingIntent);
+        }
+
+        NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm != null) {
+            int notifId = (channelName != null) ? (10000 + Math.abs(channelName.hashCode() % 10000)) : (int) (System.currentTimeMillis() % 100000);
+            nm.notify(notifId, builder.build());
         }
     }
 }

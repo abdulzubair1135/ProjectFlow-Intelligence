@@ -17,7 +17,7 @@ public class ApiClient {
     private static final String KEY_BASE_URL = "api_base_url";
     private static final String KEY_TOKEN = "auth_token";
     // Live Public Cloud URL accessible worldwide (WhatsApp shared APKs & remote devices)
-    public static final String DEFAULT_URL = "https://istanbul-folding-irrigation-lan.trycloudflare.com/api/v1/";
+    public static final String DEFAULT_URL = "https://laden-cookies-trivia-displayed.trycloudflare.com/api/v1/";
 
     public static ApiService getService(Context context) {
         if (INSTANCE == null) {
@@ -37,8 +37,8 @@ public class ApiClient {
     private static ApiService createService(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         String baseUrl = prefs.getString(KEY_BASE_URL, DEFAULT_URL);
-        // Automatically migrate legacy localhost URLs to public Cloudflare tunnel
-        if (baseUrl.contains("127.0.0.1") || baseUrl.contains("localhost")) {
+        // Automatically migrate legacy localhost or expired trycloudflare URLs to live public Cloudflare tunnel
+        if (baseUrl.contains("127.0.0.1") || baseUrl.contains("localhost") || !baseUrl.contains("laden-cookies-trivia-displayed")) {
             baseUrl = DEFAULT_URL;
             prefs.edit().putString(KEY_BASE_URL, DEFAULT_URL).apply();
         }
@@ -58,11 +58,39 @@ public class ApiClient {
             return chain.proceed(builder.build());
         };
 
+        Interceptor fallbackInterceptor = chain -> {
+            Request request = chain.request();
+            try {
+                return chain.proceed(request);
+            } catch (java.io.IOException e) {
+                okhttp3.HttpUrl originalUrl = request.url();
+                if (originalUrl.host().contains("trycloudflare.com")) {
+                    try {
+                        okhttp3.HttpUrl fallbackUrl = originalUrl.newBuilder()
+                                .scheme("http")
+                                .host("127.0.0.1")
+                                .port(8082)
+                                .build();
+                        return chain.proceed(request.newBuilder().url(fallbackUrl).build());
+                    } catch (java.io.IOException ignored) {
+                        okhttp3.HttpUrl wifiUrl = originalUrl.newBuilder()
+                                .scheme("http")
+                                .host("10.76.238.31")
+                                .port(8082)
+                                .build();
+                        return chain.proceed(request.newBuilder().url(wifiUrl).build());
+                    }
+                }
+                throw e;
+            }
+        };
+
         OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(20, TimeUnit.SECONDS)
-                .writeTimeout(20, TimeUnit.SECONDS)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(15, TimeUnit.SECONDS)
+                .writeTimeout(15, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true)
+                .addInterceptor(fallbackInterceptor)
                 .addInterceptor(authInterceptor)
                 .addInterceptor(logging)
                 .build();

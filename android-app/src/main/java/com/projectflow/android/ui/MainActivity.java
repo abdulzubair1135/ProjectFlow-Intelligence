@@ -11,6 +11,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 import com.projectflow.android.R;
 import com.projectflow.android.data.repository.ProjectFlowRepository;
+import com.projectflow.android.service.NotificationSyncManager;
 import com.projectflow.android.ui.fragment.*;
 
 public class MainActivity extends AppCompatActivity {
@@ -112,8 +113,42 @@ public class MainActivity extends AppCompatActivity {
 
         // Initial default screen: Dashboard (Screen 4)
         if (savedInstanceState == null) {
-            loadFragment(new DashboardFragment(), "Dashboard");
+            if (!handleIntent(getIntent())) {
+                loadFragment(new DashboardFragment(), "Dashboard");
+            }
+        } else {
+            handleIntent(getIntent());
         }
+
+        // Start Real-Time Notification & Chat Sync Manager
+        NotificationSyncManager.getInstance(this).start();
+    }
+
+    @Override
+    protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIntent(intent);
+    }
+
+    private boolean handleIntent(android.content.Intent intent) {
+        if (intent == null) return false;
+        String navigateTo = intent.getStringExtra("navigate_to");
+        if ("CHAT".equalsIgnoreCase(navigateTo)) {
+            String channel = intent.getStringExtra("chat_channel");
+            Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+            if (current instanceof ChatFragment) {
+                ((ChatFragment) current).switchChannel(channel);
+            } else {
+                ChatFragment chatFragment = ChatFragment.newInstance(channel);
+                loadFragment(chatFragment, "Team Discussions");
+            }
+            return true;
+        } else if ("NOTIFICATIONS".equalsIgnoreCase(navigateTo)) {
+            loadFragment(new NotificationsFragment(), "Notifications");
+            return true;
+        }
+        return false;
     }
 
     public void navigateToFragment(Fragment fragment, String title) {
@@ -126,6 +161,12 @@ public class MainActivity extends AppCompatActivity {
                 .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
                 .replace(R.id.fragment_container, fragment)
                 .commit();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        NotificationSyncManager.getInstance(this).start();
     }
 
     @Override

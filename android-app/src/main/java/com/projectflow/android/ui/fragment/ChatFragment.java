@@ -28,6 +28,16 @@ import java.util.List;
 
 public class ChatFragment extends Fragment {
 
+    public static ChatFragment newInstance(String targetChannel) {
+        ChatFragment fragment = new ChatFragment();
+        if (targetChannel != null && !targetChannel.isEmpty()) {
+            Bundle args = new Bundle();
+            args.putString("target_channel", targetChannel);
+            fragment.setArguments(args);
+        }
+        return fragment;
+    }
+
     private RecyclerView rvChatMessages;
     private ChatAdapter chatAdapter;
     private EditText etChatMessage;
@@ -49,6 +59,13 @@ public class ChatFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        if (getArguments() != null && getArguments().containsKey("target_channel")) {
+            String ch = getArguments().getString("target_channel");
+            if (ch != null && !ch.isEmpty()) {
+                activeChannel = ch;
+            }
+        }
 
         repository = new ProjectFlowRepository(requireContext());
         SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
@@ -134,7 +151,8 @@ public class ChatFragment extends Fragment {
                             channelList.addAll(Arrays.asList("general", "engineering", "design-squad", "mobile-dev-squad"));
                         }
                         renderChannelChips();
-                        selectChannel(channelList.get(0));
+                        String toSelect = (channelList.contains(activeChannel)) ? activeChannel : channelList.get(0);
+                        selectChannel(toSelect);
                     });
                 }
             }
@@ -146,7 +164,8 @@ public class ChatFragment extends Fragment {
                         channelList.clear();
                         channelList.addAll(Arrays.asList("general", "engineering", "design-squad", "mobile-dev-squad"));
                         renderChannelChips();
-                        selectChannel("general");
+                        String toSelect = (channelList.contains(activeChannel)) ? activeChannel : "general";
+                        selectChannel(toSelect);
                     });
                 }
             }
@@ -184,8 +203,20 @@ public class ChatFragment extends Fragment {
         }
     }
 
-    private void selectChannel(String channel) {
+    public void switchChannel(String channel) {
+        if (channel == null || channel.isEmpty()) return;
         this.activeChannel = channel;
+        if (isAdded() && getActivity() != null) {
+            getActivity().runOnUiThread(() -> selectChannel(channel));
+        }
+    }
+
+    private void selectChannel(String channel) {
+        if (channel == null || channel.isEmpty()) channel = "general";
+        this.activeChannel = channel;
+        if (!channelList.contains(channel)) {
+            channelList.add(channel);
+        }
         tvActiveChannelTitle.setText("#" + channel + " • Team Discussion");
         tvActiveChannelSubtitle.setText("Group discussion for #" + channel);
         tvEmptyChannelName.setText("No messages yet in #" + channel);

@@ -312,6 +312,21 @@ public class ProjectFlowRepository {
         });
     }
 
+    public void fetchAllChatMessages(DataCallback<List<ChatMessageDto>> callback) {
+        executor.execute(() -> {
+            try {
+                Response<List<ChatMessageDto>> resp = api.getChatMessages().execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    if (callback != null) callback.onData(resp.body());
+                } else {
+                    if (callback != null) callback.onError("Failed to load chat messages");
+                }
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        });
+    }
+
     public void fetchChatMessages(DataCallback<List<ChatMessageDto>> callback) {
         fetchChatMessagesByChannel("general", callback);
     }

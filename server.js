@@ -741,18 +741,60 @@ app.get('/api/v1/chat/messages', (req, res) => {
   res.json(list);
 });
 
-app.post('/api/v1/chat/messages', (req, res) => {
+app.post('/api/v1/chat/messages', async (req, res) => {
   const { content, channel, senderName, senderId } = req.body;
+  const targetChannel = channel || 'general';
+  const authorName = senderName || 'Team Member';
   const msg = {
     id: uuidv4(),
-    senderId: senderId || store.users[0].id,
-    senderName: senderName || 'User',
+    senderId: senderId || (store.users[0] ? store.users[0].id : uuidv4()),
+    senderName: authorName,
     content: content || '',
-    channel: channel || 'general',
+    channel: targetChannel,
     reactions: { '👍': 0, '❤️': 0, '🚀': 0, '🔥': 0, '🎯': 0 },
     createdAt: new Date().toISOString()
   };
   (store.messages = store.messages || []).push(msg);
+
+  // 1. Create in-app system notification for workspace members
+  const notif = {
+    id: uuidv4(),
+    title: `💬 #${targetChannel} • ${authorName}`,
+    message: content || 'Sent a new message',
+    type: 'CHAT_MESSAGE',
+    channel: targetChannel,
+    senderName: authorName,
+    senderId: msg.senderId,
+    read: false,
+    createdAt: new Date().toISOString()
+  };
+  (store.notifications = store.notifications || []).unshift(notif);
+
+  // 2. Persist to Supabase if connected
+  if (supabase) {
+    try {
+      await supabase.from('notifications').upsert({
+        id: notif.id,
+        title: notif.title,
+        message: notif.message,
+        type: notif.type,
+        read: false,
+        created_at: notif.createdAt
+      });
+    } catch (e) {
+      console.warn('[NOTIF] Supabase chat sync:', e.message);
+    }
+  }
+
+  // 3. Dispatch broadcast push alert
+  await dispatchPushNotification(notif.title, notif.message, {
+    type: 'CHAT_MESSAGE',
+    channel: targetChannel,
+    senderName: authorName,
+    senderId: msg.senderId,
+    messageId: msg.id
+  });
+
   res.status(201).json(msg);
 });
 

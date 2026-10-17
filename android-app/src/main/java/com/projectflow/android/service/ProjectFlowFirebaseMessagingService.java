@@ -75,6 +75,10 @@ public class ProjectFlowFirebaseMessagingService extends FirebaseMessagingServic
         String type = remoteMessage.getData().get("type");
         if ("RISK_ALERT".equalsIgnoreCase(type) || "CRITICAL".equalsIgnoreCase(priority)) {
             ProjectFlowNotificationHelper.showRiskNotification(this, title, messageBody, priority);
+        } else if ("CHAT_MESSAGE".equalsIgnoreCase(type) || remoteMessage.getData().containsKey("channel")) {
+            String channel = remoteMessage.getData().get("channel");
+            String senderName = remoteMessage.getData().get("senderName");
+            ProjectFlowNotificationHelper.showChatNotification(this, title, messageBody, channel, senderName);
         } else {
             ProjectFlowNotificationHelper.showTaskNotification(this, title, messageBody, taskId, priority);
         }
