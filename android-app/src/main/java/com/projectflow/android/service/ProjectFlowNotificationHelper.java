@@ -9,10 +9,17 @@ import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.widget.RemoteViews;
 import androidx.core.app.NotificationCompat;
 import com.projectflow.android.R;
 import com.projectflow.android.ui.MainActivity;
 import com.projectflow.android.ui.TaskDetailsActivity;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 /**
  * Enterprise Notification Management Engine for ProjectFlow Intelligence.
@@ -110,9 +117,11 @@ public class ProjectFlowNotificationHelper {
         );
 
         Uri defaultSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        Bitmap logoBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.logo_clean);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_TASKS)
-                .setSmallIcon(R.drawable.ic_notifications)
+                .setSmallIcon(R.drawable.ic_tasks)
+                .setLargeIcon(logoBitmap)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
@@ -135,7 +144,7 @@ public class ProjectFlowNotificationHelper {
     }
 
     /**
-     * Displays an urgent schedule risk or critical delay notification.
+     * Displays an urgent schedule risk or critical delay notification with brand logo.
      */
     public static void showRiskNotification(Context context, String title, String riskDetail, String severity) {
         initChannels(context);
@@ -151,9 +160,11 @@ public class ProjectFlowNotificationHelper {
         );
 
         Uri defaultSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        Bitmap logoBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.logo_clean);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_RISKS)
-                .setSmallIcon(R.drawable.ic_notifications)
+                .setSmallIcon(R.drawable.ic_risk)
+                .setLargeIcon(logoBitmap)
                 .setContentTitle(title)
                 .setContentText(riskDetail)
                 .setStyle(new NotificationCompat.BigTextStyle()
@@ -172,19 +183,21 @@ public class ProjectFlowNotificationHelper {
     }
 
     /**
-     * Displays an actionable heads-up chat notification with channel deep-linking.
+     * Displays an actionable heads-up chat notification with brand logo and rich custom card UI.
      */
     public static void showChatNotification(Context context, String title, String message, String channelName, String senderName) {
         initChannels(context);
 
+        String ch = (channelName != null && !channelName.isEmpty()) ? channelName : "general";
+        String sender = (senderName != null && !senderName.isEmpty()) ? senderName : "Team Member";
+        String timeStr = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
+
         Intent intent = new Intent(context, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra("navigate_to", "CHAT");
-        if (channelName != null && !channelName.isEmpty()) {
-            intent.putExtra("chat_channel", channelName);
-        }
+        intent.putExtra("chat_channel", ch);
 
-        int reqCode = (channelName != null ? channelName.hashCode() : (int) System.currentTimeMillis());
+        int reqCode = ch.hashCode();
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context,
                 reqCode,
@@ -193,18 +206,31 @@ public class ProjectFlowNotificationHelper {
         );
 
         Uri defaultSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        Bitmap logoBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.logo_clean);
 
-        String displayTitle = (title != null && !title.isEmpty()) ? title : ("💬 #" + (channelName != null ? channelName : "general"));
-        String subText = (channelName != null ? "#" + channelName : "Team Chat");
+        // 1. Rich Collapsed Custom UI with Channel & Sender Title and Time
+        RemoteViews collapsedView = new RemoteViews(context.getPackageName(), R.layout.notification_chat_collapsed);
+        collapsedView.setTextViewText(R.id.notifTitle, "💬 #" + ch + " • " + sender);
+        collapsedView.setTextViewText(R.id.notifMessage, message);
+        collapsedView.setTextViewText(R.id.notifTime, timeStr);
 
+        // 2. Rich Expanded Custom UI with Channel Tag, Sender, and Message Bubble
+        RemoteViews expandedView = new RemoteViews(context.getPackageName(), R.layout.notification_chat_expanded);
+        expandedView.setTextViewText(R.id.notifChannelExpanded, "#" + ch);
+        expandedView.setTextViewText(R.id.notifSenderExpanded, sender);
+        expandedView.setTextViewText(R.id.notifMessageExpanded, message);
+        expandedView.setTextViewText(R.id.notifTimeExpanded, timeStr);
+
+        String displayTitle = "💬 #" + ch + " • " + sender;
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_CHAT)
                 .setSmallIcon(R.drawable.ic_chat)
+                .setLargeIcon(logoBitmap)
                 .setContentTitle(displayTitle)
                 .setContentText(message)
-                .setSubText(subText)
-                .setStyle(new NotificationCompat.BigTextStyle()
-                        .setBigContentTitle(displayTitle)
-                        .bigText(message))
+                .setSubText("#" + ch)
+                .setCustomContentView(collapsedView)
+                .setCustomBigContentView(expandedView)
+                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
                 .setSound(defaultSound)
                 .setVibrate(new long[]{0, 200, 100, 200})
                 .setColor(Color.parseColor("#47745A"))
@@ -213,13 +239,11 @@ public class ProjectFlowNotificationHelper {
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent);
 
-        if (channelName != null && !channelName.isEmpty()) {
-            builder.addAction(R.drawable.ic_chat, "Open #" + channelName, pendingIntent);
-        }
+        builder.addAction(R.drawable.ic_chat, "Open #" + ch, pendingIntent);
 
         NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) {
-            int notifId = (channelName != null) ? (10000 + Math.abs(channelName.hashCode() % 10000)) : (int) (System.currentTimeMillis() % 100000);
+            int notifId = 10000 + Math.abs(ch.hashCode() % 10000);
             nm.notify(notifId, builder.build());
         }
     }

@@ -127,6 +127,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onNewIntent(android.content.Intent intent) {
         super.onNewIntent(intent);
+        StatusBarUtils.applyLightStatusBar(this);
         setIntent(intent);
         handleIntent(intent);
     }
@@ -166,6 +167,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        StatusBarUtils.applyLightStatusBar(this);
         NotificationSyncManager.getInstance(this).start();
     }
 

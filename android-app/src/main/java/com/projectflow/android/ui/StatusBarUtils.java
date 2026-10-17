@@ -8,6 +8,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import com.projectflow.android.R;
 
 public class StatusBarUtils {
 
@@ -20,6 +21,11 @@ public class StatusBarUtils {
         // Exact natural limestone background color matching top header
         int statusBarColor = Color.parseColor("#F4F2E9");
         window.setStatusBarColor(statusBarColor);
+
+        View drawer = activity.findViewById(R.id.drawer_layout);
+        if (drawer instanceof androidx.drawerlayout.widget.DrawerLayout) {
+            ((androidx.drawerlayout.widget.DrawerLayout) drawer).setStatusBarBackgroundColor(statusBarColor);
+        }
 
         // Set dark icons (time, battery, Wi-Fi) on light background
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());

@@ -12,8 +12,9 @@
         <item name="colorOnSecondary">@color/text_main</item>
 
         <!-- Status bar color -->
-        <item name="android:statusBarColor">@color/earth_bg</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="colorPrimaryDark">#F4F2E9</item>
+        <item name="android:statusBarColor">#F4F2E9</item>
+        <item name="android:windowLightStatusBar">true</item>
 
         <!-- Background & Surface -->
         <item name="android:windowBackground">@color/earth_bg</item>

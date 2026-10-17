@@ -12,6 +12,7 @@
         <item name="colorOnSecondary">@color/text_main</item>
 
         <!-- Status bar color -->
+        <item name="colorPrimaryDark">#F4F2E9</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">#F4F2E9</item>
         <item name="android:windowLightStatusBar">true</item>
