@@ -26,5 +26,31 @@ public class ProjectFlowApplication extends Application {
 
         // Initialize Enterprise Notification Channels
         com.projectflow.android.service.ProjectFlowNotificationHelper.initChannels(this);
+
+        // Register Firebase Cloud Messaging (FCM) Push Token with Render Server
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+                if (task.isSuccessful() && task.getResult() != null) {
+                    String token = task.getResult();
+                    android.util.Log.d("ProjectFlowFCM", "Active Firebase device push token: " + token);
+                    prefs.edit().putString("fcm_token", token).apply();
+
+                    new Thread(() -> {
+                        try {
+                            java.util.Map<String, String> body = new java.util.HashMap<>();
+                            body.put("fcmToken", token);
+                            String email = prefs.getString("user_email", "admin@projectflow.io");
+                            body.put("email", email);
+                            com.projectflow.android.data.remote.ApiClient.getService(this).registerFcmToken(body).execute();
+                            android.util.Log.d("ProjectFlowFCM", "Firebase token synced with Render backend successfully.");
+                        } catch (Exception e) {
+                            android.util.Log.w("ProjectFlowFCM", "Token sync error: " + e.getMessage());
+                        }
+                    }).start();
+                }
+            });
+        } catch (Exception e) {
+            android.util.Log.w("ProjectFlowFCM", "Firebase messaging initialization: " + e.getMessage());
+        }
     }
 }
