@@ -37,18 +37,23 @@ import java.util.*;
 
 public class ChatFragment extends Fragment {
 
-    public static ChatFragment newInstance(String targetChannel, String targetName, String targetType) {
+    public static ChatFragment newInstance(String targetChannel, String targetName, String targetType, boolean targetOnline) {
         ChatFragment fragment = new ChatFragment();
         Bundle args = new Bundle();
         if (targetChannel != null) args.putString("target_channel", targetChannel);
         if (targetName != null) args.putString("target_name", targetName);
         if (targetType != null) args.putString("target_type", targetType);
+        args.putBoolean("target_online", targetOnline);
         fragment.setArguments(args);
         return fragment;
     }
 
+    public static ChatFragment newInstance(String targetChannel, String targetName, String targetType) {
+        return newInstance(targetChannel, targetName, targetType, false);
+    }
+
     public static ChatFragment newInstance(String targetChannel) {
-        return newInstance(targetChannel, null, null);
+        return newInstance(targetChannel, null, null, false);
     }
 
     // View Containers
@@ -223,14 +228,32 @@ public class ChatFragment extends Fragment {
         tvChatRoomTitle.setText(activeChatTitle);
 
         if ("DIRECT".equalsIgnoreCase(activeChatType)) {
-            tvChatRoomSubtitle.setText("Online • Direct Chat");
-            tvChatRoomSubtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.earth_success));
+            boolean isOnline = false;
+            if (getArguments() != null && getArguments().containsKey("target_online") && activeChannel != null && activeChannel.equals(getArguments().getString("target_channel"))) {
+                isOnline = getArguments().getBoolean("target_online", false);
+            } else {
+                for (ConversationItem conv : allConversations) {
+                    if (conv.id != null && conv.id.equalsIgnoreCase(activeChannel)) {
+                        isOnline = conv.online;
+                        break;
+                    }
+                }
+            }
+
+            if (isOnline) {
+                tvChatRoomSubtitle.setText("Online • Direct Chat");
+                tvChatRoomSubtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.earth_success));
+                viewChatRoomOnlineDot.setVisibility(View.VISIBLE);
+            } else {
+                tvChatRoomSubtitle.setText("Offline • Direct Chat");
+                tvChatRoomSubtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary));
+                viewChatRoomOnlineDot.setVisibility(View.GONE);
+            }
             tvChatRoomTypeBadge.setText("1-ON-1");
             ivChatRoomGroupIcon.setVisibility(View.GONE);
             tvChatRoomInitial.setVisibility(View.VISIBLE);
             String init = activeChatTitle.length() > 0 ? activeChatTitle.substring(0, 1).toUpperCase() : "U";
             tvChatRoomInitial.setText(init);
-            viewChatRoomOnlineDot.setVisibility(View.VISIBLE);
         } else {
             tvChatRoomSubtitle.setText("Group Squad • Active");
             tvChatRoomSubtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary));
@@ -350,7 +373,7 @@ public class ChatFragment extends Fragment {
                         time,
                         init,
                         ConversationItem.Type.DIRECT,
-                        m.active
+                        m.isOnline
                 );
                 item.targetEmail = m.email;
                 allConversations.add(item);

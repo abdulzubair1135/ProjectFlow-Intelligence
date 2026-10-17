@@ -152,7 +152,7 @@ public class TeamFragment extends Fragment {
                 .setTitle(member.fullName)
                 .setMessage("Role: " + member.role + "\n" +
                         "Email: " + member.email + "\n" +
-                        "Status: " + (member.active ? "Active Member" : "Inactive") + "\n" +
+                        "Status: " + (member.isOnline ? "🟢 Online" : "⚪ Offline") + "\n" +
                         "Assigned Tasks: " + member.assignedTasksCount)
                 .setPositiveButton("Send Message", (d, w) -> {
                     if (getActivity() instanceof MainActivity) {
@@ -166,7 +166,7 @@ public class TeamFragment extends Fragment {
                                 : "dm_" + clean2 + "_" + clean1;
 
                         ((MainActivity) getActivity()).navigateToFragment(
-                                ChatFragment.newInstance(dmChannel, member.fullName, "DIRECT"),
+                                ChatFragment.newInstance(dmChannel, member.fullName, "DIRECT", member.isOnline),
                                 "Chat: " + member.fullName
                         );
                     }
@@ -206,6 +206,18 @@ public class TeamFragment extends Fragment {
             String initial = (m.fullName != null && !m.fullName.isEmpty()) ? m.fullName.substring(0, 1).toUpperCase() : "U";
             holder.tvInitial.setText(initial);
 
+            if (holder.tvStatus != null) {
+                if (m.isOnline) {
+                    holder.tvStatus.setText("ONLINE");
+                    holder.tvStatus.setBackgroundResource(R.drawable.bg_badge_success);
+                    holder.tvStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.earth_success));
+                } else {
+                    holder.tvStatus.setText("OFFLINE");
+                    holder.tvStatus.setBackgroundResource(R.drawable.bg_chip_unselected);
+                    holder.tvStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.text_secondary));
+                }
+            }
+
             holder.itemView.setOnClickListener(v -> listener.onClick(m));
         }
 
@@ -213,13 +225,14 @@ public class TeamFragment extends Fragment {
         public int getItemCount() { return members.size(); }
 
         static class ViewHolder extends RecyclerView.ViewHolder {
-            TextView tvName, tvRole, tvProjects, tvInitial;
+            TextView tvName, tvRole, tvProjects, tvInitial, tvStatus;
             ViewHolder(@NonNull View itemView) {
                 super(itemView);
                 tvName = itemView.findViewById(R.id.tvMemberName);
                 tvRole = itemView.findViewById(R.id.tvMemberRole);
                 tvProjects = itemView.findViewById(R.id.tvMemberProjects);
                 tvInitial = itemView.findViewById(R.id.tvAvatarInitial);
+                tvStatus = itemView.findViewById(R.id.tvMemberStatus);
             }
         }
     }

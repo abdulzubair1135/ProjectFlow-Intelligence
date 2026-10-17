@@ -672,7 +672,21 @@ app.post('/api/v1/teams', (req, res) => {
   res.status(201).json(newTeam);
 });
 
+store.activeSessions = store.activeSessions || {};
+
+app.post('/api/v1/users/heartbeat', (req, res) => {
+  const email = req.body.email || req.headers['x-user-email'];
+  if (email) {
+    store.activeSessions[email.toLowerCase()] = Date.now();
+  }
+  res.json({ success: true, online: true, timestamp: Date.now() });
+});
+
 app.get('/api/v1/team', async (req, res) => {
+  const reqEmail = req.headers['x-user-email'] || req.query.userEmail;
+  if (reqEmail) {
+    store.activeSessions[reqEmail.toLowerCase()] = Date.now();
+  }
   if (supabase) {
     try {
       const { data: profiles, error } = await supabase.from('profiles').select('*');
@@ -693,14 +707,23 @@ app.get('/api/v1/team', async (req, res) => {
       }
     } catch (e) {}
   }
-  const team = store.users.map(u => ({
-    id: u.id,
-    email: u.email,
-    fullName: u.fullName,
-    role: u.role,
-    active: u.active !== false,
-    assignedTasksCount: store.tasks.filter(t => t.assigneeId === u.id).length
-  }));
+  const now = Date.now();
+  const team = store.users.map(u => {
+    const emailKey = (u.email || '').toLowerCase();
+    const lastActive = store.activeSessions ? store.activeSessions[emailKey] : 0;
+    // User is online only if they had active session/heartbeat in last 3 minutes (180,000 ms)
+    const isOnline = !!(lastActive && (now - lastActive < 180000));
+    return {
+      id: u.id,
+      email: u.email,
+      fullName: u.fullName,
+      role: u.role,
+      active: u.active !== false,
+      isOnline: isOnline,
+      lastSeen: lastActive ? new Date(lastActive).toISOString() : null,
+      assignedTasksCount: store.tasks.filter(t => t.assigneeId === u.id).length
+    };
+  });
   res.json(team);
 });
 

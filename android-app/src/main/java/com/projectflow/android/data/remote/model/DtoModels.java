@@ -81,6 +81,8 @@ public class DtoModels {
         public String fullName;
         public String role;
         public boolean active;
+        public boolean isOnline;
+        public String lastSeen;
         public int assignedTasksCount;
     }
 
