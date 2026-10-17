@@ -14,11 +14,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ProjectFlowRepository {
+    private final Context context;
     private final AppDatabase db;
     private final ApiService api;
     private final ExecutorService executor;
 
     public ProjectFlowRepository(Context context) {
+        this.context = context.getApplicationContext();
         this.db = AppDatabase.getInstance(context);
         this.api = ApiClient.getService(context);
         this.executor = Executors.newSingleThreadExecutor();
@@ -391,12 +393,23 @@ public class ProjectFlowRepository {
     }
 
     public void sendChatMessage(String content, String senderName, String channel, DataCallback<ChatMessageDto> callback) {
+        android.content.SharedPreferences prefs = context.getSharedPreferences("projectflow_prefs", android.content.Context.MODE_PRIVATE);
+        String email = prefs.getString("user_email", "admin@projectflow.io");
+        String role = prefs.getString("user_role", "ADMINISTRATOR");
+        String userId = prefs.getString("user_id", "");
+        sendChatMessage(content, senderName, channel, email, role, userId, callback);
+    }
+
+    public void sendChatMessage(String content, String senderName, String channel, String senderEmail, String senderRole, String senderId, DataCallback<ChatMessageDto> callback) {
         executor.execute(() -> {
             try {
                 Map<String, String> body = new HashMap<>();
                 body.put("content", content);
                 body.put("senderName", senderName != null ? senderName : "You");
                 body.put("channel", channel != null ? channel : "general");
+                if (senderEmail != null) body.put("senderEmail", senderEmail);
+                if (senderRole != null) body.put("senderRole", senderRole);
+                if (senderId != null) body.put("senderId", senderId);
                 Response<ChatMessageDto> resp = api.sendChatMessage(body).execute();
                 if (resp.isSuccessful() && resp.body() != null) {
                     if (callback != null) callback.onData(resp.body());

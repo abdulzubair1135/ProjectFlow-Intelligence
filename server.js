@@ -999,17 +999,44 @@ app.get('/api/v1/chat/messages', (req, res) => {
   if (channel && channel !== 'all') {
     list = list.filter(m => m.channel === channel);
   }
-  res.json(list);
+  const enriched = list.map(m => {
+    const matchedUser = store.users?.find(u => 
+      (m.senderId && u.id === m.senderId) || 
+      (m.senderEmail && u.email?.toLowerCase() === m.senderEmail?.toLowerCase()) || 
+      (m.senderName && u.fullName?.toLowerCase() === m.senderName?.toLowerCase())
+    );
+    return {
+      ...m,
+      senderName: m.senderName || (matchedUser ? matchedUser.fullName : 'Team Member'),
+      senderEmail: m.senderEmail || (matchedUser ? matchedUser.email : 'admin@projectflow.io'),
+      senderRole: m.senderRole || (matchedUser ? matchedUser.role : 'ADMINISTRATOR')
+    };
+  });
+  res.json(enriched);
 });
 
 app.post('/api/v1/chat/messages', async (req, res) => {
-  const { content, channel, senderName, senderId } = req.body;
+  const { content, channel, senderName, senderId, senderEmail: reqEmail, senderRole: reqRole } = req.body;
   const targetChannel = channel || 'general';
-  const authorName = senderName || 'Team Member';
+  const authorName = senderName || (req.user ? req.user.fullName : 'Administrator');
+  
+  // Resolve user identity from store if possible
+  const matchedUser = store.users?.find(u => 
+    (senderId && u.id === senderId) || 
+    (reqEmail && u.email?.toLowerCase() === reqEmail?.toLowerCase()) || 
+    (u.fullName?.toLowerCase() === authorName?.toLowerCase())
+  );
+  
+  const finalEmail = reqEmail || (matchedUser ? matchedUser.email : (req.user ? req.user.email : 'admin@projectflow.io'));
+  const finalRole = reqRole || (matchedUser ? matchedUser.role : (req.user ? req.user.role : 'ADMINISTRATOR'));
+  const finalSenderId = senderId || (matchedUser ? matchedUser.id : (store.users[0] ? store.users[0].id : uuidv4()));
+
   const msg = {
     id: uuidv4(),
-    senderId: senderId || (store.users[0] ? store.users[0].id : uuidv4()),
+    senderId: finalSenderId,
     senderName: authorName,
+    senderEmail: finalEmail,
+    senderRole: finalRole,
     content: content || '',
     channel: targetChannel,
     reactions: { '👍': 0, '❤️': 0, '🚀': 0, '🔥': 0, '🎯': 0 },
@@ -1019,7 +1046,7 @@ app.post('/api/v1/chat/messages', async (req, res) => {
 
   // 1. Create in-app system notification for workspace members
   const isDirect = targetChannel.startsWith('dm_');
-  const notifTitle = isDirect ? `💬 ${authorName}` : `💬 #${targetChannel} • ${authorName}`;
+  const notifTitle = isDirect ? `💬 ${authorName} (${finalRole})` : `💬 #${targetChannel} • ${authorName}`;
   const notif = {
     id: uuidv4(),
     title: notifTitle,

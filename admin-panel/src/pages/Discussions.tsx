@@ -36,18 +36,24 @@ interface ChatMessage {
   channel: string;
   senderName: string;
   senderEmail: string;
+  senderRole?: string;
   content: string;
   messageType?: string;
   createdAt: string;
   reactions?: Record<string, string[]>;
 }
 
-export const Discussions: React.FC = () => {
+interface DiscussionsProps {
+  initialChannel?: string;
+  initialMemberEmail?: string;
+}
+
+export const Discussions: React.FC<DiscussionsProps> = ({ initialChannel, initialMemberEmail }) => {
   const { user } = useAuth();
 
   const [groups, setGroups] = useState<ChatGroup[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
-  const [activeChannel, setActiveChannel] = useState<string>('general');
+  const [activeChannel, setActiveChannel] = useState<string>(initialChannel || 'general');
   const [activeTitle, setActiveTitle] = useState<string>('General Squad');
   const [activeSubtitle, setActiveSubtitle] = useState<string>('Organization-wide channel');
   const [activeIsDirect, setActiveIsDirect] = useState<boolean>(false);
@@ -76,6 +82,13 @@ export const Discussions: React.FC = () => {
       ]);
       setGroups(gList || []);
       setMembers(mList || []);
+
+      if (initialMemberEmail && mList && mList.length > 0) {
+        const found = mList.find((m: any) => m.email?.toLowerCase() === initialMemberEmail.toLowerCase());
+        if (found) {
+          openDirectChat(found);
+        }
+      }
     } catch (err) {
       console.warn('Failed loading chat channels', err);
     }
@@ -118,7 +131,10 @@ export const Discussions: React.FC = () => {
       await api.sendChatMessage({
         channel: activeChannel,
         content,
-        messageType: 'TEXT'
+        messageType: 'TEXT',
+        senderName: user?.fullName || 'Administrator',
+        senderEmail: user?.email || 'admin@projectflow.io',
+        senderRole: user?.role || 'ADMINISTRATOR'
       });
       await loadMessages(activeChannel);
     } catch (err) {
@@ -366,23 +382,51 @@ export const Discussions: React.FC = () => {
             </div>
           ) : (
             messages.map((m) => {
-              const isMe = m.senderEmail?.toLowerCase() === (user?.email || 'admin@projectflow.io').toLowerCase();
+              const myEmail = (user?.email || 'admin@projectflow.io').toLowerCase();
+              const isMe = 
+                (m.senderEmail && m.senderEmail.toLowerCase() === myEmail) ||
+                (m.senderName && user?.fullName && m.senderName.toLowerCase() === user.fullName.toLowerCase()) ||
+                (m.senderName && (m.senderName.toLowerCase() === 'you' || m.senderName.toLowerCase() === 'administrator'));
+
+              const initial = (m.senderName || 'U').charAt(0).toUpperCase();
+              const role = m.senderRole || (isMe ? (user?.role || 'ADMINISTRATOR') : 'MEMBER');
+              const roleBadgeColor = 
+                role.includes('ADMIN')
+                  ? 'bg-amber-100 text-amber-800 border-amber-300'
+                  : role.includes('MANAGER')
+                  ? 'bg-blue-100 text-blue-800 border-blue-300'
+                  : 'bg-emerald-100 text-emerald-800 border-emerald-300';
+
               return (
                 <div
                   key={m.id}
-                  className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+                  className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} my-2.5`}
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[11px] font-semibold text-[#5A6258]">{m.senderName}</span>
+                  {/* Sender Identity & Metadata Header */}
+                  <div className={`flex items-center gap-2 mb-1 px-1 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                    {!isMe && (
+                      <div className="w-5 h-5 rounded-full bg-[#78866B] text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
+                        {initial}
+                      </div>
+                    )}
+                    <span className={`text-xs font-bold ${isMe ? 'text-[#56664C]' : 'text-[#292D28]'}`}>
+                      {isMe ? 'You' : m.senderName}
+                    </span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${roleBadgeColor}`}>
+                      {role}
+                    </span>
                     <span className="text-[10px] text-[#78866B]">
                       {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
+                    {isMe && <span className="text-[10px] text-[#56664C] font-bold">✓✓</span>}
                   </div>
+
+                  {/* Speech Bubble */}
                   <div
-                    className={`max-w-md p-3.5 rounded-2xl shadow-sm text-xs leading-relaxed ${
+                    className={`max-w-md p-3.5 rounded-2xl shadow-sm text-xs leading-relaxed font-normal ${
                       isMe
-                        ? 'bg-[#56664C] text-[#F4F2E9] rounded-tr-xs'
-                        : 'bg-[#FAFAF7] border border-[#E2E0D8] text-[#292D28] rounded-tl-xs'
+                        ? 'bg-[#56664C] text-[#F4F2E9] rounded-tr-xs shadow-md font-medium'
+                        : 'bg-white border border-[#E2E0D8] text-[#292D28] rounded-tl-xs shadow-xs'
                     }`}
                   >
                     {m.content}

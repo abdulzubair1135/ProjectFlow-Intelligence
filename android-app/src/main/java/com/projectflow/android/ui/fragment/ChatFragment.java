@@ -89,6 +89,7 @@ public class ChatFragment extends Fragment {
     private String currentUserName = "User";
     private String currentUserEmail = "admin@projectflow.io";
     private String currentUserRole = "ADMINISTRATOR";
+    private String currentUserId = "";
 
     private String activeChannel = "general";
     private String activeChatTitle = "General Squad";
@@ -118,6 +119,7 @@ public class ChatFragment extends Fragment {
         String defaultName = currentUserEmail.contains("@") ? currentUserEmail.split("@")[0] : "ProjectFlow User";
         currentUserName = prefs.getString("user_name", prefs.getString("user_display_name", defaultName));
         currentUserRole = prefs.getString("user_role", "ADMINISTRATOR");
+        currentUserId = prefs.getString("user_id", "");
 
         // Bind Containers
         layoutConversationList = view.findViewById(R.id.layoutConversationList);
@@ -159,7 +161,8 @@ public class ChatFragment extends Fragment {
         LinearLayoutManager msgLayoutManager = new LinearLayoutManager(requireContext());
         msgLayoutManager.setStackFromEnd(true);
         rvChatMessages.setLayoutManager(msgLayoutManager);
-        chatAdapter = new ChatAdapter(currentUserName);
+        String currentUserId = prefs.getString("user_id", "");
+        chatAdapter = new ChatAdapter(currentUserId, currentUserName, currentUserEmail);
         chatAdapter.setOnReactionClickListener((message, emoji) -> {
             repository.reactToMessage(message.id, emoji, new ProjectFlowRepository.DataCallback<ChatMessageDto>() {
                 @Override
@@ -190,6 +193,12 @@ public class ChatFragment extends Fragment {
 
         // Setup Back Button from Chat Room to Conversation List
         btnBackToConversations.setOnClickListener(v -> {
+            if (getArguments() != null && getArguments().containsKey("target_channel")) {
+                if (getActivity() != null && getActivity().getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                    getActivity().getSupportFragmentManager().popBackStack();
+                    return;
+                }
+            }
             layoutChatRoom.setVisibility(View.GONE);
             layoutConversationList.setVisibility(View.VISIBLE);
             loadConversations();
@@ -455,7 +464,7 @@ public class ChatFragment extends Fragment {
         etChatMessage.setText("");
         btnSendMessage.setEnabled(false);
 
-        repository.sendChatMessage(text, currentUserName, activeChannel, new ProjectFlowRepository.DataCallback<ChatMessageDto>() {
+        repository.sendChatMessage(text, currentUserName, activeChannel, currentUserEmail, currentUserRole, currentUserId, new ProjectFlowRepository.DataCallback<ChatMessageDto>() {
             @Override
             public void onData(ChatMessageDto data) {
                 if (getActivity() != null) {

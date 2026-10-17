@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { UserProfile, Role } from '../types';
+import { Discussions } from './Discussions';
 import {
   Users,
   Search,
@@ -15,10 +17,18 @@ import {
   X,
   Mail,
   User,
-  Filter
+  Filter,
+  MessageSquare
 } from 'lucide-react';
 
 export const UserManagement: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<'members' | 'discussions'>(
+    tabParam === 'discussions' ? 'discussions' : 'members'
+  );
+  const [targetChatEmail, setTargetChatEmail] = useState<string | undefined>(undefined);
+
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState('');
@@ -134,28 +144,72 @@ export const UserManagement: React.FC = () => {
       {/* Page Title & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-[#292D28] tracking-tight">User Directory & RBAC</h2>
+          <h2 className="text-2xl font-bold text-[#292D28] tracking-tight">Team Members & Discussions</h2>
           <p className="text-sm text-[#78866B]">
-            Global role permissions, live session indicators, and tenant access authorization.
+            Enterprise team directory, role-based access control, squad discussions, and real-time team chats in one unified center.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#56664C] text-[#F4F2E9] text-xs font-semibold hover:bg-[#485640] transition-colors shadow-sm"
-          >
-            <UserPlus className="w-4 h-4" />
-            Invite Member
-          </button>
-          <button
-            onClick={fetchUsers}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#FAFAF7] border border-[#E2E0D8] text-xs font-semibold text-[#5A6258] hover:text-[#292D28] hover:bg-[#EFECE4] transition-colors"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#56664C]' : ''}`} />
-            Refresh
-          </button>
-        </div>
+        {activeTab === 'members' && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#56664C] text-[#F4F2E9] text-xs font-semibold hover:bg-[#485640] transition-colors shadow-sm"
+            >
+              <UserPlus className="w-4 h-4" />
+              Invite Member
+            </button>
+            <button
+              onClick={fetchUsers}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#FAFAF7] border border-[#E2E0D8] text-xs font-semibold text-[#5A6258] hover:text-[#292D28] hover:bg-[#EFECE4] transition-colors"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#56664C]' : ''}`} />
+              Refresh
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Unified Tab Navigation */}
+      <div className="flex border-b border-[#E2E0D8] bg-[#FAFAF7] px-4 pt-2 gap-4 rounded-xl border border-[#E2E0D8] shadow-xs">
+        <button
+          onClick={() => {
+            setActiveTab('members');
+            setSearchParams({});
+          }}
+          className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all ${
+            activeTab === 'members'
+              ? 'border-[#56664C] text-[#56664C]'
+              : 'border-transparent text-[#78866B] hover:text-[#292D28]'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Team Members & RBAC</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#EFECE4] text-[#5A6258] font-bold">{total}</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('discussions');
+            setSearchParams({ tab: 'discussions' });
+          }}
+          className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all ${
+            activeTab === 'discussions'
+              ? 'border-[#56664C] text-[#56664C]'
+              : 'border-transparent text-[#78866B] hover:text-[#292D28]'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          <span>Team Discussions & Squad Chats</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#56664C] text-white font-bold animate-pulse">LIVE</span>
+        </button>
+      </div>
+
+      {activeTab === 'discussions' ? (
+        <div className="bg-white rounded-2xl border border-[#E2E0D8] overflow-hidden shadow-sm">
+          <Discussions initialMemberEmail={targetChatEmail} />
+        </div>
+      ) : (
+        <>
 
       {successMessage && (
         <div className="p-3.5 rounded-lg bg-[#56664C]/10 border border-[#56664C]/30 text-[#56664C] text-xs font-semibold flex items-center justify-between">
@@ -304,6 +358,19 @@ export const UserManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="inline-flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setTargetChatEmail(u.email);
+                            setActiveTab('discussions');
+                            setSearchParams({ tab: 'discussions' });
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#56664C]/30 bg-[#56664C]/10 hover:bg-[#56664C] hover:text-[#F4F2E9] text-[#56664C] font-semibold text-xs transition-colors"
+                          title="Open live chat with team member"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          Chat
+                        </button>
+
                         <button
                           onClick={() => {
                             setSelectedUser(u);
@@ -476,6 +543,8 @@ export const UserManagement: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

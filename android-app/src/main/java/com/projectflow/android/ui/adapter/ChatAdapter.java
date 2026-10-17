@@ -24,10 +24,18 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private final List<ChatMessageDto> messages = new ArrayList<>();
     private final String currentUserId;
+    private final String currentUserName;
+    private final String currentUserEmail;
     private OnReactionClickListener reactionClickListener;
 
-    public ChatAdapter(String currentUserId) {
+    public ChatAdapter(String currentUserId, String currentUserName, String currentUserEmail) {
         this.currentUserId = currentUserId != null ? currentUserId : "";
+        this.currentUserName = currentUserName != null ? currentUserName : "";
+        this.currentUserEmail = currentUserEmail != null ? currentUserEmail : "";
+    }
+
+    public ChatAdapter(String currentUserId) {
+        this(currentUserId, currentUserId, "");
     }
 
     public void setOnReactionClickListener(OnReactionClickListener listener) {
@@ -72,11 +80,19 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
+    private boolean isOutgoing(ChatMessageDto msg) {
+        if (msg == null) return false;
+        if ("You".equalsIgnoreCase(msg.senderName)) return true;
+        if (currentUserName.length() > 0 && currentUserName.equalsIgnoreCase(msg.senderName)) return true;
+        if (currentUserEmail.length() > 0 && currentUserEmail.equalsIgnoreCase(msg.senderEmail)) return true;
+        if (currentUserId.length() > 0 && currentUserId.equalsIgnoreCase(msg.senderId)) return true;
+        return false;
+    }
+
     @Override
     public int getItemViewType(int position) {
         ChatMessageDto msg = messages.get(position);
-        if ("You".equalsIgnoreCase(msg.senderName) || 
-            (currentUserId.length() > 0 && currentUserId.equals(msg.senderId))) {
+        if (isOutgoing(msg)) {
             return VIEW_TYPE_OUTGOING;
         }
         return VIEW_TYPE_INCOMING;
@@ -108,7 +124,8 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (holder instanceof OutgoingViewHolder) {
             OutgoingViewHolder vh = (OutgoingViewHolder) holder;
             vh.tvContent.setText(msg.content);
-            vh.tvTimestamp.setText(timeStr);
+            if (vh.tvHeaderTimestamp != null) vh.tvHeaderTimestamp.setText(timeStr);
+            if (vh.tvTimestamp != null) vh.tvTimestamp.setText(timeStr);
 
             vh.btnReactLike.setText("👍 " + likeCount);
             vh.btnReactRocket.setText("🚀 " + rocketCount);
@@ -120,9 +137,17 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         } else if (holder instanceof IncomingViewHolder) {
             IncomingViewHolder vh = (IncomingViewHolder) holder;
-            vh.tvSender.setText(msg.senderName != null ? msg.senderName : "Colleague");
+            String sender = (msg.senderName != null && !msg.senderName.isEmpty()) ? msg.senderName : "Colleague";
+            vh.tvSender.setText(sender);
+            if (vh.tvAvatarInitial != null) {
+                vh.tvAvatarInitial.setText(sender.substring(0, 1).toUpperCase());
+            }
+            if (vh.tvSenderRole != null) {
+                vh.tvSenderRole.setText(msg.senderRole != null ? msg.senderRole : "MEMBER");
+            }
+            if (vh.tvHeaderTimestamp != null) vh.tvHeaderTimestamp.setText(timeStr);
+            if (vh.tvTimestamp != null) vh.tvTimestamp.setText(timeStr);
             vh.tvContent.setText(msg.content);
-            vh.tvTimestamp.setText(timeStr);
 
             vh.btnReactLike.setText("👍 " + likeCount);
             vh.btnReactRocket.setText("🚀 " + rocketCount);
@@ -162,12 +187,15 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     static class IncomingViewHolder extends RecyclerView.ViewHolder {
-        TextView tvSender, tvContent, tvTimestamp;
+        TextView tvSender, tvSenderRole, tvAvatarInitial, tvHeaderTimestamp, tvContent, tvTimestamp;
         TextView btnReactLike, btnReactRocket, btnReactFire, btnReactLove;
 
         IncomingViewHolder(@NonNull View itemView) {
             super(itemView);
             tvSender = itemView.findViewById(R.id.tvSenderName);
+            tvSenderRole = itemView.findViewById(R.id.tvSenderRole);
+            tvAvatarInitial = itemView.findViewById(R.id.tvAvatarInitial);
+            tvHeaderTimestamp = itemView.findViewById(R.id.tvHeaderTimestamp);
             tvContent = itemView.findViewById(R.id.tvMessageContent);
             tvTimestamp = itemView.findViewById(R.id.tvTimestamp);
             btnReactLike = itemView.findViewById(R.id.btnReactLike);
@@ -178,11 +206,14 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     static class OutgoingViewHolder extends RecyclerView.ViewHolder {
-        TextView tvContent, tvTimestamp;
+        TextView tvSenderName, tvSenderRole, tvHeaderTimestamp, tvContent, tvTimestamp;
         TextView btnReactLike, btnReactRocket, btnReactFire;
 
         OutgoingViewHolder(@NonNull View itemView) {
             super(itemView);
+            tvSenderName = itemView.findViewById(R.id.tvSenderName);
+            tvSenderRole = itemView.findViewById(R.id.tvSenderRole);
+            tvHeaderTimestamp = itemView.findViewById(R.id.tvHeaderTimestamp);
             tvContent = itemView.findViewById(R.id.tvMessageContent);
             tvTimestamp = itemView.findViewById(R.id.tvTimestamp);
             btnReactLike = itemView.findViewById(R.id.btnReactLike);

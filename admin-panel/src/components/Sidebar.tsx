@@ -25,14 +25,13 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-  { name: 'Discussions & Squad', path: '/discussions', icon: MessageSquare, badge: 'LIVE' },
   { name: 'Workspaces', path: '/workspaces', icon: Layers },
   { name: 'Projects', path: '/projects', icon: FolderKanban },
   { name: 'Tasks Explorer', path: '/tasks', icon: CheckSquare },
   { name: 'Delivery Calendar', path: '/calendar', icon: Calendar },
+  { name: 'Team & Discussions', path: '/users', icon: Users, badge: 'LIVE' },
   { name: 'Push Broadcast', path: '/broadcast', icon: Radio },
   { name: 'Risk Radar', path: '/risks', icon: ShieldAlert },
-  { name: 'User Management', path: '/users', icon: Users },
   { name: 'App Releases', path: '/releases', icon: Package },
   { name: 'Audit Logs', path: '/audit-logs', icon: Activity },
   { name: 'System Telemetry', path: '/health', icon: HeartPulse },

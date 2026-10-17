@@ -26,10 +26,6 @@
             android:icon="@drawable/ic_reports"
             android:title="Reports" />
         <item
-            android:id="@+id/drawer_chat"
-            android:icon="@drawable/ic_chat"
-            android:title="Team Discussions" />
-        <item
             android:id="@+id/drawer_notifications"
             android:icon="@drawable/ic_notifications"
             android:title="Notifications" />

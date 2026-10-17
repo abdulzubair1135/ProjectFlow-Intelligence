@@ -331,7 +331,7 @@ export const api = {
     return handleResponse<any[]>(res);
   },
 
-  async sendChatMessage(data: { channel: string; content: string; messageType?: string }) {
+  async sendChatMessage(data: { channel: string; content: string; messageType?: string; senderName?: string; senderEmail?: string; senderRole?: string }) {
     const res = await fetch(`${API_BASE}/chat/messages`, {
       method: 'POST',
       headers: getAuthHeaders(),

@@ -111,6 +111,8 @@ public class DtoModels {
         public String id;
         public String senderId;
         public String senderName;
+        public String senderEmail;
+        public String senderRole;
         public String content;
         public String channel;
         public java.util.Map<String, Integer> reactions;

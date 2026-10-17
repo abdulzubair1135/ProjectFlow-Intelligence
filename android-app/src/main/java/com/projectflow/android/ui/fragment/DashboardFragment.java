@@ -211,7 +211,7 @@ public class DashboardFragment extends Fragment {
 
         qaChat.setOnClickListener(v -> {
             if (getActivity() instanceof MainActivity) {
-                ((MainActivity) getActivity()).navigateToFragment(new ChatFragment(), "Team Discussions");
+                ((MainActivity) getActivity()).navigateToFragment(new TeamFragment(), "Team & Discussions");
             }
         });
 

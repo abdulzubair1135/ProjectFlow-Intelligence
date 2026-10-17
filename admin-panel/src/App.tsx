@@ -47,7 +47,7 @@ export const App: React.FC = () => {
             }
           >
             <Route index element={<Dashboard />} />
-            <Route path="discussions" element={<Discussions />} />
+            <Route path="discussions" element={<Navigate to="/users?tab=discussions" replace />} />
             <Route path="workspaces" element={<Workspaces />} />
             <Route path="projects" element={<Projects />} />
             <Route path="tasks" element={<Tasks />} />

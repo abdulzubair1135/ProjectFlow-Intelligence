@@ -134,14 +134,12 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(new TasksFragment(), "Tasks");
                 bottomNav.setSelectedItemId(R.id.nav_tasks);
             } else if (id == R.id.drawer_team) {
-                loadFragment(new TeamFragment(), "Team Members");
+                loadFragment(new TeamFragment(), "Team & Discussions");
                 bottomNav.setSelectedItemId(R.id.nav_team);
             } else if (id == R.id.drawer_calendar) {
                 loadFragment(new CalendarFragment(), "Calendar");
             } else if (id == R.id.drawer_reports) {
                 loadFragment(new ReportsFragment(), "Reports");
-            } else if (id == R.id.drawer_chat) {
-                loadFragment(new ChatFragment(), "Team Discussions");
             } else if (id == R.id.drawer_notifications) {
                 loadFragment(new NotificationsFragment(), "Notifications");
             } else if (id == R.id.drawer_profile) {
@@ -166,6 +164,27 @@ public class MainActivity extends AppCompatActivity {
         } else {
             handleIntent(getIntent());
         }
+
+        // Synchronize Header Title & Bottom Nav on Back Stack Popping
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+            if (current instanceof TeamFragment) {
+                tvHeaderTitle.setText("Team Members");
+                bottomNav.setSelectedItemId(R.id.nav_team);
+            } else if (current instanceof DashboardFragment) {
+                tvHeaderTitle.setText("Dashboard");
+                bottomNav.setSelectedItemId(R.id.nav_home);
+            } else if (current instanceof ProjectsFragment) {
+                tvHeaderTitle.setText("Projects");
+                bottomNav.setSelectedItemId(R.id.nav_projects);
+            } else if (current instanceof TasksFragment) {
+                tvHeaderTitle.setText("Tasks");
+                bottomNav.setSelectedItemId(R.id.nav_tasks);
+            } else if (current instanceof ProfileFragment) {
+                tvHeaderTitle.setText("Profile & Settings");
+                bottomNav.setSelectedItemId(R.id.nav_profile);
+            }
+        });
 
         // Start Real-Time Notification & Chat Sync Manager
         NotificationSyncManager.getInstance(this).start();
@@ -200,7 +219,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void navigateToFragment(Fragment fragment, String title) {
-        loadFragment(fragment, title);
+        tvHeaderTitle.setText(title);
+        getSupportFragmentManager().beginTransaction()
+                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(title)
+                .commit();
     }
 
     private void loadFragment(Fragment fragment, String title) {
@@ -222,6 +246,8 @@ public class MainActivity extends AppCompatActivity {
     public void onBackPressed() {
         if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START);
+        } else if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            getSupportFragmentManager().popBackStack();
         } else {
             super.onBackPressed();
         }

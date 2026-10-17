@@ -1,6 +1,8 @@
 package com.projectflow.android.ui.fragment;
 
 import android.app.AlertDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -10,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -18,26 +21,43 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.projectflow.android.R;
+import com.projectflow.android.data.model.ConversationItem;
+import com.projectflow.android.data.remote.model.DtoModels.ChatGroupDto;
 import com.projectflow.android.data.remote.model.DtoModels.TeamMemberDto;
 import com.projectflow.android.data.repository.ProjectFlowRepository;
 import com.projectflow.android.ui.MainActivity;
+import com.projectflow.android.ui.adapter.ConversationAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class TeamFragment extends Fragment {
 
+    // Top Segmented Tabs
+    private TextView tabTeamMembers, tabSquadDiscussions;
+    private View layoutTeamMembersSection, layoutSquadDiscussionsSection;
+
+    // Team Members Views
     private EditText etSearchTeam;
     private TextView chipRoleAll, chipRoleAdmin, chipRoleManager, chipRoleMember;
     private RecyclerView rvTeamMembers;
     private LinearLayout llEmptyTeam;
-    private SwipeRefreshLayout swipeRefreshTeam;
-    private ProjectFlowRepository repository;
-
     private TeamMemberAdapter adapter;
     private final List<TeamMemberDto> fullTeamList = new ArrayList<>();
     private String selectedRole = "ALL";
     private String searchQuery = "";
+
+    // Squad Discussions Views
+    private View btnCreateSquadGroup;
+    private RecyclerView rvSquadDiscussions;
+    private LinearLayout llEmptyDiscussions;
+    private ConversationAdapter squadAdapter;
+    private final List<ConversationItem> squadItems = new ArrayList<>();
+
+    private SwipeRefreshLayout swipeRefreshTeam;
+    private ProjectFlowRepository repository;
+    private SharedPreferences prefs;
+    private String activeTab = "MEMBERS";
 
     @Nullable
     @Override
@@ -50,7 +70,15 @@ public class TeamFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         repository = new ProjectFlowRepository(requireContext());
+        prefs = requireContext().getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
 
+        // Bind Tabs
+        tabTeamMembers = view.findViewById(R.id.tabTeamMembers);
+        tabSquadDiscussions = view.findViewById(R.id.tabSquadDiscussions);
+        layoutTeamMembersSection = view.findViewById(R.id.layoutTeamMembersSection);
+        layoutSquadDiscussionsSection = view.findViewById(R.id.layoutSquadDiscussionsSection);
+
+        // Bind Members Section Views
         etSearchTeam = view.findViewById(R.id.etSearchTeam);
         chipRoleAll = view.findViewById(R.id.chipRoleAll);
         chipRoleAdmin = view.findViewById(R.id.chipRoleAdmin);
@@ -58,12 +86,36 @@ public class TeamFragment extends Fragment {
         chipRoleMember = view.findViewById(R.id.chipRoleMember);
         rvTeamMembers = view.findViewById(R.id.rvTeamMembers);
         llEmptyTeam = view.findViewById(R.id.llEmptyTeam);
+
+        // Bind Discussions Section Views
+        btnCreateSquadGroup = view.findViewById(R.id.btnCreateSquadGroup);
+        rvSquadDiscussions = view.findViewById(R.id.rvSquadDiscussions);
+        llEmptyDiscussions = view.findViewById(R.id.llEmptyDiscussions);
+
         swipeRefreshTeam = view.findViewById(R.id.swipeRefreshTeam);
 
+        // Setup Members RecyclerView
         adapter = new TeamMemberAdapter(member -> openDirectChatWithMember(member));
         rvTeamMembers.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvTeamMembers.setAdapter(adapter);
 
+        // Setup Squad Discussions RecyclerView
+        squadAdapter = new ConversationAdapter(item -> {
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).navigateToFragment(
+                        ChatFragment.newInstance(item.id, item.title, "GROUP"),
+                        "Squad: " + item.title
+                );
+            }
+        });
+        rvSquadDiscussions.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rvSquadDiscussions.setAdapter(squadAdapter);
+
+        // Tab click listeners
+        tabTeamMembers.setOnClickListener(v -> switchTab("MEMBERS"));
+        tabSquadDiscussions.setOnClickListener(v -> switchTab("DISCUSSIONS"));
+
+        // Search listener
         etSearchTeam.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -73,15 +125,41 @@ public class TeamFragment extends Fragment {
             @Override public void afterTextChanged(Editable s) {}
         });
 
+        // Filter chips listeners
         chipRoleAll.setOnClickListener(v -> selectRoleFilter("ALL", chipRoleAll));
         chipRoleAdmin.setOnClickListener(v -> selectRoleFilter("ADMINISTRATOR", chipRoleAdmin));
         chipRoleManager.setOnClickListener(v -> selectRoleFilter("MANAGER", chipRoleManager));
         chipRoleMember.setOnClickListener(v -> selectRoleFilter("MEMBER", chipRoleMember));
 
-        swipeRefreshTeam.setColorSchemeResources(R.color.primary_earth, R.color.muted_clay);
-        swipeRefreshTeam.setOnRefreshListener(this::loadTeamData);
+        // Create Squad Button Listener
+        btnCreateSquadGroup.setOnClickListener(v -> showCreateSquadDialog());
 
-        loadTeamData();
+        swipeRefreshTeam.setColorSchemeResources(R.color.primary_earth, R.color.muted_clay);
+        swipeRefreshTeam.setOnRefreshListener(this::loadAllData);
+
+        loadAllData();
+    }
+
+    private void switchTab(String tab) {
+        activeTab = tab;
+        if ("MEMBERS".equals(tab)) {
+            tabTeamMembers.setBackgroundResource(R.drawable.bg_chip_selected);
+            tabTeamMembers.setTextColor(ContextCompat.getColor(requireContext(), R.color.white));
+            tabSquadDiscussions.setBackground(null);
+            tabSquadDiscussions.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_main));
+
+            layoutTeamMembersSection.setVisibility(View.VISIBLE);
+            layoutSquadDiscussionsSection.setVisibility(View.GONE);
+        } else {
+            tabSquadDiscussions.setBackgroundResource(R.drawable.bg_chip_selected);
+            tabSquadDiscussions.setTextColor(ContextCompat.getColor(requireContext(), R.color.white));
+            tabTeamMembers.setBackground(null);
+            tabTeamMembers.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_main));
+
+            layoutTeamMembersSection.setVisibility(View.GONE);
+            layoutSquadDiscussionsSection.setVisibility(View.VISIBLE);
+            loadSquadGroups();
+        }
     }
 
     private void selectRoleFilter(String role, TextView selectedChip) {
@@ -97,6 +175,11 @@ public class TeamFragment extends Fragment {
             }
         }
         applyFilter();
+    }
+
+    private void loadAllData() {
+        loadTeamData();
+        loadSquadGroups();
     }
 
     private void loadTeamData() {
@@ -120,6 +203,108 @@ public class TeamFragment extends Fragment {
                 }
             }
         });
+    }
+
+    private void loadSquadGroups() {
+        repository.fetchChatGroups(new ProjectFlowRepository.DataCallback<List<ChatGroupDto>>() {
+            @Override
+            public void onData(List<ChatGroupDto> groups) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        squadItems.clear();
+                        if (groups != null) {
+                            for (ChatGroupDto g : groups) {
+                                String desc = g.description != null ? g.description : "Squad Discussion Channel";
+                                String name = g.name != null ? g.name : "General Squad";
+                                String initial = name.length() > 0 ? name.substring(0, 1).toUpperCase() : "#";
+                                squadItems.add(new ConversationItem(
+                                        g.channel != null ? g.channel : "general",
+                                        name,
+                                        desc,
+                                        "Live",
+                                        initial,
+                                        ConversationItem.Type.GROUP,
+                                        false
+                                ));
+                            }
+                        }
+                        squadAdapter.setItems(squadItems);
+                        if (squadItems.isEmpty()) {
+                            rvSquadDiscussions.setVisibility(View.GONE);
+                            llEmptyDiscussions.setVisibility(View.VISIBLE);
+                        } else {
+                            llEmptyDiscussions.setVisibility(View.GONE);
+                            rvSquadDiscussions.setVisibility(View.VISIBLE);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onError(String message) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        if (squadItems.isEmpty()) {
+                            rvSquadDiscussions.setVisibility(View.GONE);
+                            llEmptyDiscussions.setVisibility(View.VISIBLE);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    private void showCreateSquadDialog() {
+        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_create_group, null);
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        EditText etGroupName = dialogView.findViewById(R.id.etGroupName);
+        EditText etGroupDesc = dialogView.findViewById(R.id.etGroupDescription);
+        View btnCreate = dialogView.findViewById(R.id.btnSubmitGroup);
+        View btnCancel = dialogView.findViewById(R.id.btnCancelGroup);
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        btnCreate.setOnClickListener(v -> {
+            String name = etGroupName.getText().toString().trim();
+            String desc = etGroupDesc.getText().toString().trim();
+            if (name.isEmpty()) {
+                etGroupName.setError("Group name is required");
+                return;
+            }
+
+            String role = prefs.getString("user_role", "ADMINISTRATOR");
+            String email = prefs.getString("user_email", "admin@projectflow.io");
+
+            repository.createChatGroup(name, desc, new ArrayList<>(), role, email, new ProjectFlowRepository.DataCallback<ChatGroupDto>() {
+                @Override
+                public void onData(ChatGroupDto newGroup) {
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            dialog.dismiss();
+                            Toast.makeText(requireContext(), "Squad channel created!", Toast.LENGTH_SHORT).show();
+                            loadSquadGroups();
+                        });
+                    }
+                }
+
+                @Override
+                public void onError(String message) {
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            Toast.makeText(requireContext(), "Error: " + message, Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                }
+            });
+        });
+
+        dialog.show();
     }
 
     private void applyFilter() {
@@ -149,7 +334,6 @@ public class TeamFragment extends Fragment {
 
     private void openDirectChatWithMember(TeamMemberDto member) {
         if (getActivity() instanceof MainActivity) {
-            android.content.SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", android.content.Context.MODE_PRIVATE);
             String myEmail = prefs.getString("user_email", "admin@projectflow.io");
             String targetEmail = member.email != null ? member.email : member.fullName;
             String clean1 = myEmail.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
@@ -208,6 +392,9 @@ public class TeamFragment extends Fragment {
                 }
             }
 
+            if (holder.btnMemberChat != null) {
+                holder.btnMemberChat.setOnClickListener(v -> listener.onClick(m));
+            }
             holder.itemView.setOnClickListener(v -> listener.onClick(m));
         }
 
@@ -215,7 +402,7 @@ public class TeamFragment extends Fragment {
         public int getItemCount() { return members.size(); }
 
         static class ViewHolder extends RecyclerView.ViewHolder {
-            TextView tvName, tvRole, tvProjects, tvInitial, tvStatus;
+            TextView tvName, tvRole, tvProjects, tvInitial, tvStatus, btnMemberChat;
             ViewHolder(@NonNull View itemView) {
                 super(itemView);
                 tvName = itemView.findViewById(R.id.tvMemberName);
@@ -223,6 +410,7 @@ public class TeamFragment extends Fragment {
                 tvProjects = itemView.findViewById(R.id.tvMemberProjects);
                 tvInitial = itemView.findViewById(R.id.tvAvatarInitial);
                 tvStatus = itemView.findViewById(R.id.tvMemberStatus);
+                btnMemberChat = itemView.findViewById(R.id.btnMemberChat);
             }
         }
     }
