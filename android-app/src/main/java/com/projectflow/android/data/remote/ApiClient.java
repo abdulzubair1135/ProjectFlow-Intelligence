@@ -16,8 +16,8 @@ public class ApiClient {
     private static final String PREF_NAME = "projectflow_prefs";
     private static final String KEY_BASE_URL = "api_base_url";
     private static final String KEY_TOKEN = "auth_token";
-    // Live Public Cloud URL accessible worldwide (WhatsApp shared APKs & remote devices)
-    public static final String DEFAULT_URL = "https://laden-cookies-trivia-displayed.trycloudflare.com/api/v1/";
+    // Live Public Production Cloud URL hosted on Render
+    public static final String DEFAULT_URL = "https://projectflow-intelligence.onrender.com/api/v1/";
 
     public static ApiService getService(Context context) {
         if (INSTANCE == null) {
@@ -37,8 +37,8 @@ public class ApiClient {
     private static ApiService createService(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         String baseUrl = prefs.getString(KEY_BASE_URL, DEFAULT_URL);
-        // Automatically migrate legacy localhost or expired trycloudflare URLs to live public Cloudflare tunnel
-        if (baseUrl.contains("127.0.0.1") || baseUrl.contains("localhost") || !baseUrl.contains("laden-cookies-trivia-displayed")) {
+        // Automatically migrate legacy trycloudflare or localhost URLs to live Render production server
+        if (baseUrl.contains("trycloudflare.com") || baseUrl.contains("127.0.0.1") || baseUrl.contains("localhost") || !baseUrl.contains("projectflow-intelligence.onrender.com")) {
             baseUrl = DEFAULT_URL;
             prefs.edit().putString(KEY_BASE_URL, DEFAULT_URL).apply();
         }
@@ -64,7 +64,7 @@ public class ApiClient {
                 return chain.proceed(request);
             } catch (java.io.IOException e) {
                 okhttp3.HttpUrl originalUrl = request.url();
-                if (originalUrl.host().contains("trycloudflare.com")) {
+                if (originalUrl.host().contains("onrender.com")) {
                     try {
                         okhttp3.HttpUrl fallbackUrl = originalUrl.newBuilder()
                                 .scheme("http")
