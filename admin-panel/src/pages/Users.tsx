@@ -144,9 +144,9 @@ export const UserManagement: React.FC = () => {
       {/* Page Title & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-[#292D28] tracking-tight">Team Members & Discussions</h2>
+          <h2 className="text-2xl font-bold text-[#292D28] tracking-tight">Persons & Groups</h2>
           <p className="text-sm text-[#78866B]">
-            Enterprise team directory, role-based access control, squad discussions, and real-time team chats in one unified center.
+            Enterprise person directory, role-based access control, group discussions, and real-time team chats in one unified center.
           </p>
         </div>
         {activeTab === 'members' && (
@@ -156,7 +156,7 @@ export const UserManagement: React.FC = () => {
               className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#56664C] text-[#F4F2E9] text-xs font-semibold hover:bg-[#485640] transition-colors shadow-sm"
             >
               <UserPlus className="w-4 h-4" />
-              Invite Member
+              Add Person
             </button>
             <button
               onClick={fetchUsers}
@@ -183,7 +183,7 @@ export const UserManagement: React.FC = () => {
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>Team Members & RBAC</span>
+          <span>👥 Persons & RBAC</span>
           <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#EFECE4] text-[#5A6258] font-bold">{total}</span>
         </button>
 
@@ -199,7 +199,7 @@ export const UserManagement: React.FC = () => {
           }`}
         >
           <MessageSquare className="w-4 h-4" />
-          <span>Team Discussions & Squad Chats</span>
+          <span>💬 Groups & Discussions</span>
           <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#56664C] text-white font-bold animate-pulse">LIVE</span>
         </button>
       </div>
@@ -281,7 +281,7 @@ export const UserManagement: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="bg-[#F4F2E9] border-b border-[#E2E0D8] text-[#5A6258] font-semibold uppercase tracking-wider">
               <tr>
-                <th className="px-6 py-3.5">User & Presence</th>
+                <th className="px-6 py-3.5">Person &amp; Presence</th>
                 <th className="px-6 py-3.5">Global Role</th>
                 <th className="px-6 py-3.5">Account Status</th>
                 <th className="px-6 py-3.5">Registered</th>

@@ -228,6 +228,44 @@
                             android:textColor="@color/text_main"
                             android:textSize="13sp" />
                     </RadioGroup>
+
+                    <!-- Assign to Person -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:letterSpacing="0.06"
+                        android:text="ASSIGN TO PERSON (OPTIONAL)"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <Spinner
+                        android:id="@+id/spAssignPerson"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_neu_input"
+                        android:paddingHorizontal="10dp" />
+
+                    <!-- Assign to Group -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:letterSpacing="0.06"
+                        android:text="ASSIGN TO GROUP (OPTIONAL)"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <Spinner
+                        android:id="@+id/spAssignGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_neu_input"
+                        android:paddingHorizontal="10dp" />
                 </LinearLayout>
 
                 <!-- Submit Button -->

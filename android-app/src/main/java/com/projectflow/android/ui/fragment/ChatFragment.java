@@ -271,9 +271,9 @@ public class ChatFragment extends Fragment {
             String init = activeChatTitle.length() > 0 ? activeChatTitle.substring(0, 1).toUpperCase() : "U";
             tvChatRoomInitial.setText(init);
         } else {
-            tvChatRoomSubtitle.setText("Group Squad • Active");
+            tvChatRoomSubtitle.setText("Discussion Group • Active");
             tvChatRoomSubtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary));
-            tvChatRoomTypeBadge.setText("SQUAD");
+            tvChatRoomTypeBadge.setText("GROUP");
             ivChatRoomGroupIcon.setVisibility(View.VISIBLE);
             tvChatRoomInitial.setVisibility(View.GONE);
             viewChatRoomOnlineDot.setVisibility(View.GONE);
@@ -496,7 +496,7 @@ public class ChatFragment extends Fragment {
                 (currentUserEmail != null && currentUserEmail.toLowerCase().contains("admin"));
 
         if (!isAdmin) {
-            Toast.makeText(requireContext(), "Permission Denied: Only Administrators can create new group squads.", Toast.LENGTH_LONG).show();
+            Toast.makeText(requireContext(), "Permission Denied: Only Administrators can create discussion groups.", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -562,7 +562,7 @@ public class ChatFragment extends Fragment {
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
                             dialog.dismiss();
-                            Toast.makeText(requireContext(), "Squad Group \"" + newGroup.name + "\" created successfully!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(), "Discussion Group \"" + newGroup.name + "\" created successfully!", Toast.LENGTH_SHORT).show();
                             openChatRoom(newGroup.channel, newGroup.name, "GROUP");
                         });
                     }

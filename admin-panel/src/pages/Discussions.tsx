@@ -54,7 +54,7 @@ export const Discussions: React.FC<DiscussionsProps> = ({ initialChannel, initia
   const [groups, setGroups] = useState<ChatGroup[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [activeChannel, setActiveChannel] = useState<string>(initialChannel || 'general');
-  const [activeTitle, setActiveTitle] = useState<string>('General Squad');
+  const [activeTitle, setActiveTitle] = useState<string>('General Group');
   const [activeSubtitle, setActiveSubtitle] = useState<string>('Organization-wide channel');
   const [activeIsDirect, setActiveIsDirect] = useState<boolean>(false);
   const [activeOnline, setActiveOnline] = useState<boolean>(false);
@@ -218,14 +218,16 @@ export const Discussions: React.FC<DiscussionsProps> = ({ initialChannel, initia
               <MessageSquare className="w-4 h-4 text-[#56664C]" />
               Discussions
             </h2>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-[#56664C] text-[#F4F2E9] hover:bg-[#485640] transition-colors shadow-sm"
-              title="Create New Squad Group"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>New Group</span>
-            </button>
+            {user?.role === 'ADMINISTRATOR' && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-[#56664C] text-[#F4F2E9] hover:bg-[#485640] transition-colors shadow-sm"
+                title="Create New Discussion Group"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Group</span>
+              </button>
+            )}
           </div>
 
           {/* Search Bar */}
@@ -477,7 +479,7 @@ export const Discussions: React.FC<DiscussionsProps> = ({ initialChannel, initia
                   required
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
-                  placeholder="e.g. Frontend Architecture Squad"
+                  placeholder="e.g. Frontend Architecture Group"
                   className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-xl text-xs text-[#292D28] focus:outline-none focus:border-[#56664C]"
                 />
               </div>
@@ -494,7 +496,7 @@ export const Discussions: React.FC<DiscussionsProps> = ({ initialChannel, initia
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#5A6258] uppercase mb-1">Assign Squad Members</label>
+                <label className="block text-xs font-semibold text-[#5A6258] uppercase mb-1">Assign Group Members</label>
                 <div className="max-h-40 overflow-y-auto border border-[#E2E0D8] rounded-xl p-2 bg-white divide-y divide-[#E2E0D8]/60">
                   {members.map((m) => (
                     <label key={m.email} className="flex items-center gap-2 py-1.5 px-2 hover:bg-[#F4F2E9]/60 rounded cursor-pointer text-xs">
@@ -527,7 +529,7 @@ export const Discussions: React.FC<DiscussionsProps> = ({ initialChannel, initia
                   disabled={creatingGroup}
                   className="flex-1 py-2.5 rounded-xl bg-[#56664C] text-[#F4F2E9] text-xs font-semibold hover:bg-[#485640] transition-colors shadow-sm"
                 >
-                  {creatingGroup ? 'Creating...' : 'Create Squad'}
+                  {creatingGroup ? 'Creating...' : 'Create Group'}
                 </button>
               </div>
             </form>

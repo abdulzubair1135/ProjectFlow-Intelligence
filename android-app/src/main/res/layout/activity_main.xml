@@ -66,18 +66,7 @@
                     android:id="@+id/tvWorkspaceBadge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_online_pill"
-                    android:drawableStart="@drawable/bg_dot_done"
-                    android:drawablePadding="6dp"
-                    android:letterSpacing="0.06"
-                    android:paddingStart="12dp"
-                    android:paddingTop="5dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="5dp"
-                    android:text="ONLINE"
-                    android:textColor="@color/earth_success"
-                    android:textSize="10.5sp"
-                    android:textStyle="bold" />
+                    android:visibility="gone" />
             </LinearLayout>
         </FrameLayout>
 

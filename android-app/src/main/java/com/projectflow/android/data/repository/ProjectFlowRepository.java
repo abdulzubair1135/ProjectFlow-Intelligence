@@ -172,7 +172,7 @@ public class ProjectFlowRepository {
         });
     }
 
-    public void createTask(String projectId, String title, String description, String priority, String dueDate, Runnable onSuccess, Runnable onError) {
+    public void createTask(String projectId, String title, String description, String priority, String dueDate, String assigneeId, String assigneeName, String teamId, String teamName, Runnable onSuccess, Runnable onError) {
         executor.execute(() -> {
             try {
                 Map<String, Object> body = new HashMap<>();
@@ -181,6 +181,18 @@ public class ProjectFlowRepository {
                 body.put("priority", priority);
                 if (dueDate != null && !dueDate.isEmpty()) {
                     body.put("dueDate", dueDate);
+                }
+                if (assigneeId != null && !assigneeId.isEmpty()) {
+                    body.put("assigneeId", assigneeId);
+                }
+                if (assigneeName != null && !assigneeName.isEmpty()) {
+                    body.put("assigneeName", assigneeName);
+                }
+                if (teamId != null && !teamId.isEmpty()) {
+                    body.put("teamId", teamId);
+                }
+                if (teamName != null && !teamName.isEmpty()) {
+                    body.put("teamName", teamName);
                 }
                 Response<TaskDto> resp = api.createTask(projectId, body).execute();
                 if (resp.isSuccessful() && resp.body() != null) {
@@ -200,8 +212,12 @@ public class ProjectFlowRepository {
         });
     }
 
+    public void createTask(String projectId, String title, String description, String priority, String dueDate, Runnable onSuccess, Runnable onError) {
+        createTask(projectId, title, description, priority, dueDate, null, null, null, null, onSuccess, onError);
+    }
+
     public void createTask(String projectId, String title, String description, String priority, Runnable onSuccess, Runnable onError) {
-        createTask(projectId, title, description, priority, null, onSuccess, onError);
+        createTask(projectId, title, description, priority, null, null, null, null, null, onSuccess, onError);
     }
 
     public void updateTaskStatus(String taskId, String statusCategory, int progressPercent, Runnable onDone) {

@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_tasks) {
                 loadFragment(new TasksFragment(), "Tasks");
             } else if (id == R.id.nav_team) {
-                loadFragment(new TeamFragment(), "Team Members");
+                loadFragment(new TeamFragment(), "Persons & Groups");
             } else if (id == R.id.nav_profile) {
                 loadFragment(new ProfileFragment(), "Profile & Settings");
             } else {
@@ -134,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(new TasksFragment(), "Tasks");
                 bottomNav.setSelectedItemId(R.id.nav_tasks);
             } else if (id == R.id.drawer_team) {
-                loadFragment(new TeamFragment(), "Team & Discussions");
+                loadFragment(new TeamFragment(), "Persons & Groups");
                 bottomNav.setSelectedItemId(R.id.nav_team);
             } else if (id == R.id.drawer_calendar) {
                 loadFragment(new CalendarFragment(), "Calendar");
@@ -169,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
         getSupportFragmentManager().addOnBackStackChangedListener(() -> {
             Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
             if (current instanceof TeamFragment) {
-                tvHeaderTitle.setText("Team Members");
+                tvHeaderTitle.setText("Persons & Groups");
                 bottomNav.setSelectedItemId(R.id.nav_team);
             } else if (current instanceof DashboardFragment) {
                 tvHeaderTitle.setText("Dashboard");
@@ -208,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
                 ((ChatFragment) current).switchChannel(channel);
             } else {
                 ChatFragment chatFragment = ChatFragment.newInstance(channel);
-                loadFragment(chatFragment, "Team Discussions");
+                loadFragment(chatFragment, "Discussions");
             }
             return true;
         } else if ("NOTIFICATIONS".equalsIgnoreCase(navigateTo)) {
@@ -242,14 +242,34 @@ public class MainActivity extends AppCompatActivity {
         NotificationSyncManager.getInstance(this).start();
     }
 
+    private long backPressedTime = 0;
+
     @Override
     public void onBackPressed() {
         if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START);
-        } else if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            return;
+        }
+
+        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
             getSupportFragmentManager().popBackStack();
-        } else {
+            return;
+        }
+
+        Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+        if (!(current instanceof DashboardFragment)) {
+            loadFragment(new DashboardFragment(), "Dashboard");
+            if (bottomNav != null) {
+                bottomNav.setSelectedItemId(R.id.nav_home);
+            }
+            return;
+        }
+
+        if (backPressedTime + 2000 > System.currentTimeMillis()) {
             super.onBackPressed();
+        } else {
+            Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
+            backPressedTime = System.currentTimeMillis();
         }
     }
 }

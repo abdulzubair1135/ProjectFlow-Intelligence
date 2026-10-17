@@ -28,7 +28,7 @@
                 android:layout_weight="1"
                 android:background="@drawable/bg_chip_selected"
                 android:gravity="center"
-                android:text="👥 Team Members"
+                android:text="👥 Persons"
                 android:textColor="@color/white"
                 android:textSize="13sp"
                 android:textStyle="bold" />
@@ -40,7 +40,7 @@
                 android:layout_weight="1"
                 android:background="@null"
                 android:gravity="center"
-                android:text="💬 Squad Discussions"
+                android:text="💬 Groups"
                 android:textColor="@color/text_main"
                 android:textSize="13sp"
                 android:textStyle="bold" />
@@ -82,7 +82,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginStart="10dp"
                         android:background="@null"
-                        android:hint="Search team members by name or role..."
+                        android:hint="Search persons by name or role..."
                         android:importantForAutofill="no"
                         android:inputType="text"
                         android:textColor="@color/text_main"
@@ -183,7 +183,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="No team members found."
+                    android:text="No persons found."
                     android:textColor="@color/text_main"
                     android:textSize="15sp"
                     android:textStyle="bold" />
@@ -198,7 +198,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- SECTION 2: Squad Discussions & Group Channels -->
+        <!-- SECTION 2: Groups & Discussions -->
         <LinearLayout
             android:id="@+id/layoutSquadDiscussionsSection"
             android:layout_width="match_parent"
@@ -219,7 +219,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Squad Channels"
+                    android:text="Discussion Groups"
                     android:textColor="@color/text_main"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -231,7 +231,7 @@
                     android:background="@drawable/bg_chip_selected"
                     android:paddingHorizontal="12dp"
                     android:paddingVertical="6dp"
-                    android:text="+ New Squad"
+                    android:text="+ New Group"
                     android:textColor="@color/white"
                     android:textSize="12sp"
                     android:textStyle="bold" />

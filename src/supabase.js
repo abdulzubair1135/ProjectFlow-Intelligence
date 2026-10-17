@@ -35,14 +35,6 @@ const store = {
       role: 'MANAGER',
       active: true,
       createdAt: new Date().toISOString()
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000003',
-      email: 'member@projectflow.io',
-      fullName: 'Team Member',
-      role: 'MEMBER',
-      active: true,
-      createdAt: new Date().toISOString()
     }
   ],
   workspaces: [
@@ -211,11 +203,11 @@ const store = {
     },
     {
       id: 'team-0000-0002',
-      name: 'UI/UX Design Squad',
-      slug: 'design-squad',
+      name: 'UI/UX Design Group',
+      slug: 'design-group',
       description: 'Neumorphism 3D visual language, design tokens, and fluid animations.',
       memberCount: 3,
-      channel: 'design-squad',
+      channel: 'design-group',
       createdAt: new Date().toISOString()
     },
     {

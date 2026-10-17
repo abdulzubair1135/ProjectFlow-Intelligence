@@ -92,6 +92,12 @@ public class TeamFragment extends Fragment {
         rvSquadDiscussions = view.findViewById(R.id.rvSquadDiscussions);
         llEmptyDiscussions = view.findViewById(R.id.llEmptyDiscussions);
 
+        String currentUserRole = prefs.getString("user_role", "MEMBER");
+        boolean isAdmin = "ADMINISTRATOR".equalsIgnoreCase(currentUserRole);
+        if (btnCreateSquadGroup != null) {
+            btnCreateSquadGroup.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
+        }
+
         swipeRefreshTeam = view.findViewById(R.id.swipeRefreshTeam);
 
         // Setup Members RecyclerView
@@ -99,12 +105,12 @@ public class TeamFragment extends Fragment {
         rvTeamMembers.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvTeamMembers.setAdapter(adapter);
 
-        // Setup Squad Discussions RecyclerView
+        // Setup Group Discussions RecyclerView
         squadAdapter = new ConversationAdapter(item -> {
             if (getActivity() instanceof MainActivity) {
                 ((MainActivity) getActivity()).navigateToFragment(
                         ChatFragment.newInstance(item.id, item.title, "GROUP"),
-                        "Squad: " + item.title
+                        "Group: " + item.title
                 );
             }
         });
@@ -131,8 +137,15 @@ public class TeamFragment extends Fragment {
         chipRoleManager.setOnClickListener(v -> selectRoleFilter("MANAGER", chipRoleManager));
         chipRoleMember.setOnClickListener(v -> selectRoleFilter("MEMBER", chipRoleMember));
 
-        // Create Squad Button Listener
-        btnCreateSquadGroup.setOnClickListener(v -> showCreateSquadDialog());
+        // Create Group Button Listener (Only Admin)
+        btnCreateSquadGroup.setOnClickListener(v -> {
+            String role = prefs.getString("user_role", "MEMBER");
+            if (!"ADMINISTRATOR".equalsIgnoreCase(role)) {
+                Toast.makeText(requireContext(), "Only Administrators can create discussion groups", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showCreateSquadDialog();
+        });
 
         swipeRefreshTeam.setColorSchemeResources(R.color.primary_earth, R.color.muted_clay);
         swipeRefreshTeam.setOnRefreshListener(this::loadAllData);
@@ -287,7 +300,7 @@ public class TeamFragment extends Fragment {
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
                             dialog.dismiss();
-                            Toast.makeText(requireContext(), "Squad channel created!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(), "Group channel created!", Toast.LENGTH_SHORT).show();
                             loadSquadGroups();
                         });
                     }

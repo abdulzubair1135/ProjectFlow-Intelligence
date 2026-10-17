@@ -392,20 +392,15 @@ app.get('/api/v1/admin/users', async (req, res) => {
   if (supabase) {
     try {
       const { data: profiles, error } = await supabase.from('profiles').select('*');
-      if (!error && profiles) {
-        profiles.forEach(p => {
-          const exists = store.users.find(u => u.id === p.id || (u.email && u.email.toLowerCase() === (p.email || '').toLowerCase()));
-          if (!exists) {
-            store.users.push({
-              id: p.id,
-              email: p.email,
-              fullName: p.full_name || (p.email ? p.email.split('@')[0] : 'Member'),
-              role: p.global_role || 'MEMBER',
-              active: p.active !== false,
-              createdAt: p.created_at || new Date().toISOString()
-            });
-          }
-        });
+      if (!error && profiles && profiles.length > 0) {
+        store.users = profiles.map(p => ({
+          id: p.id,
+          email: p.email,
+          fullName: p.full_name || (p.email ? p.email.split('@')[0] : 'Member'),
+          role: p.global_role || 'MEMBER',
+          active: p.active !== false,
+          createdAt: p.created_at || new Date().toISOString()
+        }));
       }
     } catch (e) {
       console.warn('[ADMIN] Profiles live sync error:', e.message);
@@ -691,16 +686,62 @@ app.get('/api/v1/tasks', (req, res) => {
   if (req.query.projectId) list = list.filter(t => t.projectId === req.query.projectId);
   if (req.query.assigneeId) list = list.filter(t => t.assigneeId === req.query.assigneeId);
   if (req.query.teamId) list = list.filter(t => t.teamId === req.query.teamId);
-  res.json(list);
+  res.json(list.map(t => {
+    const user = t.assigneeId ? store.users.find(u => u.id === t.assigneeId) : null;
+    const team = t.teamId ? (store.teams || []).find(tm => tm.id === t.teamId) : null;
+    return {
+      ...t,
+      assigneeName: user ? user.fullName : (t.assigneeName || null),
+      teamName: team ? team.name : (t.teamName || null)
+    };
+  }));
 });
 
-app.get('/api/v1/projects/:id/tasks', (req, res) => {
-  const list = store.tasks.filter(t => t.projectId === req.params.id);
+app.get('/api/v1/projects/:id/tasks', async (req, res) => {
+  if (supabase) {
+    try {
+      const { data: dbTasks, error } = await supabase.from('tasks').select('*').eq('project_id', req.params.id);
+      if (!error && dbTasks) {
+        dbTasks.forEach(dt => {
+          const idx = store.tasks.findIndex(t => t.id === dt.id);
+          const mapped = {
+            id: dt.id,
+            projectId: dt.project_id,
+            title: dt.title,
+            description: dt.description || '',
+            priority: dt.priority,
+            statusCategory: dt.status_category,
+            progressPercent: dt.progress_percent,
+            completedAt: dt.completed_at,
+            dueDate: dt.due_date,
+            assigneeId: dt.assignee_id,
+            createdAt: dt.created_at
+          };
+          if (idx >= 0) store.tasks[idx] = { ...store.tasks[idx], ...mapped };
+          else store.tasks.push(mapped);
+        });
+      }
+    } catch (e) {}
+  }
+  const list = store.tasks.filter(t => t.projectId === req.params.id).map(t => {
+    const user = t.assigneeId ? store.users.find(u => u.id === t.assigneeId) : null;
+    const team = t.teamId ? (store.teams || []).find(tm => tm.id === t.teamId) : null;
+    return {
+      ...t,
+      assigneeName: user ? user.fullName : (t.assigneeName || null),
+      teamName: team ? team.name : (t.teamName || null)
+    };
+  });
   res.json(list);
 });
 
 app.post('/api/v1/projects/:id/tasks', async (req, res) => {
-  const { title, description, priority, dueDate, assigneeId, teamId, teamName } = req.body;
+  const { title, description, priority, dueDate, assigneeId, teamId, teamName, assigneeName } = req.body;
+  const user = assigneeId ? store.users.find(u => u.id === assigneeId) : null;
+  const team = teamId ? (store.teams || []).find(tm => tm.id === teamId) : null;
+  const resolvedAssigneeName = assigneeName || (user ? user.fullName : null);
+  const resolvedTeamName = teamName || (team ? team.name : null);
+
   const task = {
     id: uuidv4(),
     projectId: req.params.id,
@@ -711,8 +752,9 @@ app.post('/api/v1/projects/:id/tasks', async (req, res) => {
     progressPercent: 0,
     dueDate: dueDate ? dueDate.split('T')[0] : null,
     assigneeId: assigneeId || null,
+    assigneeName: resolvedAssigneeName,
     teamId: teamId || null,
-    teamName: teamName || null,
+    teamName: resolvedTeamName,
     createdAt: new Date().toISOString()
   };
   store.tasks.push(task);
@@ -794,10 +836,35 @@ app.patch('/api/v1/tasks/:id/status', (req, res) => {
 // -------------------------------------------------------------
 // DETERMINISTIC RISK RADAR & WHAT-IF SIMULATION
 // -------------------------------------------------------------
-app.get('/api/v1/projects/:id/risks', (req, res) => {
+app.get('/api/v1/projects/:id/risks', async (req, res) => {
+  if (supabase) {
+    try {
+      const { data: dbTasks, error } = await supabase.from('tasks').select('*').eq('project_id', req.params.id);
+      if (!error && dbTasks) {
+        dbTasks.forEach(dt => {
+          const idx = store.tasks.findIndex(t => t.id === dt.id);
+          const mapped = {
+            id: dt.id,
+            projectId: dt.project_id,
+            title: dt.title,
+            description: dt.description || '',
+            priority: dt.priority,
+            statusCategory: dt.status_category,
+            progressPercent: dt.progress_percent,
+            completedAt: dt.completed_at,
+            dueDate: dt.due_date,
+            assigneeId: dt.assignee_id,
+            createdAt: dt.created_at
+          };
+          if (idx >= 0) store.tasks[idx] = { ...store.tasks[idx], ...mapped };
+          else store.tasks.push(mapped);
+        });
+      }
+    } catch (e) {}
+  }
   const project = store.projects.find(p => p.id === req.params.id) || store.projects[0];
   const projectTasks = store.tasks.filter(t => t.projectId === req.params.id);
-  const findings = evaluateProjectRisks(project, projectTasks, store.dependencies);
+  const findings = evaluateProjectRisks(project, projectTasks, store.dependencies || []);
   res.json(findings);
 });
 
@@ -880,20 +947,15 @@ app.get('/api/v1/team', async (req, res) => {
   if (supabase) {
     try {
       const { data: profiles, error } = await supabase.from('profiles').select('*');
-      if (!error && profiles) {
-        profiles.forEach(p => {
-          const exists = store.users.find(u => u.id === p.id || (u.email && u.email.toLowerCase() === (p.email || '').toLowerCase()));
-          if (!exists) {
-            store.users.push({
-              id: p.id,
-              email: p.email,
-              fullName: p.full_name || (p.email ? p.email.split('@')[0] : 'Member'),
-              role: p.global_role || 'MEMBER',
-              active: p.active !== false,
-              createdAt: p.created_at || new Date().toISOString()
-            });
-          }
-        });
+      if (!error && profiles && profiles.length > 0) {
+        store.users = profiles.map(p => ({
+          id: p.id,
+          email: p.email,
+          fullName: p.full_name || (p.email ? p.email.split('@')[0] : 'Member'),
+          role: p.global_role || 'MEMBER',
+          active: p.active !== false,
+          createdAt: p.created_at || new Date().toISOString()
+        }));
       }
     } catch (e) {}
   }
@@ -939,9 +1001,9 @@ app.post('/api/v1/notifications/mark-all-read', (req, res) => {
 // CHAT & DISCUSSIONS (WHATSAPP-STYLE DIRECT + SQUAD GROUPS)
 // -------------------------------------------------------------
 store.chatGroups = store.chatGroups || [
-  { id: 'group_general', name: 'General Squad', channel: 'general', description: 'Company-wide team squad', members: [], createdBy: 'admin@projectflow.io', createdAt: new Date().toISOString() },
+  { id: 'group_general', name: 'General Group', channel: 'general', description: 'Company-wide collaboration group', members: [], createdBy: 'admin@projectflow.io', createdAt: new Date().toISOString() },
   { id: 'group_engineering', name: 'Core Engineering', channel: 'engineering', description: 'Software and infrastructure', members: [], createdBy: 'admin@projectflow.io', createdAt: new Date().toISOString() },
-  { id: 'group_design', name: 'Design Squad', channel: 'design-squad', description: 'UI/UX & Mobile aesthetic', members: [], createdBy: 'admin@projectflow.io', createdAt: new Date().toISOString() }
+  { id: 'group_design', name: 'Design Group', channel: 'design-group', description: 'UI/UX & Mobile aesthetic', members: [], createdBy: 'admin@projectflow.io', createdAt: new Date().toISOString() }
 ];
 
 app.get('/api/v1/chat/groups', (req, res) => {

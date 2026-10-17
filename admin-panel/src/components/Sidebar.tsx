@@ -29,7 +29,7 @@ const navItems: NavItem[] = [
   { name: 'Projects', path: '/projects', icon: FolderKanban },
   { name: 'Tasks Explorer', path: '/tasks', icon: CheckSquare },
   { name: 'Delivery Calendar', path: '/calendar', icon: Calendar },
-  { name: 'Team & Discussions', path: '/users', icon: Users, badge: 'LIVE' },
+  { name: 'Persons & Groups', path: '/users', icon: Users, badge: 'LIVE' },
   { name: 'Push Broadcast', path: '/broadcast', icon: Radio },
   { name: 'Risk Radar', path: '/risks', icon: ShieldAlert },
   { name: 'App Releases', path: '/releases', icon: Package },

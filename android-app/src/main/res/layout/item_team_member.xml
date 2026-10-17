@@ -40,7 +40,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_marginStart="14dp"
-            android:layout_toStartOf="@+id/tvMemberStatus"
+            android:layout_toStartOf="@id/llMemberActions"
             android:layout_toEndOf="@id/avatarContainer"
             android:orientation="vertical">
 

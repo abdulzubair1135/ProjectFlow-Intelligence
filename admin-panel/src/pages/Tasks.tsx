@@ -136,11 +136,12 @@ export const Tasks: React.FC = () => {
       let teamId: string | undefined;
       let teamName: string | undefined;
 
-      if (assignType === 'USER' && selectedUserId) {
+      if (selectedUserId) {
         const found = users.find(u => u.id === selectedUserId);
         assigneeId = selectedUserId;
         assigneeName = found ? found.fullName : undefined;
-      } else if (assignType === 'TEAM' && selectedTeamId) {
+      }
+      if (selectedTeamId) {
         const found = teams.find(t => t.id === selectedTeamId);
         teamId = selectedTeamId;
         teamName = found ? found.name : undefined;
@@ -161,8 +162,8 @@ export const Tasks: React.FC = () => {
       setTitle('');
       setDescription('');
       setDueDate('');
-      setAssignType('NONE');
       setSelectedUserId('');
+      setSelectedTeamId('');
       setSelectedTeamId('');
     } catch (err: any) {
       alert(`Task creation failed: ${err.message}`);
@@ -391,19 +392,21 @@ export const Tasks: React.FC = () => {
                           </p>
                         )}
 
-                        {/* Assignee / Squad */}
-                        <div className="flex items-center gap-1.5">
-                          {t.teamName ? (
+                        {/* Assignee / Group */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {t.teamName && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-[#56664C]/10 text-[#56664C] px-2 py-0.5 rounded-md">
                               <Users className="w-3 h-3" />
                               {t.teamName}
                             </span>
-                          ) : t.assigneeName ? (
+                          )}
+                          {t.assigneeName && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-[#F4F2E9] text-[#292D28] px-2 py-0.5 rounded-md border border-[#E2E0D8]">
                               <User className="w-3 h-3 text-[#5A6258]" />
                               {t.assigneeName}
                             </span>
-                          ) : (
+                          )}
+                          {!t.teamName && !t.assigneeName && (
                             <span className="text-[10px] text-[#78866B] italic">Unassigned</span>
                           )}
                         </div>
@@ -497,19 +500,23 @@ export const Tasks: React.FC = () => {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        {t.teamName ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-[#56664C]/15 text-[#56664C] border border-[#56664C]/30">
-                            <Users className="w-3 h-3" />
-                            {t.teamName}
-                          </span>
-                        ) : t.assigneeName ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium bg-[#EFECE4] text-[#292D28] border border-[#E2E0D8]">
-                            <User className="w-3 h-3 text-[#5A6258]" />
-                            {t.assigneeName}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-[#78866B] italic">Unassigned</span>
-                        )}
+                        <div className="flex flex-col gap-1 items-start">
+                          {t.teamName && (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#56664C]/15 text-[#56664C] border border-[#56664C]/30">
+                              <Users className="w-3 h-3" />
+                              {t.teamName}
+                            </span>
+                          )}
+                          {t.assigneeName && (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#EFECE4] text-[#292D28] border border-[#E2E0D8]">
+                              <User className="w-3 h-3 text-[#5A6258]" />
+                              {t.assigneeName}
+                            </span>
+                          )}
+                          {!t.teamName && !t.assigneeName && (
+                            <span className="text-[10px] text-[#78866B] italic">Unassigned</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">{getPriorityBadge(t.priority)}</td>
                       <td className="px-6 py-4">
@@ -618,68 +625,43 @@ export const Tasks: React.FC = () => {
                 </div>
               </div>
 
-              {/* Assignment Options */}
-              <div>
-                <label className="block text-xs font-semibold text-[#5A6258] uppercase mb-1">Assignment</label>
-                <div className="flex gap-2 mb-2">
-                  <button
-                    type="button"
-                    onClick={() => setAssignType('NONE')}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                      assignType === 'NONE' ? 'bg-[#56664C] text-white' : 'bg-[#EFECE4] text-[#5A6258]'
-                    }`}
-                  >
-                    Unassigned
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAssignType('USER')}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                      assignType === 'USER' ? 'bg-[#56664C] text-white' : 'bg-[#EFECE4] text-[#5A6258]'
-                    }`}
-                  >
-                    Individual Member
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAssignType('TEAM')}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                      assignType === 'TEAM' ? 'bg-[#56664C] text-white' : 'bg-[#EFECE4] text-[#5A6258]'
-                    }`}
-                  >
-                    Squad Team
-                  </button>
-                </div>
-
-                {assignType === 'USER' && (
+              {/* Assignment: Person & Group */}
+              <div className="space-y-3 pt-1">
+                <div>
+                  <label className="block text-xs font-semibold text-[#5A6258] uppercase mb-1">
+                    Assign to Person (Optional)
+                  </label>
                   <select
                     value={selectedUserId}
                     onChange={(e) => setSelectedUserId(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-xl text-xs text-[#292D28] focus:outline-none focus:border-[#56664C]"
                   >
-                    <option value="">Select team member...</option>
+                    <option value="">Unassigned (None)</option>
                     {users.map((u) => (
                       <option key={u.id} value={u.id}>
-                        {u.fullName} ({u.email})
+                        {u.fullName} ({u.role})
                       </option>
                     ))}
                   </select>
-                )}
+                </div>
 
-                {assignType === 'TEAM' && (
+                <div>
+                  <label className="block text-xs font-semibold text-[#5A6258] uppercase mb-1">
+                    Assign to Group (Optional)
+                  </label>
                   <select
                     value={selectedTeamId}
                     onChange={(e) => setSelectedTeamId(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-xl text-xs text-[#292D28] focus:outline-none focus:border-[#56664C]"
                   >
-                    <option value="">Select squad...</option>
+                    <option value="">Unassigned (None)</option>
                     {teams.map((tm) => (
                       <option key={tm.id} value={tm.id}>
                         {tm.name}
                       </option>
                     ))}
                   </select>
-                )}
+                </div>
               </div>
 
               <div className="flex gap-2 pt-2">
@@ -703,11 +685,11 @@ export const Tasks: React.FC = () => {
         </div>
       )}
 
-      {/* CREATE SQUAD TEAM MODAL */}
+      {/* CREATE GROUP MODAL */}
       {showTeamModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-[#FAFAF7] border border-[#E2E0D8] rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-[#292D28]">Create New Squad</h3>
+            <h3 className="text-base font-bold text-[#292D28]">Create New Group</h3>
 
             {teamSuccessMsg && (
               <div className="p-3 bg-green-50 border border-green-200 text-green-800 text-xs rounded-xl font-semibold">
@@ -717,13 +699,13 @@ export const Tasks: React.FC = () => {
 
             <form onSubmit={handleCreateTeam} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-[#5A6258] uppercase mb-1">Squad Name</label>
+                <label className="block text-xs font-semibold text-[#5A6258] uppercase mb-1">Group Name</label>
                 <input
                   type="text"
                   required
                   value={newTeamName}
                   onChange={(e) => setNewTeamName(e.target.value)}
-                  placeholder="e.g. Mobile Engineering Squad"
+                  placeholder="e.g. Mobile Engineering Group"
                   className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-xl text-xs text-[#292D28] focus:outline-none focus:border-[#56664C]"
                 />
               </div>
@@ -752,7 +734,7 @@ export const Tasks: React.FC = () => {
                   disabled={teamSubmitting}
                   className="flex-1 py-2.5 rounded-xl bg-[#56664C] text-[#F4F2E9] text-xs font-semibold hover:bg-[#485640] transition-colors shadow-sm disabled:opacity-50"
                 >
-                  {teamSubmitting ? 'Creating...' : 'Create Squad'}
+                  {teamSubmitting ? 'Creating...' : 'Create Group'}
                 </button>
               </div>
             </form>
