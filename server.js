@@ -327,6 +327,43 @@ app.post('/api/v1/notifications/send-push', async (req, res) => {
   res.json({ success: true, notification: notif, deliveredDevices: store.fcmTokens.length });
 });
 
+// Push Broadcast Delivery Logs History
+app.get('/api/v1/broadcast/history', (req, res) => {
+  res.json(store.pushLogs || []);
+});
+
+// Broadcast Dispatch Handlers (Supports both /fcm/broadcast and /broadcast/send)
+const handleBroadcastSend = async (req, res) => {
+  const { title, body, message, type } = req.body;
+  const alertTitle = title || 'ProjectFlow Broadcast Alert';
+  const alertBody = body || message || 'New enterprise announcement';
+  await dispatchPushNotification(alertTitle, alertBody, { type: type || 'BROADCAST' });
+  recordAuditLog('BROADCAST_SENT', 'NOTIFICATION', null, req.headers['x-user-email'] || 'admin@projectflow.io', { title: alertTitle, recipientsCount: store.fcmTokens.length });
+  res.json({
+    success: true,
+    message: `Dispatched to ${store.fcmTokens.length} active mobile subscribers`,
+    recipientsCount: store.fcmTokens.length,
+    timestamp: new Date().toISOString()
+  });
+};
+
+app.post('/api/v1/fcm/broadcast', handleBroadcastSend);
+app.post('/api/v1/broadcast/send', handleBroadcastSend);
+
+// What-If Scenario Simulation Endpoint (Aliases project scenario evaluate)
+app.post('/api/v1/scenarios/simulate', (req, res) => {
+  const { projectId, scenarioName, changes } = req.body;
+  const project = store.projects.find(p => p.id === projectId) || store.projects[0];
+  const projectTasks = store.tasks.filter(t => t.projectId === (project ? project.id : ''));
+  const scenario = {
+    id: uuidv4(),
+    name: scenarioName || 'What-If Simulation',
+    changes: changes || []
+  };
+  const result = evaluateScenario(project, projectTasks, store.dependencies || [], scenario);
+  res.json(result);
+});
+
 app.get('/api/v1/me', (req, res) => {
   const auth = req.headers.authorization || '';
   let email = 'admin@projectflow.io';
