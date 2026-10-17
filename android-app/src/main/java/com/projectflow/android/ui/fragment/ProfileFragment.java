@@ -147,36 +147,52 @@ public class ProfileFragment extends Fragment {
     }
 
     private void showEditNameDialog() {
-        EditText input = new EditText(requireContext());
-        input.setText(tvProfileName.getText());
-        input.setSelection(input.getText().length());
+        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_edit_display_name, null);
+        EditText etName = dialogView.findViewById(R.id.etDialogDisplayName);
+        View btnCancel = dialogView.findViewById(R.id.btnDialogCancel);
+        View btnSave = dialogView.findViewById(R.id.btnDialogSave);
 
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Update Display Name")
-                .setView(input)
-                .setPositiveButton("Save", (dialog, which) -> {
-                    String newName = input.getText().toString().trim();
-                    if (!newName.isEmpty()) {
-                        tvProfileName.setText(newName);
-                        tvProfileInitial.setText(newName.substring(0, 1).toUpperCase());
-                        prefs.edit().putString("user_name", newName).apply();
+        etName.setText(tvProfileName.getText());
+        if (etName.getText() != null) {
+            etName.setSelection(etName.getText().length());
+        }
 
-                        repository.updateProfile(newName, new ProjectFlowRepository.DataCallback<UserDto>() {
-                            @Override
-                            public void onData(UserDto data) {
-                                if (getActivity() != null) {
-                                    getActivity().runOnUiThread(() ->
-                                            Toast.makeText(requireContext(), "Profile updated successfully", Toast.LENGTH_SHORT).show()
-                                    );
-                                }
-                            }
-                            @Override
-                            public void onError(String message) {}
-                        });
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnSave.setOnClickListener(v -> {
+            String newName = etName.getText() != null ? etName.getText().toString().trim() : "";
+            if (!newName.isEmpty()) {
+                tvProfileName.setText(newName);
+                tvProfileInitial.setText(newName.substring(0, 1).toUpperCase());
+                prefs.edit().putString("user_name", newName).apply();
+
+                repository.updateProfile(newName, new ProjectFlowRepository.DataCallback<UserDto>() {
+                    @Override
+                    public void onData(UserDto data) {
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() ->
+                                    Toast.makeText(requireContext(), "Profile updated successfully", Toast.LENGTH_SHORT).show()
+                            );
+                        }
                     }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+                    @Override
+                    public void onError(String message) {}
+                });
+                dialog.dismiss();
+            } else {
+                Toast.makeText(requireContext(), "Please enter a valid display name", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        dialog.show();
     }
 
     private void setThemeMode(int mode, String name) {

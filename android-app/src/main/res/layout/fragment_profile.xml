@@ -528,18 +528,24 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Logout Button -->
-        <Button
+        <!-- Logout Button: High-Contrast Solid Crimson Danger Button with Pure White Text -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnLogout"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="52dp"
             android:layout_marginTop="24dp"
             android:layout_marginBottom="32dp"
-            android:background="@drawable/bg_badge_error"
+            app:backgroundTint="#B7473C"
             android:text="Logout from Device"
-            android:textColor="@color/earth_error"
+            android:textColor="#FFFFFF"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            app:cornerRadius="12dp"
+            app:elevation="2dp"
+            app:icon="@drawable/ic_logout"
+            app:iconGravity="textStart"
+            app:iconPadding="10dp"
+            app:iconTint="#FFFFFF" />
 
     </LinearLayout>
 </ScrollView>
