@@ -283,7 +283,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="Toggle natural मिट्टी mineral theme modes"
+                    android:text="Toggle natural mineral theme modes"
                     android:textColor="@color/text_secondary"
                     android:textSize="11sp" />
 
@@ -300,7 +300,7 @@
                         android:layout_weight="1"
                         android:background="@drawable/bg_chip_selected"
                         android:gravity="center"
-                        android:text="Light मिट्टी"
+                        android:text="Light Mode"
                         android:textColor="@color/white"
                         android:textSize="12sp"
                         android:textStyle="bold" />
@@ -313,7 +313,7 @@
                         android:layout_weight="1"
                         android:background="@drawable/bg_chip_unselected"
                         android:gravity="center"
-                        android:text="Dark Clay"
+                        android:text="Dark Mode"
                         android:textColor="@color/text_main"
                         android:textSize="12sp"
                         android:textStyle="bold" />
