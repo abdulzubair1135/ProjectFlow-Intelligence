@@ -10,20 +10,27 @@ import {
   Activity,
   HeartPulse,
   Settings,
-  Package
+  Package,
+  MessageSquare,
+  Radio,
+  Calendar
 } from 'lucide-react';
 
 interface NavItem {
   name: string;
   path: string;
   icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
 }
 
 const navItems: NavItem[] = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+  { name: 'Discussions & Squad', path: '/discussions', icon: MessageSquare, badge: 'LIVE' },
   { name: 'Workspaces', path: '/workspaces', icon: Layers },
   { name: 'Projects', path: '/projects', icon: FolderKanban },
   { name: 'Tasks Explorer', path: '/tasks', icon: CheckSquare },
+  { name: 'Delivery Calendar', path: '/calendar', icon: Calendar },
+  { name: 'Push Broadcast', path: '/broadcast', icon: Radio },
   { name: 'Risk Radar', path: '/risks', icon: ShieldAlert },
   { name: 'User Management', path: '/users', icon: Users },
   { name: 'App Releases', path: '/releases', icon: Package },
@@ -63,15 +70,22 @@ export const Sidebar: React.FC = () => {
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                `flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
                     ? 'bg-[#56664C] text-[#F4F2E9] shadow-sm'
                     : 'text-[#5A6258] hover:bg-[#EFECE4] hover:text-[#292D28]'
                 }`
               }
             >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span>{item.name}</span>
+              <div className="flex items-center gap-3">
+                <Icon className="w-4 h-4 shrink-0" />
+                <span>{item.name}</span>
+              </div>
+              {item.badge && (
+                <span className="text-[9px] font-mono font-bold bg-[#47745A] text-white px-1.5 py-0.5 rounded shadow-xs">
+                  {item.badge}
+                </span>
+              )}
             </NavLink>
           );
         })}

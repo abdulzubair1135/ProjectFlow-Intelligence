@@ -81,15 +81,19 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         rvProjectRisks.setLayoutManager(new LinearLayoutManager(this));
         rvProjectRisks.setAdapter(riskAdapter);
 
+        View btnBack = findViewById(R.id.btnBackProjectDetails);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
+
         btnAddTask.setOnClickListener(v -> {
             Intent intent = new Intent(ProjectDetailsActivity.this, CreateTaskActivity.class);
             intent.putExtra("project_id", projectId);
             startActivity(intent);
         });
 
-        // Observe Tasks
-        AppDatabase db = AppDatabase.getInstance(this);
-        db.taskDao().getByProjectLive(projectId).observe(this, tasks -> {
+        // Observe Tasks via repository so it triggers network sync and live updates
+        repository.getTasks(projectId).observe(this, tasks -> {
             if (tasks != null && !tasks.isEmpty()) {
                 tvEmptyTasks.setVisibility(View.GONE);
                 rvProjectTasks.setVisibility(View.VISIBLE);
@@ -117,5 +121,14 @@ public class ProjectDetailsActivity extends AppCompatActivity {
                 tvEmptyRisks.setVisibility(View.VISIBLE);
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (repository != null) {
+            repository.refreshTasks(projectId);
+            repository.refreshAllTasks();
+        }
     }
 }

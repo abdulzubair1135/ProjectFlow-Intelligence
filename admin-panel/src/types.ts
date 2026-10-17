@@ -92,9 +92,12 @@ export interface AuditLog {
   id: string;
   workspaceId?: string;
   actorId?: string;
+  actorEmail?: string;
   action: string;
-  entityType: string;
+  entityType?: string;
   entityId?: string;
+  details?: string;
+  ipAddress?: string;
   metadata?: string;
   timestamp: string;
 }

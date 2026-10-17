@@ -310,6 +310,18 @@
                 android:textColor="@color/primary_earth"
                 android:textSize="9sp"
                 android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/btnChatRoomOptions"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="6dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="6dp"
+                android:src="@drawable/ic_more_vert"
+                app:tint="@color/text_main" />
         </LinearLayout>
 
         <!-- Chat Messages List -->

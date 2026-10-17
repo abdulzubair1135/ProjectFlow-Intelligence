@@ -13,6 +13,9 @@ import { AuditLogs } from './pages/AuditLogs';
 import { HealthView } from './pages/SystemHealth';
 import { Settings } from './pages/Settings';
 import { Releases } from './pages/Releases';
+import { Discussions } from './pages/Discussions';
+import { CalendarView } from './pages/CalendarView';
+import { Broadcast } from './pages/Broadcast';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -44,9 +47,12 @@ export const App: React.FC = () => {
             }
           >
             <Route index element={<Dashboard />} />
+            <Route path="discussions" element={<Discussions />} />
             <Route path="workspaces" element={<Workspaces />} />
             <Route path="projects" element={<Projects />} />
             <Route path="tasks" element={<Tasks />} />
+            <Route path="calendar" element={<CalendarView />} />
+            <Route path="broadcast" element={<Broadcast />} />
             <Route path="risks" element={<Risks />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="releases" element={<Releases />} />

@@ -27,6 +27,15 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 export const api = {
   // Auth
+  async login(email: string, password?: string) {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: password || 'ProjectFlow@2026' })
+    });
+    return handleResponse<{ token: string; user: UserProfile }>(res);
+  },
+
   async devLogin(email: string) {
     const res = await fetch(`${API_BASE}/auth/dev-login`, {
       method: 'POST',
@@ -127,6 +136,13 @@ export const api = {
   // Tasks
   async getProjectTasks(projectId: string) {
     const res = await fetch(`${API_BASE}/projects/${projectId}/tasks`, {
+      headers: getAuthHeaders()
+    });
+    return handleResponse<Task[]>(res);
+  },
+
+  async getAllTasks() {
+    const res = await fetch(`${API_BASE}/tasks`, {
       headers: getAuthHeaders()
     });
     return handleResponse<Task[]>(res);
@@ -249,5 +265,56 @@ export const api = {
       headers: getAuthHeaders()
     });
     return handleResponse<ErrorLogEntry>(res);
+  },
+
+  // Chat & Real-Time Discussions
+  async getChatMessages(channel?: string) {
+    const q = channel ? `?channel=${encodeURIComponent(channel)}` : '';
+    const res = await fetch(`${API_BASE}/chat/messages${q}`, {
+      headers: getAuthHeaders()
+    });
+    return handleResponse<any[]>(res);
+  },
+
+  async sendChatMessage(data: { channel: string; content: string; messageType?: string }) {
+    const res = await fetch(`${API_BASE}/chat/messages`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse<any>(res);
+  },
+
+  async getChatGroups() {
+    const res = await fetch(`${API_BASE}/chat/groups`, {
+      headers: getAuthHeaders()
+    });
+    return handleResponse<any[]>(res);
+  },
+
+  async createChatGroup(data: { name: string; description?: string; channel: string; members?: string[] }) {
+    const res = await fetch(`${API_BASE}/chat/groups`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse<any>(res);
+  },
+
+  // FCM Push Notifications & Broadcasts
+  async sendBroadcastNotification(data: { title: string; body: string; type?: string }) {
+    const res = await fetch(`${API_BASE}/fcm/broadcast`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse<{ success: boolean; message: string; results?: any }>(res);
+  },
+
+  async getTeamMembers() {
+    const res = await fetch(`${API_BASE}/team`, {
+      headers: getAuthHeaders()
+    });
+    return handleResponse<any[]>(res);
   }
 };

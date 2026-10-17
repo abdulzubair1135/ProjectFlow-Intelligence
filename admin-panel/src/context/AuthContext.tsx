@@ -6,7 +6,7 @@ interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
   loading: boolean;
-  login: (email: string) => Promise<void>;
+  login: (email: string, password?: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -39,10 +39,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadUser();
   }, [token]);
 
-  const login = async (email: string) => {
+  const login = async (email: string, password?: string) => {
     setLoading(true);
     try {
-      const resp = await api.devLogin(email);
+      const resp = await api.login(email, password);
       localStorage.setItem('projectflow_token', resp.token);
       setToken(resp.token);
       setUser(resp.user);

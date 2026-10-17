@@ -17,6 +17,7 @@
     <color name="earth_success">#47745A</color>
     <color name="earth_warning">#A56A2B</color>
     <color name="earth_error">#B7473C</color>
+    <color name="earth_danger">#B7473C</color>
     <color name="earth_info">#4D718C</color>
 
     <!-- Semantic Status Tints -->

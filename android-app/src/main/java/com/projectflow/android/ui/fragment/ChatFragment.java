@@ -70,6 +70,7 @@ public class ChatFragment extends Fragment {
 
     // Chat Room Views (WhatsApp Conversation)
     private View btnBackToConversations;
+    private View btnChatRoomOptions;
     private TextView tvChatRoomTitle, tvChatRoomSubtitle, tvChatRoomInitial, tvChatRoomTypeBadge;
     private ImageView ivChatRoomGroupIcon;
     private View viewChatRoomOnlineDot;
@@ -79,6 +80,9 @@ public class ChatFragment extends Fragment {
     private FrameLayout btnSendMessage;
     private View llEmptyChat;
     private TextView tvEmptyChannelName;
+
+    private final List<TeamMemberDto> cachedTeamMembers = new ArrayList<>();
+    private final List<ChatGroupDto> cachedGroups = new ArrayList<>();
 
     private ProjectFlowRepository repository;
     private SharedPreferences prefs;
@@ -128,8 +132,11 @@ public class ChatFragment extends Fragment {
         rvConversations = view.findViewById(R.id.rvConversations);
         llEmptyConversations = view.findViewById(R.id.llEmptyConversations);
 
-        // Bind Chat Room Views
         btnBackToConversations = view.findViewById(R.id.btnBackToConversations);
+        btnChatRoomOptions = view.findViewById(R.id.btnChatRoomOptions);
+        if (btnChatRoomOptions != null) {
+            btnChatRoomOptions.setOnClickListener(v -> showChatRoomDetails());
+        }
         tvChatRoomTitle = view.findViewById(R.id.tvChatRoomTitle);
         tvChatRoomSubtitle = view.findViewById(R.id.tvChatRoomSubtitle);
         tvChatRoomInitial = view.findViewById(R.id.tvChatRoomInitial);
@@ -318,6 +325,10 @@ public class ChatFragment extends Fragment {
 
     private void buildConversationList(List<ChatGroupDto> groups, List<TeamMemberDto> teamMembers, List<ChatMessageDto> messages) {
         allConversations.clear();
+        cachedGroups.clear();
+        if (groups != null) cachedGroups.addAll(groups);
+        cachedTeamMembers.clear();
+        if (teamMembers != null) cachedTeamMembers.addAll(teamMembers);
 
         Map<String, ChatMessageDto> lastMsgByChannel = new HashMap<>();
         if (messages != null) {
@@ -613,6 +624,126 @@ public class ChatFragment extends Fragment {
                 tvEmailRole = v.findViewById(R.id.tvMemberEmailRole);
             }
         }
+    }
+
+    private void showChatRoomDetails() {
+        if ("DIRECT".equalsIgnoreCase(activeChatType)) {
+            TeamMemberDto targetMember = null;
+            for (TeamMemberDto m : cachedTeamMembers) {
+                if (m.fullName != null && m.fullName.equalsIgnoreCase(activeChatTitle)) {
+                    targetMember = m;
+                    break;
+                }
+                if (m.email != null) {
+                    String clean1 = currentUserEmail.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
+                    String clean2 = m.email.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
+                    String dmChannel = (clean1.compareTo(clean2) < 0) ? "dm_" + clean1 + "_" + clean2 : "dm_" + clean2 + "_" + clean1;
+                    if (dmChannel.equalsIgnoreCase(activeChannel)) {
+                        targetMember = m;
+                        break;
+                    }
+                }
+            }
+
+            if (targetMember != null) {
+                displayMemberDetailsDialog(targetMember);
+            } else {
+                repository.fetchTeam(new ProjectFlowRepository.DataCallback<List<TeamMemberDto>>() {
+                    @Override
+                    public void onData(List<TeamMemberDto> data) {
+                        if (data != null) {
+                            cachedTeamMembers.clear();
+                            cachedTeamMembers.addAll(data);
+                            for (TeamMemberDto m : data) {
+                                if (m.fullName != null && m.fullName.equalsIgnoreCase(activeChatTitle)) {
+                                    if (getActivity() != null) {
+                                        getActivity().runOnUiThread(() -> displayMemberDetailsDialog(m));
+                                    }
+                                    return;
+                                }
+                            }
+                        }
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> displayBasicDetailsDialog(activeChatTitle, "1-on-1 Direct Chat"));
+                        }
+                    }
+                    @Override
+                    public void onError(String message) {
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> displayBasicDetailsDialog(activeChatTitle, "1-on-1 Direct Chat"));
+                        }
+                    }
+                });
+            }
+        } else {
+            ChatGroupDto targetGroup = null;
+            for (ChatGroupDto g : cachedGroups) {
+                if (g.channel != null && g.channel.equalsIgnoreCase(activeChannel)) {
+                    targetGroup = g;
+                    break;
+                }
+            }
+
+            if (targetGroup != null) {
+                displayGroupDetailsDialog(targetGroup);
+            } else {
+                repository.fetchChatGroups(new ProjectFlowRepository.DataCallback<List<ChatGroupDto>>() {
+                    @Override
+                    public void onData(List<ChatGroupDto> data) {
+                        if (data != null) {
+                            cachedGroups.clear();
+                            cachedGroups.addAll(data);
+                            for (ChatGroupDto g : data) {
+                                if (g.channel != null && g.channel.equalsIgnoreCase(activeChannel)) {
+                                    if (getActivity() != null) {
+                                        getActivity().runOnUiThread(() -> displayGroupDetailsDialog(g));
+                                    }
+                                    return;
+                                }
+                            }
+                        }
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> displayBasicDetailsDialog(activeChatTitle, "Squad Group Chat"));
+                        }
+                    }
+                    @Override
+                    public void onError(String message) {
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> displayBasicDetailsDialog(activeChatTitle, "Squad Group Chat"));
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    private void displayMemberDetailsDialog(TeamMemberDto member) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle(member.fullName)
+                .setMessage("Role: " + member.role + "\n" +
+                        "Email: " + member.email + "\n" +
+                        "Status: " + (member.isOnline ? "🟢 Online" : "⚪ Offline") + "\n" +
+                        "Assigned Tasks: " + member.assignedTasksCount)
+                .setPositiveButton("Close", null)
+                .show();
+    }
+
+    private void displayGroupDetailsDialog(ChatGroupDto group) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle(group.name)
+                .setMessage("Topic: " + (group.description != null ? group.description : "Project squad discussion") + "\n" +
+                        "Channel: #" + group.channel + "\n" +
+                        "Squad Members: " + (group.members != null ? group.members.size() : 0) + " members")
+                .setPositiveButton("Close", null)
+                .show();
+    }
+
+    private void displayBasicDetailsDialog(String title, String message) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("Close", null)
+                .show();
     }
 
     private String formatTime(String isoString) {
