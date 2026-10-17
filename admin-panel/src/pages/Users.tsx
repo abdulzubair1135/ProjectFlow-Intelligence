@@ -1,41 +1,59 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { UserProfile, Role } from '../types';
-import { Users, Search, ShieldCheck, ShieldAlert, CheckCircle2, XCircle, RefreshCw, Edit3 } from 'lucide-react';
+import {
+  Users,
+  Search,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  Edit3,
+  UserPlus,
+  PowerOff,
+  Power,
+  X,
+  Mail,
+  User,
+  Filter
+} from 'lucide-react';
 
 export const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Edit Role Modal State
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [newRole, setNewRole] = useState<Role>('MEMBER');
-  const [updating, setUpdating] = useState(false);
+  const [updatingRole, setUpdatingRole] = useState(false);
+
+  // Create User Modal State
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createEmail, setCreateEmail] = useState('');
+  const [createFullName, setCreateFullName] = useState('');
+  const [createRole, setCreateRole] = useState<Role>('MEMBER');
+  const [creating, setCreating] = useState(false);
+
+  // Toggle Status Loading State
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
     setError(null);
     try {
-      const resp = await api.getUsers(query, 0, 50);
+      const resp = await api.getUsers(query, 0, 100);
       setUsers(resp.content || []);
       setTotal(resp.totalElements || (resp.content ? resp.content.length : 0));
     } catch (err: any) {
       setError(err.message || 'Failed to fetch users');
-      // Fallback display if dev server offline
-      setUsers([
-        {
-          id: '00000000-0000-0000-0000-000000000001',
-          email: 'admin@projectflow.io',
-          fullName: 'System Administrator',
-          role: 'ADMINISTRATOR',
-          active: true,
-          createdAt: new Date().toISOString()
-        }
-      ]);
-      setTotal(1);
+      setUsers([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -47,36 +65,106 @@ export const UserManagement: React.FC = () => {
 
   const handleRoleChange = async () => {
     if (!selectedUser) return;
-    setUpdating(true);
+    setUpdatingRole(true);
     try {
       const updated = await api.updateUserRole(selectedUser.id, newRole);
-      setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+      setUsers((prev) => prev.map((u) => (u.id === updated.id ? { ...u, role: updated.role } : u)));
       setSelectedUser(null);
+      setSuccessMessage(`Role for ${selectedUser.email} successfully updated to ${newRole}`);
+      setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
       alert(`Role change failed: ${err.message}`);
     } finally {
-      setUpdating(false);
+      setUpdatingRole(false);
     }
   };
 
+  const handleToggleStatus = async (user: UserProfile) => {
+    const nextStatus = !user.active;
+    const actionLabel = nextStatus ? 'activate' : 'deactivate';
+    if (!confirm(`Are you sure you want to ${actionLabel} account for ${user.email}?`)) {
+      return;
+    }
+    setTogglingId(user.id);
+    try {
+      const updated = await api.updateUserStatus(user.id, nextStatus);
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, active: updated.active } : u)));
+      setSuccessMessage(`User ${user.email} has been ${nextStatus ? 'activated' : 'deactivated'}.`);
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err: any) {
+      alert(`Failed to update status: ${err.message}`);
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createEmail.trim()) return;
+    setCreating(true);
+    try {
+      const created = await api.createUser({
+        email: createEmail.trim(),
+        fullName: createFullName.trim() || createEmail.trim().split('@')[0],
+        role: createRole
+      });
+      setShowCreateModal(false);
+      setCreateEmail('');
+      setCreateFullName('');
+      setCreateRole('MEMBER');
+      setSuccessMessage(`User ${created.email} invited successfully with ${created.role} privileges.`);
+      setTimeout(() => setSuccessMessage(null), 4000);
+      await fetchUsers();
+    } catch (err: any) {
+      alert(`User creation failed: ${err.message}`);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const filteredUsers = users.filter((u) => {
+    if (roleFilter !== 'ALL' && u.role !== roleFilter) return false;
+    if (statusFilter === 'ACTIVE' && !u.active) return false;
+    if (statusFilter === 'DEACTIVATED' && u.active) return false;
+    return true;
+  });
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Page Title */}
+      {/* Page Title & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-[#292D28] tracking-tight">User Directory</h2>
+          <h2 className="text-2xl font-bold text-[#292D28] tracking-tight">User Directory & RBAC</h2>
           <p className="text-sm text-[#78866B]">
-            Global role assignment, account status, and tenant authorization across ProjectFlow.
+            Global role permissions, live session indicators, and tenant access authorization.
           </p>
         </div>
-        <button
-          onClick={fetchUsers}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#FAFAF7] border border-[#E2E0D8] text-xs font-semibold text-[#5A6258] hover:text-[#292D28] hover:bg-[#EFECE4] transition-colors"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#56664C]' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#56664C] text-[#F4F2E9] text-xs font-semibold hover:bg-[#485640] transition-colors shadow-sm"
+          >
+            <UserPlus className="w-4 h-4" />
+            Invite Member
+          </button>
+          <button
+            onClick={fetchUsers}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#FAFAF7] border border-[#E2E0D8] text-xs font-semibold text-[#5A6258] hover:text-[#292D28] hover:bg-[#EFECE4] transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#56664C]' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
+
+      {successMessage && (
+        <div className="p-3.5 rounded-lg bg-[#56664C]/10 border border-[#56664C]/30 text-[#56664C] text-xs font-semibold flex items-center justify-between">
+          <span>{successMessage}</span>
+          <button onClick={() => setSuccessMessage(null)} className="text-[#56664C] hover:opacity-75">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="p-3.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs">
@@ -84,8 +172,8 @@ export const UserManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Filter and Search */}
-      <div className="bg-[#FAFAF7] border border-[#E2E0D8] p-4 rounded-xl flex items-center justify-between gap-4">
+      {/* Filter and Search Bar */}
+      <div className="bg-[#FAFAF7] border border-[#E2E0D8] p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-[#78866B] absolute left-3 top-2.5" />
           <input
@@ -96,8 +184,40 @@ export const UserManagement: React.FC = () => {
             className="w-full pl-9 pr-4 py-2 bg-white border border-[#E2E0D8] rounded-lg text-xs text-[#292D28] focus:outline-none focus:border-[#56664C] focus:ring-1 focus:ring-[#56664C]"
           />
         </div>
-        <div className="text-xs font-medium text-[#78866B]">
-          Showing {users.length} of {total} accounts
+
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1.5 text-xs text-[#5A6258] font-semibold">
+            <Filter className="w-3.5 h-3.5 text-[#78866B]" />
+            Role:
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="px-2.5 py-1.5 bg-white border border-[#E2E0D8] rounded-lg text-xs font-semibold text-[#292D28] focus:outline-none focus:border-[#56664C]"
+            >
+              <option value="ALL">All Roles</option>
+              <option value="ADMINISTRATOR">ADMINISTRATOR</option>
+              <option value="MANAGER">MANAGER</option>
+              <option value="MEMBER">MEMBER</option>
+              <option value="VIEWER">VIEWER</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-xs text-[#5A6258] font-semibold">
+            Status:
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-2.5 py-1.5 bg-white border border-[#E2E0D8] rounded-lg text-xs font-semibold text-[#292D28] focus:outline-none focus:border-[#56664C]"
+            >
+              <option value="ALL">All Status</option>
+              <option value="ACTIVE">Active Only</option>
+              <option value="DEACTIVATED">Deactivated Only</option>
+            </select>
+          </div>
+
+          <div className="text-xs font-medium text-[#78866B] pl-2">
+            {filteredUsers.length} of {total} accounts
+          </div>
         </div>
       </div>
 
@@ -107,7 +227,7 @@ export const UserManagement: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="bg-[#F4F2E9] border-b border-[#E2E0D8] text-[#5A6258] font-semibold uppercase tracking-wider">
               <tr>
-                <th className="px-6 py-3.5">User</th>
+                <th className="px-6 py-3.5">User & Presence</th>
                 <th className="px-6 py-3.5">Global Role</th>
                 <th className="px-6 py-3.5">Account Status</th>
                 <th className="px-6 py-3.5">Registered</th>
@@ -115,22 +235,41 @@ export const UserManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E2E0D8] text-[#292D28]">
-              {users.length === 0 ? (
+              {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-[#5A6258]">
-                    No users match search criteria.
+                  <td colSpan={5} className="px-6 py-12 text-center text-[#5A6258]">
+                    <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-[#E2E0D8] text-[#56664C] flex items-center justify-center">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    No user accounts match current filters.
                   </td>
                 </tr>
               ) : (
-                users.map((u) => (
+                filteredUsers.map((u) => (
                   <tr key={u.id} className="hover:bg-[#F4F2E9]/60 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#E2E0D8] text-[#56664C] flex items-center justify-center font-bold text-xs">
-                          {u.fullName ? u.fullName.charAt(0).toUpperCase() : u.email.charAt(0).toUpperCase()}
+                        <div className="relative">
+                          <div className="w-8 h-8 rounded-full bg-[#E2E0D8] text-[#56664C] flex items-center justify-center font-bold text-xs">
+                            {u.fullName ? u.fullName.charAt(0).toUpperCase() : u.email.charAt(0).toUpperCase()}
+                          </div>
+                          {/* Live Online Badge Indicator */}
+                          <span
+                            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                              u.isOnline ? 'bg-emerald-500' : 'bg-gray-300'
+                            }`}
+                            title={u.isOnline ? 'Online now' : 'Offline'}
+                          />
                         </div>
                         <div>
-                          <div className="font-semibold text-[#292D28]">{u.fullName || 'Unnamed User'}</div>
+                          <div className="font-semibold text-[#292D28] flex items-center gap-2">
+                            <span>{u.fullName || 'Unnamed User'}</span>
+                            {u.isOnline && (
+                              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-semibold border border-emerald-200">
+                                LIVE
+                              </span>
+                            )}
+                          </div>
                           <div className="text-[11px] text-[#78866B] font-mono">{u.email}</div>
                         </div>
                       </div>
@@ -151,11 +290,11 @@ export const UserManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       {u.active ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-[#56664C] font-medium">
+                        <span className="inline-flex items-center gap-1 text-[11px] text-[#56664C] font-semibold">
                           <CheckCircle2 className="w-3.5 h-3.5" /> Active
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-[#C84B31] font-medium">
+                        <span className="inline-flex items-center gap-1 text-[11px] text-[#C84B31] font-semibold">
                           <XCircle className="w-3.5 h-3.5" /> Deactivated
                         </span>
                       )}
@@ -164,16 +303,40 @@ export const UserManagement: React.FC = () => {
                       {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'Initial Setup'}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => {
-                          setSelectedUser(u);
-                          setNewRole(u.role);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E2E0D8] bg-white hover:bg-[#EFECE4] text-[#292D28] font-semibold text-xs transition-colors"
-                      >
-                        <Edit3 className="w-3 h-3 text-[#56664C]" />
-                        Edit Role
-                      </button>
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedUser(u);
+                            setNewRole(u.role);
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#E2E0D8] bg-white hover:bg-[#EFECE4] text-[#292D28] font-semibold text-xs transition-colors"
+                        >
+                          <Edit3 className="w-3 h-3 text-[#56664C]" />
+                          Role
+                        </button>
+
+                        <button
+                          disabled={togglingId === u.id}
+                          onClick={() => handleToggleStatus(u)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
+                            u.active
+                              ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
+                              : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                          }`}
+                        >
+                          {u.active ? (
+                            <>
+                              <PowerOff className="w-3 h-3 text-red-600" />
+                              Deactivate
+                            </>
+                          ) : (
+                            <>
+                              <Power className="w-3 h-3 text-emerald-600" />
+                              Activate
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -216,13 +379,101 @@ export const UserManagement: React.FC = () => {
                 Cancel
               </button>
               <button
-                disabled={updating}
+                disabled={updatingRole}
                 onClick={handleRoleChange}
                 className="px-4 py-1.5 rounded-lg bg-[#56664C] text-[#F4F2E9] text-xs font-semibold hover:bg-[#485640] disabled:opacity-50"
               >
-                {updating ? 'Saving...' : 'Apply Role'}
+                {updatingRole ? 'Saving...' : 'Apply Role'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invite / Create User Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#FAFAF7] border border-[#E2E0D8] rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-[#292D28] flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-[#56664C]" />
+                Invite New Team Member
+              </h3>
+              <button onClick={() => setShowCreateModal(false)} className="text-[#5A6258] hover:text-[#292D28]">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-[#5A6258]">
+              Add a new member to the organization directory. They will be granted immediate access.
+            </p>
+
+            <form onSubmit={handleCreateUser} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-[#5A6258] uppercase tracking-wider mb-1">
+                  Email Address *
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-[#78866B] absolute left-3 top-2.5" />
+                  <input
+                    type="email"
+                    required
+                    placeholder="teammate@company.com"
+                    value={createEmail}
+                    onChange={(e) => setCreateEmail(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-white border border-[#E2E0D8] rounded-lg text-xs text-[#292D28] focus:outline-none focus:border-[#56664C]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#5A6258] uppercase tracking-wider mb-1">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-[#78866B] absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    placeholder="e.g. Sarah Jenkins"
+                    value={createFullName}
+                    onChange={(e) => setCreateFullName(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-white border border-[#E2E0D8] rounded-lg text-xs text-[#292D28] focus:outline-none focus:border-[#56664C]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#5A6258] uppercase tracking-wider mb-1">
+                  Privilege Role
+                </label>
+                <select
+                  value={createRole}
+                  onChange={(e) => setCreateRole(e.target.value as Role)}
+                  className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-lg text-xs font-semibold text-[#292D28] focus:outline-none focus:border-[#56664C]"
+                >
+                  <option value="ADMINISTRATOR">ADMINISTRATOR (Full platform control)</option>
+                  <option value="MANAGER">MANAGER (Project & scenario authority)</option>
+                  <option value="MEMBER">MEMBER (Standard task contributor)</option>
+                  <option value="VIEWER">VIEWER (Read-only observer)</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-3.5 py-1.5 rounded-lg border border-[#E2E0D8] text-xs font-semibold text-[#5A6258] hover:bg-[#EFECE4]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="px-4 py-1.5 rounded-lg bg-[#56664C] text-[#F4F2E9] text-xs font-semibold hover:bg-[#485640] disabled:opacity-50"
+                >
+                  {creating ? 'Inviting...' : 'Send Invitation'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-import { AdminOverview, AppRelease, AuditLog, ErrorLogEntry, PageResponse, Project, RiskFinding, SystemHealth, Task, Team, UserProfile, Workspace } from '../types';
+import { AdminOverview, AppRelease, AuditLog, ErrorLogEntry, PageResponse, Project, RiskFinding, SystemHealth, SystemSettings, Task, Team, UserProfile, Workspace } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -67,20 +67,31 @@ export const api = {
     return handleResponse<SystemHealth>(res);
   },
 
-  async getAuditEvents(page = 0, size = 25) {
-    const res = await fetch(`${API_BASE}/admin/audit-events?page=${page}&size=${size}`, {
+  async getAuditEvents(page = 0, size = 25, query = '', action = '') {
+    const q = query ? `&query=${encodeURIComponent(query)}` : '';
+    const a = action && action !== 'ALL' ? `&action=${encodeURIComponent(action)}` : '';
+    const res = await fetch(`${API_BASE}/admin/audit-events?page=${page}&size=${size}${q}${a}`, {
       headers: getAuthHeaders()
     });
     return handleResponse<PageResponse<AuditLog>>(res);
   },
 
   // Users
-  async getUsers(query = '', page = 0, size = 20) {
+  async getUsers(query = '', page = 0, size = 50) {
     const q = query ? `&query=${encodeURIComponent(query)}` : '';
     const res = await fetch(`${API_BASE}/admin/users?page=${page}&size=${size}${q}`, {
       headers: getAuthHeaders()
     });
     return handleResponse<PageResponse<UserProfile>>(res);
+  },
+
+  async createUser(data: { email: string; fullName: string; role: string }) {
+    const res = await fetch(`${API_BASE}/admin/users`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse<UserProfile>(res);
   },
 
   async updateUserRole(userId: string, role: string) {
@@ -90,6 +101,32 @@ export const api = {
       body: JSON.stringify({ role })
     });
     return handleResponse<UserProfile>(res);
+  },
+
+  async updateUserStatus(userId: string, active?: boolean) {
+    const res = await fetch(`${API_BASE}/admin/users/${userId}/status`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(active !== undefined ? { active } : {})
+    });
+    return handleResponse<UserProfile>(res);
+  },
+
+  // System Settings
+  async getSettings() {
+    const res = await fetch(`${API_BASE}/admin/settings`, {
+      headers: getAuthHeaders()
+    });
+    return handleResponse<SystemSettings>(res);
+  },
+
+  async updateSettings(data: Partial<SystemSettings>) {
+    const res = await fetch(`${API_BASE}/admin/settings`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse<SystemSettings>(res);
   },
 
   // Workspaces
@@ -133,6 +170,15 @@ export const api = {
     return handleResponse<Project>(res);
   },
 
+  async updateProject(projectId: string, data: Partial<Project>) {
+    const res = await fetch(`${API_BASE}/projects/${projectId}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse<Project>(res);
+  },
+
   // Tasks
   async getProjectTasks(projectId: string) {
     const res = await fetch(`${API_BASE}/projects/${projectId}/tasks`, {
@@ -162,6 +208,15 @@ export const api = {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
+    });
+    return handleResponse<Task>(res);
+  },
+
+  async updateTaskStatus(taskId: string, statusCategory: string, progressPercent?: number) {
+    const res = await fetch(`${API_BASE}/tasks/${taskId}/status`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ statusCategory, progressPercent })
     });
     return handleResponse<Task>(res);
   },

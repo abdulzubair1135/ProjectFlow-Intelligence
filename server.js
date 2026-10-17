@@ -17,6 +17,38 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'admin-panel', 'public')));
 app.use(express.static(path.join(__dirname, 'admin-panel', 'dist')));
 
+// System Settings Store
+store.settings = store.settings || {
+  syncIntervalMinutes: 15,
+  maxBatchSize: 100,
+  offlineGracePeriodHours: 72,
+  fcmEnabled: true,
+  fcmSenderId: '768921827461',
+  organizationName: 'ProjectFlow Enterprise',
+  contactEmail: 'admin@projectflow.io',
+  riskSeverityThreshold: 'MEDIUM',
+  updatedAt: new Date().toISOString()
+};
+
+// Global Audit Log Telemetry Helper
+function recordAuditLog(action, entityType, entityId, actorEmail, details) {
+  store.auditLogs = store.auditLogs || [];
+  const log = {
+    id: uuidv4(),
+    actorEmail: actorEmail || 'admin@projectflow.io',
+    action,
+    entityType: entityType || 'SYSTEM',
+    entityId: entityId || null,
+    details: typeof details === 'object' ? JSON.stringify(details) : (details || ''),
+    timestamp: new Date().toISOString()
+  };
+  store.auditLogs.unshift(log);
+  if (store.auditLogs.length > 500) {
+    store.auditLogs = store.auditLogs.slice(0, 500);
+  }
+  return log;
+}
+
 // -------------------------------------------------------------
 // AUTHENTICATION & SESSIONS (REAL SUPABASE + DEV FALLBACK)
 // -------------------------------------------------------------
@@ -344,7 +376,15 @@ app.get('/api/v1/admin/users', async (req, res) => {
   }
 
   const query = (req.query.query || '').toLowerCase();
-  let filtered = store.users;
+  let filtered = store.users.map(u => {
+    const lastSeen = store.activeSessions ? store.activeSessions[u.email.toLowerCase()] : null;
+    const isOnline = !!lastSeen && (Date.now() - lastSeen < 180000);
+    return {
+      ...u,
+      isOnline,
+      lastSeenAt: lastSeen
+    };
+  });
   if (query) {
     filtered = filtered.filter(u => u.email.toLowerCase().includes(query) || (u.fullName && u.fullName.toLowerCase().includes(query)));
   }
@@ -357,10 +397,71 @@ app.get('/api/v1/admin/users', async (req, res) => {
   });
 });
 
-app.patch('/api/v1/admin/users/:id/role', (req, res) => {
+// Admin Create / Invite User
+app.post('/api/v1/admin/users', async (req, res) => {
+  const { email, fullName, role } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email address is required' });
+  const cleanEmail = email.trim().toLowerCase();
+  let existing = store.users.find(u => u.email.toLowerCase() === cleanEmail);
+  if (existing) {
+    return res.status(409).json({ error: 'A user with this email address already exists' });
+  }
+  const newUser = {
+    id: uuidv4(),
+    email: cleanEmail,
+    fullName: fullName ? fullName.trim() : cleanEmail.split('@')[0],
+    role: role || 'MEMBER',
+    active: true,
+    createdAt: new Date().toISOString()
+  };
+  store.users.push(newUser);
+  if (supabase) {
+    try {
+      await supabase.from('profiles').upsert({
+        id: newUser.id,
+        email: newUser.email,
+        full_name: newUser.fullName,
+        global_role: newUser.role,
+        active: true
+      });
+    } catch (e) {
+      console.warn('[ADMIN] Supabase user insert warning:', e.message);
+    }
+  }
+  recordAuditLog('USER_INVITED', 'USER', newUser.id, req.headers['x-user-email'] || 'admin@projectflow.io', { email: cleanEmail, role: newUser.role });
+  res.status(201).json(newUser);
+});
+
+// Admin Update User Role
+app.patch('/api/v1/admin/users/:id/role', async (req, res) => {
   const user = store.users.find(u => u.id === req.params.id);
   if (!user) return res.status(404).json({ message: 'User not found' });
+  const oldRole = user.role;
   if (req.body.role) user.role = req.body.role;
+  if (supabase) {
+    try {
+      await supabase.from('profiles').update({ global_role: user.role }).eq('id', user.id);
+    } catch (e) {
+      console.warn('[ADMIN] Supabase role update warning:', e.message);
+    }
+  }
+  recordAuditLog('USER_ROLE_CHANGED', 'USER', user.id, req.headers['x-user-email'] || 'admin@projectflow.io', { oldRole, newRole: user.role, email: user.email });
+  res.json(user);
+});
+
+// Admin Toggle User Active Status
+app.patch('/api/v1/admin/users/:id/status', async (req, res) => {
+  const user = store.users.find(u => u.id === req.params.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  user.active = req.body.active !== undefined ? !!req.body.active : !user.active;
+  if (supabase) {
+    try {
+      await supabase.from('profiles').update({ active: user.active }).eq('id', user.id);
+    } catch (e) {
+      console.warn('[ADMIN] Supabase status update warning:', e.message);
+    }
+  }
+  recordAuditLog('USER_STATUS_TOGGLED', 'USER', user.id, req.headers['x-user-email'] || 'admin@projectflow.io', { active: user.active, email: user.email });
   res.json(user);
 });
 
@@ -390,14 +491,52 @@ app.get('/api/v1/admin/system/health', (req, res) => {
   });
 });
 
+// Audit Events with Search, Filter & Pagination
 app.get('/api/v1/admin/audit-events', (req, res) => {
+  store.auditLogs = store.auditLogs || [];
+  const query = (req.query.query || '').toLowerCase();
+  const actionFilter = (req.query.action || '').toUpperCase();
+  const page = parseInt(req.query.page) || 0;
+  const size = parseInt(req.query.size) || 25;
+
+  let list = store.auditLogs;
+  if (actionFilter && actionFilter !== 'ALL') {
+    list = list.filter(l => l.action.toUpperCase().includes(actionFilter));
+  }
+  if (query) {
+    list = list.filter(l => 
+      (l.action && l.action.toLowerCase().includes(query)) ||
+      (l.actorEmail && l.actorEmail.toLowerCase().includes(query)) ||
+      (l.entityType && l.entityType.toLowerCase().includes(query)) ||
+      (l.details && l.details.toLowerCase().includes(query))
+    );
+  }
+
+  const start = page * size;
+  const paginated = list.slice(start, start + size);
+
   res.json({
-    content: store.auditLogs,
-    totalElements: store.auditLogs.length,
-    totalPages: 1,
-    size: 25,
-    number: 0
+    content: paginated,
+    totalElements: list.length,
+    totalPages: Math.ceil(list.length / size) || 1,
+    size,
+    number: page
   });
+});
+
+// Admin System Settings (Persisted)
+app.get('/api/v1/admin/settings', (req, res) => {
+  res.json(store.settings);
+});
+
+app.patch('/api/v1/admin/settings', (req, res) => {
+  store.settings = {
+    ...store.settings,
+    ...req.body,
+    updatedAt: new Date().toISOString()
+  };
+  recordAuditLog('SETTINGS_UPDATED', 'CONFIGURATION', 'global', req.headers['x-user-email'] || 'admin@projectflow.io', req.body);
+  res.json(store.settings);
 });
 
 // -------------------------------------------------------------
@@ -490,6 +629,20 @@ app.post('/api/v1/workspaces/:id/projects', (req, res) => {
   store.projects.push(project);
   saveProjectToSupabase(project);
   res.status(201).json(project);
+});
+
+app.patch('/api/v1/projects/:id', (req, res) => {
+  const project = store.projects.find(p => p.id === req.params.id);
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+  const { name, description, status, health, targetDate } = req.body;
+  if (name) project.name = name;
+  if (description !== undefined) project.description = description;
+  if (status) project.status = status;
+  if (health) project.health = health;
+  if (targetDate) project.targetDate = targetDate;
+  project.updatedAt = new Date().toISOString();
+  saveProjectToSupabase(project);
+  res.json(project);
 });
 
 // -------------------------------------------------------------
@@ -964,11 +1117,17 @@ app.get('/api/v1/releases/:id/download', (req, res) => {
 });
 
 app.get('/api/v1/admin/releases', (req, res) => {
-  res.json(store.releases);
+  const normalized = (store.releases || []).map(r => ({
+    ...r,
+    channel: r.channel || r.releaseChannel || 'STABLE',
+    artifactSize: r.artifactSize || r.fileSizeBytes || 8114674,
+    artifactUrl: r.artifactUrl || (r.storagePath ? `/${r.storagePath}` : '/releases/android/ProjectFlow-Intelligence-v2.0.0.apk')
+  }));
+  res.json(normalized);
 });
 
 app.post('/api/v1/admin/releases', (req, res) => {
-  const { versionName, versionCode, artifactFilename, storagePath, releaseNotes, releaseChannel } = req.body;
+  const { versionName, versionCode, artifactFilename, storagePath, releaseNotes, releaseChannel, channel, artifactSize, fileSizeBytes } = req.body;
   const newRelease = {
     id: uuidv4(),
     applicationId: req.body.applicationId || 'com.projectflow.android',
@@ -977,9 +1136,11 @@ app.post('/api/v1/admin/releases', (req, res) => {
     artifactFilename: artifactFilename || 'ProjectFlow-Intelligence-v2.0.0.apk',
     storagePath: storagePath || 'releases/android/ProjectFlow-Intelligence-v2.0.0.apk',
     mimeType: 'application/vnd.android.package-archive',
-    fileSizeBytes: req.body.fileSizeBytes || 8114674,
+    fileSizeBytes: fileSizeBytes || artifactSize || 8114674,
+    artifactSize: artifactSize || fileSizeBytes || 8114674,
     sha256Checksum: req.body.sha256Checksum || '8c20000160064c7bb80af8765f912ed1d9bb20ef6bffbb4d35ed2b3729030409',
-    releaseChannel: releaseChannel || 'STABLE',
+    releaseChannel: releaseChannel || channel || 'STABLE',
+    channel: channel || releaseChannel || 'STABLE',
     releaseNotes: releaseNotes || 'Official release',
     minimumSupportedVersionCode: 1,
     status: 'PUBLISHED',
@@ -987,6 +1148,7 @@ app.post('/api/v1/admin/releases', (req, res) => {
     publishedAt: new Date().toISOString()
   };
   store.releases.unshift(newRelease);
+  recordAuditLog('RELEASE_CREATED', 'RELEASE', newRelease.id, req.headers['x-user-email'] || 'admin@projectflow.io', { versionName: newRelease.versionName, channel: newRelease.channel });
   res.status(201).json(newRelease);
 });
 
@@ -995,6 +1157,7 @@ app.post('/api/v1/admin/releases/:id/publish', (req, res) => {
   if (!rel) return res.status(404).json({ error: 'Release not found' });
   rel.status = 'PUBLISHED';
   rel.publishedAt = new Date().toISOString();
+  recordAuditLog('RELEASE_PUBLISHED', 'RELEASE', rel.id, req.headers['x-user-email'] || 'admin@projectflow.io', { versionName: rel.versionName });
   res.json(rel);
 });
 
@@ -1002,6 +1165,7 @@ app.post('/api/v1/admin/releases/:id/unpublish', (req, res) => {
   const rel = store.releases.find(r => r.id === req.params.id);
   if (!rel) return res.status(404).json({ error: 'Release not found' });
   rel.status = 'DRAFT';
+  recordAuditLog('RELEASE_UNPUBLISHED', 'RELEASE', rel.id, req.headers['x-user-email'] || 'admin@projectflow.io', { versionName: rel.versionName });
   res.json(rel);
 });
 

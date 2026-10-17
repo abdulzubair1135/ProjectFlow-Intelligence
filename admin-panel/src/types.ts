@@ -7,6 +7,8 @@ export interface UserProfile {
   avatarUrl?: string;
   role: Role;
   active: boolean;
+  isOnline?: boolean;
+  lastSeenAt?: number | string | null;
   createdAt?: string;
 }
 
@@ -157,4 +159,16 @@ export interface ErrorLogEntry {
   resolved: boolean;
   resolvedAt?: string | null;
   timestamp: string;
+}
+
+export interface SystemSettings {
+  syncIntervalMinutes: number;
+  maxBatchSize: number;
+  offlineGracePeriodHours: number;
+  fcmEnabled: boolean;
+  fcmSenderId: string;
+  organizationName: string;
+  contactEmail: string;
+  riskSeverityThreshold: string;
+  updatedAt?: string;
 }
