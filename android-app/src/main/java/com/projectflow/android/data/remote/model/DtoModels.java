@@ -127,4 +127,14 @@ public class DtoModels {
         public java.util.Map<String, Integer> statusDistribution;
         public String generatedAt;
     }
+
+    public static class ChatGroupDto {
+        public String id;
+        public String name;
+        public String channel;
+        public String description;
+        public List<String> members;
+        public String createdBy;
+        public String createdAt;
+    }
 }

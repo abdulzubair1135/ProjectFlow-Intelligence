@@ -147,7 +147,7 @@ public class TeamFragment extends Fragment {
         }
     }
 
-        private void showMemberDetailsDialog(TeamMemberDto member) {
+    private void showMemberDetailsDialog(TeamMemberDto member) {
         new AlertDialog.Builder(requireContext())
                 .setTitle(member.fullName)
                 .setMessage("Role: " + member.role + "\n" +
@@ -156,7 +156,19 @@ public class TeamFragment extends Fragment {
                         "Assigned Tasks: " + member.assignedTasksCount)
                 .setPositiveButton("Send Message", (d, w) -> {
                     if (getActivity() instanceof MainActivity) {
-                        ((MainActivity) getActivity()).navigateToFragment(ChatFragment.newInstance("general"), "Team Discussions");
+                        android.content.SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", android.content.Context.MODE_PRIVATE);
+                        String myEmail = prefs.getString("user_email", "admin@projectflow.io");
+                        String targetEmail = member.email != null ? member.email : member.fullName;
+                        String clean1 = myEmail.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
+                        String clean2 = targetEmail.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
+                        String dmChannel = (clean1.compareTo(clean2) < 0)
+                                ? "dm_" + clean1 + "_" + clean2
+                                : "dm_" + clean2 + "_" + clean1;
+
+                        ((MainActivity) getActivity()).navigateToFragment(
+                                ChatFragment.newInstance(dmChannel, member.fullName, "DIRECT"),
+                                "Chat: " + member.fullName
+                        );
                     }
                 })
                 .setNegativeButton("Close", null)

@@ -76,6 +76,12 @@ public interface ApiService {
     @GET("chat/channels")
     Call<List<String>> getChatChannels();
 
+    @GET("chat/groups")
+    Call<List<ChatGroupDto>> getChatGroups();
+
+    @POST("chat/groups")
+    Call<ChatGroupDto> createChatGroup(@Body Map<String, Object> body);
+
     @GET("chat/messages")
     Call<List<ChatMessageDto>> getChatMessages();
 

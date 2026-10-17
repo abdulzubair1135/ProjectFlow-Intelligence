@@ -312,6 +312,46 @@ public class ProjectFlowRepository {
         });
     }
 
+    public void fetchChatGroups(DataCallback<List<ChatGroupDto>> callback) {
+        executor.execute(() -> {
+            try {
+                Response<List<ChatGroupDto>> resp = api.getChatGroups().execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    if (callback != null) callback.onData(resp.body());
+                } else {
+                    if (callback != null) callback.onError("Failed to load chat groups");
+                }
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        });
+    }
+
+    public void createChatGroup(String name, String description, List<String> memberEmails, String creatorRole, String creatorEmail, DataCallback<ChatGroupDto> callback) {
+        executor.execute(() -> {
+            try {
+                Map<String, Object> body = new HashMap<>();
+                body.put("name", name);
+                body.put("description", description != null ? description : "");
+                body.put("memberEmails", memberEmails != null ? memberEmails : Collections.emptyList());
+                body.put("creatorRole", creatorRole != null ? creatorRole : "MEMBER");
+                body.put("creatorEmail", creatorEmail != null ? creatorEmail : "");
+                Response<ChatGroupDto> resp = api.createChatGroup(body).execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    if (callback != null) callback.onData(resp.body());
+                } else {
+                    String err = "Failed to create group";
+                    if (resp.code() == 403) {
+                        err = "Permission denied: Only administrators can create group channels.";
+                    }
+                    if (callback != null) callback.onError(err);
+                }
+            } catch (Exception e) {
+                if (callback != null) callback.onError(e.getMessage());
+            }
+        });
+    }
+
     public void fetchAllChatMessages(DataCallback<List<ChatMessageDto>> callback) {
         executor.execute(() -> {
             try {
