@@ -1,0 +1,9 @@
+const express = require('express');
+const router = express.Router();
+const taskController = require('../controllers/taskController');
+
+router.get('/tasks', taskController.getAllTasks);
+router.patch('/tasks/:id/status', taskController.updateTaskStatus);
+router.patch('/tasks/:id', taskController.updateTask);
+
+module.exports = router;
