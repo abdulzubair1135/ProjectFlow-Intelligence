@@ -322,19 +322,28 @@ async function dispatchPushNotification(title, message, extraData = {}) {
   (store.pushLogs = store.pushLogs || []).unshift(record);
 }
 
-app.post('/api/v1/notifications/send-push', async (req, res) => {
-  const { title, message, taskId, priority, type } = req.body;
+// Universal Enterprise Real-time Notification Engine
+async function broadcastSystemNotification({ title, message, type = 'SYSTEM', taskId = null, channel = null, senderName = null, senderId = null, priority = 'NORMAL', userId = null }) {
   const notif = {
     id: uuidv4(),
     title: title || 'Workspace Alert',
-    message: message || 'You have a new update in ProjectFlow.',
-    type: type || 'PUSH_ALERT',
+    message: message || 'New enterprise update',
+    type: type || 'SYSTEM',
     taskId: taskId || null,
-    priority: priority || 'HIGH',
+    channel: channel || null,
+    senderName: senderName || null,
+    senderId: senderId || null,
+    priority: priority || 'NORMAL',
+    userId: userId || null,
     read: false,
     createdAt: new Date().toISOString()
   };
+
   (store.notifications = store.notifications || []).unshift(notif);
+  if (store.notifications.length > 200) {
+    store.notifications = store.notifications.slice(0, 200);
+  }
+
   if (supabase) {
     try {
       await supabase.from('notifications').upsert({
@@ -342,14 +351,34 @@ app.post('/api/v1/notifications/send-push', async (req, res) => {
         title: notif.title,
         message: notif.message,
         type: notif.type,
+        user_id: notif.userId || null,
         read: false,
         created_at: notif.createdAt
       });
     } catch (e) {
-      console.warn('[NOTIF] Supabase sync:', e.message);
+      console.warn('[NOTIF] Supabase sync warning:', e.message);
     }
   }
-  await dispatchPushNotification(notif.title, notif.message, { taskId: notif.taskId, priority: notif.priority });
+
+  await dispatchPushNotification(notif.title, notif.message, {
+    type: notif.type,
+    taskId: notif.taskId,
+    channel: notif.channel,
+    priority: notif.priority
+  });
+
+  return notif;
+}
+
+app.post('/api/v1/notifications/send-push', async (req, res) => {
+  const { title, message, taskId, priority, type } = req.body;
+  const notif = await broadcastSystemNotification({
+    title: title || 'Workspace Alert',
+    message: message || 'You have a new update in ProjectFlow.',
+    type: type || 'PUSH_ALERT',
+    taskId: taskId || null,
+    priority: priority || 'HIGH'
+  });
   res.json({ success: true, notification: notif, deliveredDevices: store.fcmTokens.length });
 });
 
@@ -363,7 +392,12 @@ const handleBroadcastSend = async (req, res) => {
   const { title, body, message, type } = req.body;
   const alertTitle = title || 'ProjectFlow Broadcast Alert';
   const alertBody = body || message || 'New enterprise announcement';
-  await dispatchPushNotification(alertTitle, alertBody, { type: type || 'BROADCAST' });
+  await broadcastSystemNotification({
+    title: alertTitle,
+    message: alertBody,
+    type: type || 'BROADCAST',
+    priority: 'HIGH'
+  });
   recordAuditLog('BROADCAST_SENT', 'NOTIFICATION', null, req.headers['x-user-email'] || 'admin@projectflow.io', { title: alertTitle, recipientsCount: store.fcmTokens.length });
   res.json({
     success: true,
@@ -697,10 +731,16 @@ app.post('/api/v1/workspaces/:id/projects', (req, res) => {
   };
   store.projects.push(project);
   saveProjectToSupabase(project);
+  broadcastSystemNotification({
+    title: '🚀 New Project Created',
+    message: `Project "${project.name}" (${project.code}) was created by Administrator.`,
+    type: 'PROJECT_CREATED',
+    priority: 'HIGH'
+  });
   res.status(201).json(project);
 });
 
-app.patch('/api/v1/projects/:id', (req, res) => {
+app.patch('/api/v1/projects/:id', async (req, res) => {
   const project = store.projects.find(p => p.id === req.params.id);
   if (!project) return res.status(404).json({ error: 'Project not found' });
   const { name, description, status, health, targetDate } = req.body;
@@ -711,6 +751,12 @@ app.patch('/api/v1/projects/:id', (req, res) => {
   if (targetDate) project.targetDate = targetDate;
   project.updatedAt = new Date().toISOString();
   saveProjectToSupabase(project);
+  await broadcastSystemNotification({
+    title: '📊 Project Updated',
+    message: `Project "${project.name}" status: ${project.status || 'ACTIVE'}, health: ${project.health || 'ON_TRACK'}`,
+    type: 'PROJECT_UPDATED',
+    priority: 'NORMAL'
+  });
   res.json(project);
 });
 
@@ -795,43 +841,22 @@ app.post('/api/v1/projects/:id/tasks', async (req, res) => {
     createdAt: new Date().toISOString()
   };
   store.tasks.push(task);
-
-  // Automatically generate notification for user or team
-  const targetLabel = teamName ? `Team "${teamName}"` : 'You';
-  const notif = {
-    id: uuidv4(),
-    title: 'New Task Assigned',
-    message: `${targetLabel} received task: "${task.title}" (Priority: ${task.priority})`,
-    type: 'TASK_ASSIGNED',
-    userId: assigneeId || null,
-    teamId: teamId || null,
-    taskId: task.id,
-    read: false,
-    createdAt: new Date().toISOString()
-  };
-  (store.notifications = store.notifications || []).unshift(notif);
   saveTaskToSupabase(task);
 
-  if (supabase) {
-    try {
-      await supabase.from('notifications').upsert({
-        id: notif.id,
-        title: notif.title,
-        message: notif.message,
-        type: notif.type,
-        user_id: notif.userId || null,
-        read: false,
-        created_at: notif.createdAt
-      });
-    } catch (err) {
-      console.warn('[NOTIF] Supabase notif upsert warning:', err.message);
-    }
-  }
+  const targetLabel = resolvedAssigneeName || (resolvedTeamName ? `Team "${resolvedTeamName}"` : 'Team');
+  await broadcastSystemNotification({
+    title: '📋 New Task Assigned',
+    message: `${targetLabel} received task: "${task.title}" (Priority: ${task.priority})`,
+    type: 'TASK_ASSIGNED',
+    taskId: task.id,
+    userId: assigneeId || null,
+    priority: task.priority
+  });
 
   res.status(201).json(task);
 });
 
-app.patch('/api/v1/tasks/:id/status', (req, res) => {
+app.patch('/api/v1/tasks/:id/status', async (req, res) => {
   const task = store.tasks.find(t => t.id === req.params.id);
   if (!task) return res.status(404).json({ error: 'Task not found' });
   if (req.body.statusCategory) {
@@ -845,27 +870,13 @@ app.patch('/api/v1/tasks/:id/status', (req, res) => {
   }
   saveTaskToSupabase(task);
 
-  const statusNotif = {
-    id: uuidv4(),
-    title: task.statusCategory === 'DONE' ? 'Task Completed 🎉' : 'Task Status Updated',
+  await broadcastSystemNotification({
+    title: task.statusCategory === 'DONE' ? '🎉 Task Completed' : 'Task Status Updated',
     message: `"${task.title}" has been updated to ${task.statusCategory}.`,
     type: 'TASK_STATUS_CHANGED',
     taskId: task.id,
-    read: false,
-    createdAt: new Date().toISOString()
-  };
-  (store.notifications = store.notifications || []).unshift(statusNotif);
-  if (supabase) {
-    supabase.from('notifications').upsert({
-      id: statusNotif.id,
-      title: statusNotif.title,
-      message: statusNotif.message,
-      type: statusNotif.type,
-      read: false,
-      created_at: statusNotif.createdAt
-    }).then(() => {}).catch(err => console.warn('[NOTIF] Status notif error:', err.message));
-  }
-  dispatchPushNotification(statusNotif.title, statusNotif.message, { taskId: task.id });
+    priority: task.priority
+  });
 
   res.json(task);
 });
@@ -926,7 +937,7 @@ app.get('/api/v1/teams', (req, res) => {
   res.json(store.teams || []);
 });
 
-app.post('/api/v1/teams', (req, res) => {
+app.post('/api/v1/teams', async (req, res) => {
   const { name, description, memberCount } = req.body;
   if (!name) return res.status(400).json({ error: 'Team name is required' });
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -953,14 +964,13 @@ app.post('/api/v1/teams', (req, res) => {
     createdAt: new Date().toISOString()
   });
 
-  // Post notification
-  (store.notifications = store.notifications || []).unshift({
-    id: uuidv4(),
-    title: 'New Team & Group Created',
+  // Broadcast notification to all mobile & web clients
+  await broadcastSystemNotification({
+    title: '👥 New Team & Group Created',
     message: `Team "${name}" and chat channel #${channel} are now active.`,
     type: 'TEAM_CREATED',
-    read: false,
-    createdAt: new Date().toISOString()
+    channel: channel,
+    priority: 'HIGH'
   });
 
   res.status(201).json(newTeam);
@@ -1018,7 +1028,37 @@ app.get('/api/v1/team', async (req, res) => {
 // -------------------------------------------------------------
 // NOTIFICATIONS
 // -------------------------------------------------------------
-app.get('/api/v1/notifications', (req, res) => {
+app.get('/api/v1/notifications', async (req, res) => {
+  if (supabase) {
+    try {
+      const { data: dbNotifs, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (!error && dbNotifs && dbNotifs.length > 0) {
+        dbNotifs.forEach(dn => {
+          const idx = store.notifications.findIndex(n => n.id === dn.id);
+          const mapped = {
+            id: dn.id,
+            title: dn.title,
+            message: dn.message,
+            type: dn.type || 'SYSTEM',
+            read: !!dn.read,
+            createdAt: dn.created_at
+          };
+          if (idx >= 0) {
+            store.notifications[idx] = { ...store.notifications[idx], ...mapped };
+          } else {
+            store.notifications.push(mapped);
+          }
+        });
+        store.notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+    } catch (e) {
+      console.warn('[NOTIF] Supabase live sync warning:', e.message);
+    }
+  }
   res.json(store.notifications || []);
 });
 
@@ -1046,7 +1086,7 @@ app.get('/api/v1/chat/groups', (req, res) => {
   res.json(store.chatGroups || []);
 });
 
-app.post('/api/v1/chat/groups', (req, res) => {
+app.post('/api/v1/chat/groups', async (req, res) => {
   const { name, description, memberEmails, creatorRole, creatorEmail } = req.body;
   const isAdmin = (creatorRole && creatorRole.toUpperCase().includes('ADMIN')) ||
                   (creatorEmail && creatorEmail.toLowerCase().includes('admin'));
@@ -1079,6 +1119,14 @@ app.post('/api/v1/chat/groups', (req, res) => {
     createdAt: new Date().toISOString()
   };
   (store.messages = store.messages || []).push(welcomeMsg);
+
+  await broadcastSystemNotification({
+    title: `👥 New Group Created: ${newGroup.name}`,
+    message: description ? `Group "${newGroup.name}": ${description}` : `Administrator created a new collaboration group "${newGroup.name}".`,
+    type: 'GROUP_CREATED',
+    channel: newGroup.channel,
+    priority: 'HIGH'
+  });
 
   res.status(201).json(newGroup);
 });
@@ -1142,45 +1190,17 @@ app.post('/api/v1/chat/messages', async (req, res) => {
   };
   (store.messages = store.messages || []).push(msg);
 
-  // 1. Create in-app system notification for workspace members
+  // Broadcast notification and push
   const isDirect = targetChannel.startsWith('dm_');
   const notifTitle = isDirect ? `💬 ${authorName} (${finalRole})` : `💬 #${targetChannel} • ${authorName}`;
-  const notif = {
-    id: uuidv4(),
+  await broadcastSystemNotification({
     title: notifTitle,
     message: content || 'Sent a new message',
     type: 'CHAT_MESSAGE',
     channel: targetChannel,
     senderName: authorName,
     senderId: msg.senderId,
-    read: false,
-    createdAt: new Date().toISOString()
-  };
-  (store.notifications = store.notifications || []).unshift(notif);
-
-  // 2. Persist to Supabase if connected
-  if (supabase) {
-    try {
-      await supabase.from('notifications').upsert({
-        id: notif.id,
-        title: notif.title,
-        message: notif.message,
-        type: notif.type,
-        read: false,
-        created_at: notif.createdAt
-      });
-    } catch (e) {
-      console.warn('[NOTIF] Supabase chat sync:', e.message);
-    }
-  }
-
-  // 3. Dispatch broadcast push alert
-  await dispatchPushNotification(notif.title, notif.message, {
-    type: 'CHAT_MESSAGE',
-    channel: targetChannel,
-    senderName: authorName,
-    senderId: msg.senderId,
-    messageId: msg.id
+    priority: isDirect ? 'HIGH' : 'NORMAL'
   });
 
   res.status(201).json(msg);

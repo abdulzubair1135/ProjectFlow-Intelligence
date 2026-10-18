@@ -27,6 +27,9 @@ public class ProjectFlowApplication extends Application {
         // Initialize Enterprise Notification Channels
         com.projectflow.android.service.ProjectFlowNotificationHelper.initChannels(this);
 
+        // Start Real-Time Notification & Workspace Sync Engine
+        com.projectflow.android.service.NotificationSyncManager.getInstance(this).start();
+
         // Register Firebase Cloud Messaging (FCM) Push Token with Render Server
         try {
             com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {

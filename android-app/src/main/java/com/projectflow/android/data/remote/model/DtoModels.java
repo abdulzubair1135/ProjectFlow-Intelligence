@@ -103,6 +103,8 @@ public class DtoModels {
         public String type;
         public String taskId;
         public String priority;
+        public String channel;
+        public String senderName;
         public boolean read;
         public String createdAt;
     }

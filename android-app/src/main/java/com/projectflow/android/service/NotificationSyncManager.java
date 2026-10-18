@@ -158,9 +158,14 @@ public class NotificationSyncManager {
                     seenNotifIds.add(notif.id);
                     newFound = true;
 
-                    // Only alert if unread and not a chat message (chat messages handled above)
-                    if (!notif.read && !"CHAT_MESSAGE".equalsIgnoreCase(notif.type)) {
-                        if ("RISK_ALERT".equalsIgnoreCase(notif.type) || "CRITICAL".equalsIgnoreCase(notif.priority)) {
+                    // Trigger heads-up notification for ANY action from Control Panel / Workspace
+                    if (!notif.read) {
+                        Log.i(TAG, "Triggering phone notification: " + notif.title + " - " + notif.message);
+                        if ("CHAT_MESSAGE".equalsIgnoreCase(notif.type)) {
+                            String ch = notif.channel != null ? notif.channel : "general";
+                            String sender = notif.senderName != null ? notif.senderName : "Workspace";
+                            ProjectFlowNotificationHelper.showChatNotification(appContext, notif.title, notif.message, ch, sender);
+                        } else if ("RISK_ALERT".equalsIgnoreCase(notif.type) || "CRITICAL".equalsIgnoreCase(notif.priority)) {
                             ProjectFlowNotificationHelper.showRiskNotification(appContext, notif.title, notif.message, notif.priority);
                         } else {
                             ProjectFlowNotificationHelper.showTaskNotification(appContext, notif.title, notif.message, notif.taskId, notif.priority);
