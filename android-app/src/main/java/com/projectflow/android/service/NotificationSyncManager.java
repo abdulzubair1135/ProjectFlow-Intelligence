@@ -123,13 +123,14 @@ public class NotificationSyncManager {
 
                     if (!isSelf) {
                         Log.d(TAG, "New incoming chat alert from " + msg.senderName + " in #" + msg.channel);
-                        String title = "💬 #" + (msg.channel != null ? msg.channel : "general") + " • " + (msg.senderName != null ? msg.senderName : "Team");
+                        String sender = (msg.senderName != null && !msg.senderName.isEmpty()) ? msg.senderName : "System Administrator";
+                        String title = (msg.channel != null && msg.channel.startsWith("dm_")) ? ("💬 " + sender) : ("💬 #" + (msg.channel != null ? msg.channel : "general") + " • " + sender);
                         ProjectFlowNotificationHelper.showChatNotification(
                                 appContext,
                                 title,
                                 msg.content,
                                 msg.channel,
-                                msg.senderName
+                                sender
                         );
                     }
                 }
@@ -160,10 +161,25 @@ public class NotificationSyncManager {
 
                     // Trigger heads-up notification for ANY action from Control Panel / Workspace
                     if (!notif.read) {
+                        if (notif.message != null && notif.message.contains("<!--PF:")) {
+                            java.util.regex.Matcher m = java.util.regex.Pattern.compile("<!--PF:ch=([^:]*):task=([^:]*):sender=([^>]*)-->").matcher(notif.message);
+                            if (m.find()) {
+                                if (notif.channel == null || notif.channel.isEmpty()) notif.channel = m.group(1);
+                                if (notif.taskId == null || notif.taskId.isEmpty()) notif.taskId = m.group(2);
+                                if (notif.senderName == null || notif.senderName.isEmpty()) notif.senderName = m.group(3);
+                            }
+                            notif.message = notif.message.replaceAll("<!--PF:[^>]*-->", "").trim();
+                        }
+
                         Log.i(TAG, "Triggering phone notification: " + notif.title + " - " + notif.message);
-                        if ("CHAT_MESSAGE".equalsIgnoreCase(notif.type)) {
-                            String ch = notif.channel != null ? notif.channel : "general";
-                            String sender = notif.senderName != null ? notif.senderName : "Workspace";
+                        if ("CHAT_MESSAGE".equalsIgnoreCase(notif.type) || (notif.title != null && notif.title.contains("💬"))) {
+                            String ch = (notif.channel != null && !notif.channel.isEmpty()) ? notif.channel : "";
+                            if (ch.isEmpty()) {
+                                String clean1 = currentEmail.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
+                                String clean2 = "admin_projectflow_io";
+                                ch = (clean1.compareTo(clean2) < 0) ? "dm_" + clean1 + "_" + clean2 : "dm_" + clean2 + "_" + clean1;
+                            }
+                            String sender = (notif.senderName != null && !notif.senderName.isEmpty()) ? notif.senderName : "System Administrator";
                             ProjectFlowNotificationHelper.showChatNotification(appContext, notif.title, notif.message, ch, sender);
                         } else if ("RISK_ALERT".equalsIgnoreCase(notif.type) || "CRITICAL".equalsIgnoreCase(notif.priority)) {
                             ProjectFlowNotificationHelper.showRiskNotification(appContext, notif.title, notif.message, notif.priority);

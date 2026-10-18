@@ -203,14 +203,24 @@ public class MainActivity extends AppCompatActivity {
     private boolean handleIntent(android.content.Intent intent) {
         if (intent == null) return false;
         String navigateTo = intent.getStringExtra("navigate_to");
-        if ("CHAT".equalsIgnoreCase(navigateTo)) {
+        if ("CHAT".equalsIgnoreCase(navigateTo) || "CHAT_ROOM".equalsIgnoreCase(navigateTo)) {
             String channel = intent.getStringExtra("chat_channel");
+            String title = intent.getStringExtra("chat_title");
+            String type = intent.getStringExtra("chat_type");
+            if (channel == null || channel.isEmpty()) channel = "general";
+            if (title == null || title.isEmpty()) {
+                title = channel.startsWith("dm_") ? "System Administrator" : ("#" + channel);
+            }
+            if (type == null || type.isEmpty()) {
+                type = channel.startsWith("dm_") ? "DIRECT" : "GROUP";
+            }
+
             Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
             if (current instanceof ChatFragment) {
-                ((ChatFragment) current).switchChannel(channel);
+                ((ChatFragment) current).openChatRoom(channel, title, type);
             } else {
-                ChatFragment chatFragment = ChatFragment.newInstance(channel);
-                loadFragment(chatFragment, "Discussions");
+                ChatFragment chatFragment = ChatFragment.newInstance(channel, title, type);
+                navigateToFragment(chatFragment, "Chat: " + title);
             }
             return true;
         } else if ("NOTIFICATIONS".equalsIgnoreCase(navigateTo)) {

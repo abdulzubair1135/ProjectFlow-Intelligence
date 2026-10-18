@@ -189,15 +189,17 @@ public class ProjectFlowNotificationHelper {
         initChannels(context);
 
         String ch = (channelName != null && !channelName.isEmpty()) ? channelName : "general";
-        String sender = (senderName != null && !senderName.isEmpty()) ? senderName : "Team Member";
+        String sender = (senderName != null && !senderName.isEmpty()) ? senderName : "System Administrator";
         String timeStr = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
 
         Intent intent = new Intent(context, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra("navigate_to", "CHAT");
         intent.putExtra("chat_channel", ch);
+        intent.putExtra("chat_title", sender);
+        intent.putExtra("chat_type", ch.startsWith("dm_") ? "DIRECT" : "GROUP");
 
-        int reqCode = ch.hashCode();
+        int reqCode = Math.abs(ch.hashCode());
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context,
                 reqCode,
@@ -208,26 +210,31 @@ public class ProjectFlowNotificationHelper {
         Uri defaultSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         Bitmap logoBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.logo_clean);
 
+        boolean isDirect = ch.startsWith("dm_");
+        String channelDisplay = isDirect ? "Direct Chat" : "#" + ch;
+        String displayTitle = isDirect ? ("💬 " + sender) : ("💬 #" + ch + " • " + sender);
+
         // 1. Rich Collapsed Custom UI with Channel & Sender Title and Time
         RemoteViews collapsedView = new RemoteViews(context.getPackageName(), R.layout.notification_chat_collapsed);
-        collapsedView.setTextViewText(R.id.notifTitle, "💬 #" + ch + " • " + sender);
+        collapsedView.setTextViewText(R.id.notifTitle, displayTitle);
         collapsedView.setTextViewText(R.id.notifMessage, message);
         collapsedView.setTextViewText(R.id.notifTime, timeStr);
+        collapsedView.setOnClickPendingIntent(R.id.rootNotifCollapsed, pendingIntent);
 
         // 2. Rich Expanded Custom UI with Channel Tag, Sender, and Message Bubble
         RemoteViews expandedView = new RemoteViews(context.getPackageName(), R.layout.notification_chat_expanded);
-        expandedView.setTextViewText(R.id.notifChannelExpanded, "#" + ch);
+        expandedView.setTextViewText(R.id.notifChannelExpanded, channelDisplay);
         expandedView.setTextViewText(R.id.notifSenderExpanded, sender);
         expandedView.setTextViewText(R.id.notifMessageExpanded, message);
         expandedView.setTextViewText(R.id.notifTimeExpanded, timeStr);
+        expandedView.setOnClickPendingIntent(R.id.rootNotifExpanded, pendingIntent);
 
-        String displayTitle = "💬 #" + ch + " • " + sender;
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_CHAT)
                 .setSmallIcon(R.drawable.ic_chat)
                 .setLargeIcon(logoBitmap)
                 .setContentTitle(displayTitle)
                 .setContentText(message)
-                .setSubText("#" + ch)
+                .setSubText(channelDisplay)
                 .setCustomContentView(collapsedView)
                 .setCustomBigContentView(expandedView)
                 .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
@@ -239,7 +246,7 @@ public class ProjectFlowNotificationHelper {
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent);
 
-        builder.addAction(R.drawable.ic_chat, "Open #" + ch, pendingIntent);
+        builder.addAction(R.drawable.ic_chat, isDirect ? "Open Chat" : "Open #" + ch, pendingIntent);
 
         NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) {

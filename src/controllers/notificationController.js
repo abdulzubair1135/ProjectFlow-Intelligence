@@ -51,12 +51,18 @@ async function broadcastSystemNotification({
     store.notifications = store.notifications.slice(0, 200);
   }
 
+  // Encode channel, taskId, senderName into message metadata for Supabase persistence
+  const metaTag = (channel || taskId || senderName)
+    ? ` <!--PF:ch=${channel || ''}:task=${taskId || ''}:sender=${senderName || ''}-->`
+    : '';
+  const supabaseMessage = (notif.message || '') + metaTag;
+
   if (supabase) {
     try {
       await supabase.from('notifications').upsert({
         id: notif.id,
         title: notif.title,
-        message: notif.message,
+        message: supabaseMessage,
         type: notif.type,
         user_id: notif.userId || null,
         read: false,
@@ -128,7 +134,7 @@ function getBroadcastHistory(req, res) {
   res.json(store.pushLogs || []);
 }
 
-// Handler: Get Notifications
+// Handler: Get Notifications with Channel & Metadata Extraction
 async function getNotifications(req, res) {
   if (supabase) {
     try {
@@ -140,16 +146,39 @@ async function getNotifications(req, res) {
       if (!error && dbNotifs && dbNotifs.length > 0) {
         dbNotifs.forEach(dn => {
           const idx = (store.notifications || []).findIndex(n => n.id === dn.id);
-          const mapped = {
-            id: dn.id,
-            title: dn.title,
-            message: dn.message,
-            type: dn.type || 'SYSTEM',
-            read: !!dn.read,
-            createdAt: dn.created_at
-          };
-          if (idx >= 0) store.notifications[idx] = { ...store.notifications[idx], ...mapped };
-          else (store.notifications = store.notifications || []).push(mapped);
+          let rawMsg = dn.message || '';
+          let ch = null;
+          let tId = null;
+          let sName = null;
+
+          if (rawMsg.includes('<!--PF:')) {
+            const match = rawMsg.match(/<!--PF:ch=([^:]*):task=([^:]*):sender=([^>]*)-->/);
+            if (match) {
+              ch = match[1] || null;
+              tId = match[2] || null;
+              sName = match[3] || null;
+              rawMsg = rawMsg.replace(/<!--PF:ch=[^:]*:task=[^:]*:sender=[^>]*-->/, '').trim();
+            }
+          }
+
+          if (idx >= 0) {
+            store.notifications[idx].read = !!dn.read;
+            if (!store.notifications[idx].channel && ch) store.notifications[idx].channel = ch;
+            if (!store.notifications[idx].taskId && tId) store.notifications[idx].taskId = tId;
+            if (!store.notifications[idx].senderName && sName) store.notifications[idx].senderName = sName;
+          } else {
+            (store.notifications = store.notifications || []).push({
+              id: dn.id,
+              title: dn.title,
+              message: rawMsg,
+              type: dn.type || 'SYSTEM',
+              taskId: tId,
+              channel: ch,
+              senderName: sName,
+              read: !!dn.read,
+              createdAt: dn.created_at
+            });
+          }
         });
         store.notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       }
@@ -158,7 +187,19 @@ async function getNotifications(req, res) {
     }
   }
 
-  res.json(store.notifications || []);
+  // Return clean messages without metadata tags
+  const cleaned = (store.notifications || []).map(n => {
+    let msg = n.message || '';
+    if (msg.includes('<!--PF:')) {
+      msg = msg.replace(/<!--PF:[^>]*-->/, '').trim();
+    }
+    return {
+      ...n,
+      message: msg
+    };
+  });
+
+  res.json(cleaned);
 }
 
 // Handler: Mark Single Read

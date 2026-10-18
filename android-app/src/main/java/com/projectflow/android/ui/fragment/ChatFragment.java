@@ -235,7 +235,15 @@ public class ChatFragment extends Fragment {
 
     public void openChatRoom(String channel, String title, String type) {
         activeChannel = channel != null ? channel : "general";
-        activeChatTitle = title != null ? title : activeChannel;
+        if (title == null || title.isEmpty() || title.startsWith("dm_")) {
+            if (activeChannel.contains("admin_projectflow_io")) {
+                activeChatTitle = "System Administrator";
+            } else {
+                activeChatTitle = activeChannel.startsWith("dm_") ? "Direct Chat" : ("#" + activeChannel);
+            }
+        } else {
+            activeChatTitle = title;
+        }
         activeChatType = type != null ? type : (activeChannel.startsWith("dm_") ? "DIRECT" : "GROUP");
 
         layoutConversationList.setVisibility(View.GONE);
@@ -369,10 +377,47 @@ public class ChatFragment extends Fragment {
         }
 
         // 2. Build 1-on-1 Direct Conversations from Team Members
+        // Dedicated Pinned Administrator Channel:
+        String myClean = currentUserEmail.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
+        String adminClean = "admin_projectflow_io";
+        String adminDmChannel = (myClean.compareTo(adminClean) < 0)
+                ? "dm_" + myClean + "_" + adminClean
+                : "dm_" + adminClean + "_" + myClean;
+
+        boolean adminOnline = false;
+        String adminSnippet = "Direct chat with System Administrator";
+        String adminTime = "";
+
         if (teamMembers != null) {
             for (TeamMemberDto m : teamMembers) {
-                if (m.email != null && m.email.equalsIgnoreCase(currentUserEmail)) {
-                    continue; // Skip self
+                if ("admin@projectflow.io".equalsIgnoreCase(m.email) || (m.role != null && m.role.equalsIgnoreCase("ADMINISTRATOR"))) {
+                    adminOnline = m.isOnline;
+                    break;
+                }
+            }
+        }
+        ChatMessageDto lastAdminMsg = lastMsgByChannel.get(adminDmChannel);
+        if (lastAdminMsg != null) {
+            adminSnippet = lastAdminMsg.senderName + ": " + lastAdminMsg.content;
+            adminTime = formatTime(lastAdminMsg.createdAt);
+        }
+
+        ConversationItem adminItem = new ConversationItem(
+                adminDmChannel,
+                "System Administrator (Admin Help & Support)",
+                adminSnippet,
+                adminTime,
+                "SA",
+                ConversationItem.Type.DIRECT,
+                adminOnline
+        );
+        adminItem.targetEmail = "admin@projectflow.io";
+        allConversations.add(adminItem);
+
+        if (teamMembers != null) {
+            for (TeamMemberDto m : teamMembers) {
+                if (m.email != null && (m.email.equalsIgnoreCase(currentUserEmail) || m.email.equalsIgnoreCase("admin@projectflow.io"))) {
+                    continue; // Skip self and admin (already pinned at top)
                 }
                 String clean1 = currentUserEmail.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
                 String target = m.email != null ? m.email : m.fullName;

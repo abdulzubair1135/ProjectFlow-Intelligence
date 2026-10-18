@@ -61,11 +61,39 @@ public class NotificationsFragment extends Fragment {
                 adapter.notifyDataSetChanged();
                 repository.markNotificationRead(notif.id, null);
             }
-            if (notif.taskId != null && !notif.taskId.isEmpty()) {
+            if (notif.message != null && notif.message.contains("<!--PF:")) {
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("<!--PF:ch=([^:]*):task=([^:]*):sender=([^>]*)-->").matcher(notif.message);
+                if (m.find()) {
+                    if (notif.channel == null || notif.channel.isEmpty()) notif.channel = m.group(1);
+                    if (notif.taskId == null || notif.taskId.isEmpty()) notif.taskId = m.group(2);
+                    if (notif.senderName == null || notif.senderName.isEmpty()) notif.senderName = m.group(3);
+                }
+            }
+            boolean isChat = (notif.channel != null && !notif.channel.isEmpty())
+                    || "CHAT_MESSAGE".equalsIgnoreCase(notif.type)
+                    || (notif.title != null && notif.title.contains("💬"));
+            if (isChat) {
+                String ch = (notif.channel != null && !notif.channel.isEmpty()) ? notif.channel : "";
+                if (ch.isEmpty()) {
+                    String userEmail = requireContext().getSharedPreferences("projectflow_prefs", android.content.Context.MODE_PRIVATE)
+                            .getString("user_email", "admin@projectflow.io");
+                    String c1 = userEmail.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
+                    String c2 = "admin_projectflow_io";
+                    ch = (c1.compareTo(c2) < 0) ? "dm_" + c1 + "_" + c2 : "dm_" + c2 + "_" + c1;
+                }
+                String sender = (notif.senderName != null && !notif.senderName.isEmpty()) ? notif.senderName : "System Administrator";
+                String type = ch.startsWith("dm_") ? "DIRECT" : "GROUP";
+                if (getActivity() instanceof com.projectflow.android.ui.MainActivity) {
+                    ((com.projectflow.android.ui.MainActivity) getActivity()).navigateToFragment(
+                            ChatFragment.newInstance(ch, sender, type),
+                            "Chat: " + sender
+                    );
+                }
+            } else if (notif.taskId != null && !notif.taskId.isEmpty()) {
                 android.content.Intent intent = new android.content.Intent(requireContext(), com.projectflow.android.ui.TaskDetailsActivity.class);
                 intent.putExtra("task_id", notif.taskId);
                 intent.putExtra("task_title", notif.title);
-                intent.putExtra("task_desc", notif.message);
+                intent.putExtra("task_desc", notif.message != null ? notif.message.replaceAll("<!--PF:[^>]*-->", "").trim() : "");
                 startActivity(intent);
             }
         });
@@ -111,7 +139,20 @@ public class NotificationsFragment extends Fragment {
                     getActivity().runOnUiThread(() -> {
                         swipeRefreshNotifs.setRefreshing(false);
                         allList.clear();
-                        if (data != null) allList.addAll(data);
+                        if (data != null) {
+                            for (NotificationDto n : data) {
+                                if (n.message != null && n.message.contains("<!--PF:")) {
+                                    java.util.regex.Matcher m = java.util.regex.Pattern.compile("<!--PF:ch=([^:]*):task=([^:]*):sender=([^>]*)-->").matcher(n.message);
+                                    if (m.find()) {
+                                        if (n.channel == null || n.channel.isEmpty()) n.channel = m.group(1);
+                                        if (n.taskId == null || n.taskId.isEmpty()) n.taskId = m.group(2);
+                                        if (n.senderName == null || n.senderName.isEmpty()) n.senderName = m.group(3);
+                                    }
+                                    n.message = n.message.replaceAll("<!--PF:[^>]*-->", "").trim();
+                                }
+                                allList.add(n);
+                            }
+                        }
                         filterList();
                     });
                 }
@@ -169,7 +210,8 @@ public class NotificationsFragment extends Fragment {
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             NotificationDto item = list.get(position);
             holder.tvTitle.setText(item.title);
-            holder.tvSubtitle.setText(item.message);
+            String cleanMsg = item.message != null ? item.message.replaceAll("<!--PF:[^>]*-->", "").trim() : "";
+            holder.tvSubtitle.setText(cleanMsg);
             holder.tvTime.setText(formatRelativeTime(item.createdAt));
             holder.unreadDot.setVisibility(item.read ? View.GONE : View.VISIBLE);
 
