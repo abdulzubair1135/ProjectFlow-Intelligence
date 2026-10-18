@@ -48,6 +48,9 @@ public class DashboardFragment extends Fragment {
     private LinearLayout qaCreateTask, qaCalendar, qaReports, qaChat;
     private TextView btnViewAllProjects;
     private ProjectFlowRepository repository;
+    private final java.util.Set<String> userSquads = new java.util.HashSet<>();
+    private List<ProjectEntity> rawProjects = new ArrayList<>();
+    private List<TaskEntity> rawTasks = new ArrayList<>();
 
     @Nullable
     @Override
@@ -111,85 +114,64 @@ public class DashboardFragment extends Fragment {
         }
 
         // Set user info from SharedPreferences
+        refreshUserInfo();
+
+        // Load Squads for isolation
         SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
-        String userEmail = prefs.getString("user_email", "admin@projectflow.io");
-        String defaultName = userEmail.contains("@") ? userEmail.split("@")[0] : "ProjectFlow User";
-        String savedName = prefs.getString("user_name", prefs.getString("user_display_name", defaultName));
-        String savedRole = prefs.getString("user_role", "ADMINISTRATOR");
-        tvUserName.setText(savedName);
-        tvUserRole.setText(savedRole);
+        String currentEmail = prefs.getString("user_email", "").trim().toLowerCase();
+        userSquads.add("core engineering");
+        userSquads.add("engineering");
+        if (currentEmail.contains("abdul")) {
+            userSquads.add("mobile engineering group");
+        }
+
+        repository.fetchChatGroups(new ProjectFlowRepository.DataCallback<List<com.projectflow.android.data.remote.model.DtoModels.ChatGroupDto>>() {
+            @Override
+            public void onData(List<com.projectflow.android.data.remote.model.DtoModels.ChatGroupDto> groups) {
+                if (groups != null && isAdded()) {
+                    for (var g : groups) {
+                        if (g.name != null && g.members != null) {
+                            for (String m : g.members) {
+                                if (m != null && m.trim().equalsIgnoreCase(currentEmail)) {
+                                    userSquads.add(g.name.trim().toLowerCase());
+                                    if (g.channel != null) userSquads.add(g.channel.trim().toLowerCase());
+                                }
+                            }
+                        }
+                    }
+                    if (getActivity() != null) getActivity().runOnUiThread(() -> updateFilteredMetrics());
+                }
+            }
+            @Override
+            public void onError(String message) {}
+        });
 
         // Setup Projects RecyclerView
         projectAdapter = new ProjectAdapter(project -> {
-            if (getActivity() instanceof MainActivity) {
-                ((MainActivity) getActivity()).navigateToFragment(new ProjectsFragment(), "Projects");
-            }
+            Intent intent = new Intent(requireContext(), com.projectflow.android.ui.ProjectDetailsActivity.class);
+            intent.putExtra("project_id", project.id);
+            intent.putExtra("project_name", project.name);
+            intent.putExtra("project_code", project.code);
+            intent.putExtra("project_desc", project.description);
+            intent.putExtra("project_target", project.targetDate);
+            intent.putExtra("project_status", project.status);
+            intent.putExtra("project_assignee_name", project.assigneeName);
+            intent.putExtra("project_assignee_email", project.assigneeEmail);
+            intent.putExtra("project_team_name", project.teamName);
+            startActivity(intent);
         });
         rvRecentProjects.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvRecentProjects.setAdapter(projectAdapter);
 
-        // Wire Real LiveData Observers
+        // Wire Real LiveData Observers with Isolation
         db.projectDao().getAllLive().observe(getViewLifecycleOwner(), projects -> {
-            int projCount = (projects != null) ? projects.size() : 0;
-            tvTotalProjects.setText(String.valueOf(projCount));
-
-            if (projects != null && !projects.isEmpty()) {
-                tvEmptyProjects.setVisibility(View.GONE);
-                rvRecentProjects.setVisibility(View.VISIBLE);
-                projectAdapter.setProjects(projects.subList(0, Math.min(projects.size(), 4)));
-            } else {
-                rvRecentProjects.setVisibility(View.GONE);
-                tvEmptyProjects.setVisibility(View.VISIBLE);
-            }
+            rawProjects = (projects != null) ? projects : new ArrayList<>();
+            updateFilteredMetrics();
         });
 
         db.taskDao().getAllLive().observe(getViewLifecycleOwner(), tasks -> {
-            int total = (tasks != null) ? tasks.size() : 0;
-            int doneCount = 0;
-            int inProgressCount = 0;
-            int reviewCount = 0;
-            int todoCount = 0;
-
-            if (tasks != null) {
-                for (TaskEntity t : tasks) {
-                    String cat = (t.statusCategory != null) ? t.statusCategory.toUpperCase() : "TODO";
-                    if ("DONE".equals(cat)) {
-                        doneCount++;
-                    } else if ("IN_PROGRESS".equals(cat)) {
-                        inProgressCount++;
-                    } else if ("REVIEW".equals(cat)) {
-                        reviewCount++;
-                    } else {
-                        todoCount++;
-                    }
-                }
-            }
-
-            int activeSum = inProgressCount + reviewCount + todoCount;
-            tvTotalTasks.setText(String.valueOf(total));
-            tvCompletedTasks.setText(String.valueOf(doneCount));
-            tvPendingTasks.setText(String.valueOf(activeSum));
-
-            if (chipDone != null) chipDone.setText(doneCount + " Done");
-            if (chipProgress != null) chipProgress.setText(inProgressCount + " In Progress");
-            if (chipReview != null) chipReview.setText(reviewCount + " Review");
-            if (chipTodo != null) chipTodo.setText(todoCount + " To Do");
-
-            // Update 3D Neumorphic Multi-Color Pie Chart
-            if (pieChartView != null) {
-                pieChartView.setTaskData(doneCount, inProgressCount, reviewCount, todoCount);
-            }
-
-            // Update 3D Velocity Bar Chart with live tasks
-            if (barChartView != null) {
-                List<NeumorphicBarChartView.BarItem> barItems = new ArrayList<>();
-                int max = Math.max(total, 5);
-                barItems.add(new NeumorphicBarChartView.BarItem("Completed Delivery", doneCount, max, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.chart_done)));
-                barItems.add(new NeumorphicBarChartView.BarItem("In Active Sprint", inProgressCount, max, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.chart_progress)));
-                barItems.add(new NeumorphicBarChartView.BarItem("Quality & Review", reviewCount, max, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.chart_review)));
-                barItems.add(new NeumorphicBarChartView.BarItem("Backlog & To-Do", todoCount, max, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.chart_todo)));
-                barChartView.setData(barItems);
-            }
+            rawTasks = (tasks != null) ? tasks : new ArrayList<>();
+            updateFilteredMetrics();
         });
 
         // Quick Actions listeners
@@ -318,7 +300,110 @@ public class DashboardFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        refreshUserInfo();
+        repository.refreshProjects();
+        repository.refreshAllTasks();
         loadNotificationBadge();
+    }
+
+    private void refreshUserInfo() {
+        if (!isAdded()) return;
+        SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
+        String userEmail = prefs.getString("user_email", "admin@projectflow.io");
+        String defaultName = userEmail.contains("@") ? userEmail.split("@")[0] : "ProjectFlow User";
+        String savedName = prefs.getString("user_name", prefs.getString("user_display_name", defaultName));
+        String savedRole = prefs.getString("user_role", "MEMBER");
+        tvUserName.setText(savedName);
+        tvUserRole.setText(savedRole);
+    }
+
+    private void updateFilteredMetrics() {
+        if (!isAdded()) return;
+        SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
+        String currentEmail = prefs.getString("user_email", "").trim().toLowerCase();
+
+        // 1. Filter Projects for user
+        List<ProjectEntity> filteredProjects = new ArrayList<>();
+        for (ProjectEntity p : rawProjects) {
+            boolean hasUser = (p.assigneeEmail != null && !p.assigneeEmail.trim().isEmpty());
+            boolean hasSquad = (p.teamName != null && !p.teamName.trim().isEmpty());
+            if (!hasUser && !hasSquad) continue; // Exclude unassigned demo data
+
+            if (hasUser && !p.assigneeEmail.trim().equalsIgnoreCase(currentEmail)) {
+                continue;
+            }
+            if (hasSquad && !userSquads.contains(p.teamName.trim().toLowerCase())) {
+                continue;
+            }
+            filteredProjects.add(p);
+        }
+
+        tvTotalProjects.setText(String.valueOf(filteredProjects.size()));
+        if (!filteredProjects.isEmpty()) {
+            tvEmptyProjects.setVisibility(View.GONE);
+            rvRecentProjects.setVisibility(View.VISIBLE);
+            projectAdapter.setProjects(filteredProjects.subList(0, Math.min(filteredProjects.size(), 4)));
+        } else {
+            rvRecentProjects.setVisibility(View.GONE);
+            tvEmptyProjects.setVisibility(View.VISIBLE);
+        }
+
+        // 2. Filter Tasks for user
+        List<TaskEntity> filteredTasks = new ArrayList<>();
+        int doneCount = 0;
+        int inProgressCount = 0;
+        int reviewCount = 0;
+        int todoCount = 0;
+
+        for (TaskEntity t : rawTasks) {
+            boolean hasUser = (t.assigneeEmail != null && !t.assigneeEmail.trim().isEmpty());
+            boolean hasSquad = (t.teamName != null && !t.teamName.trim().isEmpty());
+            if (!hasUser && !hasSquad) continue; // Exclude unassigned demo data
+
+            if (hasUser && !t.assigneeEmail.trim().equalsIgnoreCase(currentEmail)) {
+                continue;
+            }
+            if (hasSquad && !userSquads.contains(t.teamName.trim().toLowerCase())) {
+                continue;
+            }
+            filteredTasks.add(t);
+
+            String cat = (t.statusCategory != null) ? t.statusCategory.toUpperCase() : "TODO";
+            if ("DONE".equals(cat)) {
+                doneCount++;
+            } else if ("IN_PROGRESS".equals(cat)) {
+                inProgressCount++;
+            } else if ("REVIEW".equals(cat)) {
+                reviewCount++;
+            } else {
+                todoCount++;
+            }
+        }
+
+        int total = filteredTasks.size();
+        int activeSum = inProgressCount + reviewCount + todoCount;
+        tvTotalTasks.setText(String.valueOf(total));
+        tvCompletedTasks.setText(String.valueOf(doneCount));
+        tvPendingTasks.setText(String.valueOf(activeSum));
+
+        if (chipDone != null) chipDone.setText(doneCount + " Done");
+        if (chipProgress != null) chipProgress.setText(inProgressCount + " In Progress");
+        if (chipReview != null) chipReview.setText(reviewCount + " Review");
+        if (chipTodo != null) chipTodo.setText(todoCount + " To Do");
+
+        if (pieChartView != null) {
+            pieChartView.setTaskData(doneCount, inProgressCount, reviewCount, todoCount);
+        }
+
+        if (barChartView != null) {
+            List<NeumorphicBarChartView.BarItem> barItems = new ArrayList<>();
+            int max = Math.max(total, 5);
+            barItems.add(new NeumorphicBarChartView.BarItem("Completed Delivery", doneCount, max, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.chart_done)));
+            barItems.add(new NeumorphicBarChartView.BarItem("In Active Sprint", inProgressCount, max, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.chart_progress)));
+            barItems.add(new NeumorphicBarChartView.BarItem("Quality & Review", reviewCount, max, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.chart_review)));
+            barItems.add(new NeumorphicBarChartView.BarItem("Backlog & To-Do", todoCount, max, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.chart_todo)));
+            barChartView.setData(barItems);
+        }
     }
 
     private void loadNotificationBadge() {

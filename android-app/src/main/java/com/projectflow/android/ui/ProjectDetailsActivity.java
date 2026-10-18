@@ -68,6 +68,38 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         tvTargetDate.setText("Target: " + (target != null ? target : "Ongoing") + assignmentInfo);
         tvProjectStatus.setText(status != null ? status : "IN_PROGRESS");
 
+        TextView tvProjectTeamBadge = findViewById(R.id.tvProjectTeamBadge);
+        TextView tvProjectAssigneeBadge = findViewById(R.id.tvProjectAssigneeBadge);
+        TextView tvProjectMembersList = findViewById(R.id.tvProjectMembersList);
+
+        if (tvProjectTeamBadge != null) {
+            if (team != null && !team.isEmpty()) {
+                tvProjectTeamBadge.setText("👥 Team: " + team);
+                tvProjectTeamBadge.setVisibility(View.VISIBLE);
+            } else {
+                tvProjectTeamBadge.setVisibility(View.GONE);
+            }
+        }
+
+        if (tvProjectAssigneeBadge != null) {
+            if (assignee != null && !assignee.isEmpty()) {
+                tvProjectAssigneeBadge.setText("👤 Lead: " + assignee);
+                tvProjectAssigneeBadge.setVisibility(View.VISIBLE);
+            } else {
+                tvProjectAssigneeBadge.setVisibility(View.GONE);
+            }
+        }
+
+        if (tvProjectMembersList != null) {
+            if (assignee != null && !assignee.isEmpty()) {
+                tvProjectMembersList.setText("Members: " + assignee);
+            } else if (team != null && !team.isEmpty()) {
+                tvProjectMembersList.setText("Members: " + team + " Members");
+            } else {
+                tvProjectMembersList.setText("Members: Open for assignment");
+            }
+        }
+
         taskAdapter = new TaskAdapter(task -> {
             Intent intent = new Intent(ProjectDetailsActivity.this, TaskDetailsActivity.class);
             intent.putExtra("task_id", task.id);
@@ -109,10 +141,26 @@ public class ProjectDetailsActivity extends AppCompatActivity {
                 taskAdapter.setTasks(tasks);
 
                 int done = 0;
-                for (var t : tasks) if ("DONE".equalsIgnoreCase(t.statusCategory)) done++;
+                java.util.Set<String> contributors = new java.util.LinkedHashSet<>();
+                if (assignee != null && !assignee.isEmpty()) contributors.add(assignee);
+                for (var t : tasks) {
+                    if ("DONE".equalsIgnoreCase(t.statusCategory)) done++;
+                    if (t.assigneeName != null && !t.assigneeName.isEmpty()) {
+                        contributors.add(t.assigneeName);
+                    }
+                }
                 int prog = Math.round((done * 100f) / tasks.size());
                 pbProjectProgress.setProgress(prog);
                 tvProgressPercent.setText(prog + "% Complete");
+
+                if (tvProjectMembersList != null && !contributors.isEmpty()) {
+                    StringBuilder sb = new StringBuilder();
+                    for (String c : contributors) {
+                        if (sb.length() > 0) sb.append(", ");
+                        sb.append(c);
+                    }
+                    tvProjectMembersList.setText("Active Contributors: " + sb.toString());
+                }
             } else {
                 rvProjectTasks.setVisibility(View.GONE);
                 tvEmptyTasks.setVisibility(View.VISIBLE);

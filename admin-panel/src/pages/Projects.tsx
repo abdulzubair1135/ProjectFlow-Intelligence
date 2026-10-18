@@ -42,23 +42,49 @@ export const Projects: React.FC = () => {
   const [targetDate, setTargetDate] = useState('');
   const [assignedTarget, setAssignedTarget] = useState<string>('UNASSIGNED');
   const [submitting, setSubmitting] = useState(false);
+  // Team Details Modal State
+  const [viewingTeamProject, setViewingTeamProject] = useState<Project | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [projList, wsList, taskList, teamList, userList] = await Promise.all([
+      const [projList, wsList, taskList, teamList] = await Promise.all([
         api.getProjects().catch(() => []),
         api.getWorkspaces().catch(() => []),
         api.getAllTasks().catch(() => []),
-        api.getTeams().catch(() => []),
-        api.getUsers().then(res => res.content || []).catch(() => [])
+        api.getTeams().catch(() => [])
       ]);
       setProjects(projList);
       setWorkspaces(wsList);
       setTasks(taskList);
       setTeams(teamList);
+
+      let userList: UserProfile[] = [];
+      try {
+        const uRes = await api.getUsers('', 0, 100);
+        if (uRes && Array.isArray(uRes.content) && uRes.content.length > 0) {
+          userList = uRes.content;
+        }
+      } catch (e) {}
+
+      if (userList.length === 0) {
+        try {
+          const teamRes = await api.getTeamMembers();
+          if (Array.isArray(teamRes) && teamRes.length > 0) {
+            userList = teamRes.map((t: any) => ({
+              id: t.id,
+              email: t.email,
+              fullName: t.fullName || t.email,
+              role: t.role || 'MEMBER',
+              active: t.active !== false,
+              createdAt: t.createdAt || new Date().toISOString()
+            }));
+          }
+        } catch (e) {}
+      }
       setUsers(userList);
+
       if (wsList.length > 0 && !selectedWs) {
         setSelectedWs(wsList[0].id);
       }
@@ -342,6 +368,18 @@ export const Projects: React.FC = () => {
                           <div>
                             <div className="font-bold text-xs text-[#292D28]">{p.name}</div>
                             <div className="text-[11px] text-[#78866B] font-mono">{p.code}</div>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              {p.teamName && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#56664C]/10 text-[#56664C]">
+                                  👥 Team: {p.teamName}
+                                </span>
+                              )}
+                              {p.assigneeName && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#EFECE4] text-[#292D28]">
+                                  👤 Lead: {p.assigneeName}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -416,19 +454,28 @@ export const Projects: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setViewingTeamProject(p)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-[#E2E0D8] bg-[#FAFAF7] hover:bg-[#EFECE4] text-[#56664C] font-bold text-xs transition-colors shadow-xs"
+                            title="View Project Team & Active Contributors"
+                          >
+                            <Users className="w-3.5 h-3.5" />
+                            <span>Team Info</span>
+                          </button>
                           <Link
                             to={`/tasks?projectId=${p.id}&action=newTask`}
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#56664C] text-[#F4F2E9] font-bold text-xs hover:bg-[#485640] transition-colors shadow-xs"
                             title="Assign a Squad or Member to a Task in this Project"
                           >
                             <Plus className="w-3.5 h-3.5" />
-                            <span>Assign Squad / Task</span>
+                            <span>Assign Task</span>
                           </Link>
                           <Link
                             to={`/tasks?projectId=${p.id}`}
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-[#E2E0D8] bg-white hover:bg-[#EFECE4] text-[#292D28] font-bold text-xs transition-colors shadow-xs"
                           >
-                            <span>Tasks Pipeline</span>
+                            <span>Tasks</span>
                             <ArrowRight className="w-3.5 h-3.5" />
                           </Link>
                         </div>
@@ -569,6 +616,102 @@ export const Projects: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Team Details Modal */}
+      {viewingTeamProject && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-[#FAFAF7] border border-[#E2E0D8] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E2E0D8] pb-3">
+              <div>
+                <h3 className="text-base font-bold text-[#292D28] flex items-center gap-2">
+                  <span className="font-mono text-xs bg-[#56664C]/10 text-[#56664C] px-2 py-0.5 rounded">
+                    {viewingTeamProject.code || 'PRJ'}
+                  </span>
+                  {viewingTeamProject.name}
+                </h3>
+                <p className="text-xs text-[#78866B]">Project Team &amp; Work Item Assignment Overview</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingTeamProject(null)}
+                className="p-1 rounded-lg hover:bg-[#EFECE4] text-[#5A6258] text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Team & Lead Overview */}
+            <div className="grid grid-cols-2 gap-3 bg-white p-3.5 rounded-xl border border-[#E2E0D8]">
+              <div>
+                <span className="text-[10px] font-semibold text-[#78866B] uppercase block">Assigned Team / Squad</span>
+                <span className="text-xs font-bold text-[#292D28] mt-0.5 flex items-center gap-1.5">
+                  👥 {viewingTeamProject.teamName || 'Unassigned'}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] font-semibold text-[#78866B] uppercase block">Project Lead / Person</span>
+                <span className="text-xs font-bold text-[#292D28] mt-0.5 flex items-center gap-1.5">
+                  👤 {viewingTeamProject.assigneeName || 'Unassigned'}
+                </span>
+              </div>
+            </div>
+
+            {/* Tasks & Assigned Contributors */}
+            <div>
+              <h4 className="text-xs font-bold text-[#5A6258] uppercase tracking-wider mb-2">
+                Active Project Tasks &amp; Assignees
+              </h4>
+              <div className="max-h-56 overflow-y-auto divide-y divide-[#F4F2E9] border border-[#E2E0D8] rounded-xl bg-white p-2">
+                {tasks.filter((t) => t.projectId === viewingTeamProject.id).length === 0 ? (
+                  <div className="py-4 text-center text-xs text-[#78866B]">
+                    No tasks created under this project yet. Click "Assign Task" to create one.
+                  </div>
+                ) : (
+                  tasks
+                    .filter((t) => t.projectId === viewingTeamProject.id)
+                    .map((t) => (
+                      <div key={t.id} className="py-2.5 px-2 flex items-center justify-between hover:bg-[#FAFAF7] rounded-lg">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold text-[#292D28]">{t.title}</div>
+                          <div className="text-[10px] text-[#78866B] flex items-center gap-2">
+                            <span>Priority: {t.priority}</span>
+                            <span>•</span>
+                            <span>Progress: {t.progressPercent || 0}%</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#56664C]/10 text-[#56664C]">
+                            👤 {t.assigneeName || (t.teamName ? '👥 ' + t.teamName : 'Unassigned')}
+                          </span>
+                          <span className="block text-[9px] font-mono text-[#78866B] uppercase mt-0.5">
+                            {t.statusCategory}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#E2E0D8]">
+              <Link
+                to={`/tasks?projectId=${viewingTeamProject.id}&action=newTask`}
+                onClick={() => setViewingTeamProject(null)}
+                className="px-3.5 py-2 rounded-xl bg-[#56664C] text-[#F4F2E9] text-xs font-semibold hover:bg-[#485640] transition-colors shadow-xs"
+              >
+                + Assign New Task
+              </Link>
+              <button
+                type="button"
+                onClick={() => setViewingTeamProject(null)}
+                className="px-4 py-2 rounded-xl border border-[#E2E0D8] text-xs font-semibold text-[#5A6258] hover:bg-[#EFECE4]"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

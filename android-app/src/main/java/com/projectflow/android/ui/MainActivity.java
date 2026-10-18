@@ -80,6 +80,43 @@ public class MainActivity extends AppCompatActivity {
         repository = new ProjectFlowRepository(this);
         repository.refreshWorkspaces();
         repository.refreshProjects();
+        repository.refreshAllTasks();
+
+        // Sync live role from JWT token and backend database
+        android.content.SharedPreferences prefs = getSharedPreferences("projectflow_prefs", MODE_PRIVATE);
+        String currentEmail = prefs.getString("user_email", "").trim().toLowerCase();
+        String token = prefs.getString("auth_token", null);
+        if (token != null && token.contains(".")) {
+            try {
+                String[] parts = token.split("\\.");
+                if (parts.length >= 2) {
+                    byte[] decoded = android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE | android.util.Base64.NO_WRAP | android.util.Base64.DEFAULT);
+                    String payload = new String(decoded, java.nio.charset.StandardCharsets.UTF_8);
+                    org.json.JSONObject obj = new org.json.JSONObject(payload);
+                    if (obj.has("role")) {
+                        String tokenRole = obj.getString("role");
+                        prefs.edit().putString("user_role", tokenRole).apply();
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        repository.fetchTeam(new ProjectFlowRepository.DataCallback<java.util.List<com.projectflow.android.data.remote.model.DtoModels.TeamMemberDto>>() {
+            @Override
+            public void onData(java.util.List<com.projectflow.android.data.remote.model.DtoModels.TeamMemberDto> members) {
+                if (members != null && !currentEmail.isEmpty()) {
+                    for (var m : members) {
+                        if (m.email != null && m.email.trim().equalsIgnoreCase(currentEmail)) {
+                            if (m.role != null && !m.role.isEmpty()) {
+                                prefs.edit().putString("user_role", m.role.toUpperCase()).apply();
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            @Override
+            public void onError(String error) {}
+        });
 
         if (headerView != null) {
             TextView tvDrawerWorkspaceName = headerView.findViewById(R.id.tvDrawerWorkspaceName);

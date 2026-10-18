@@ -50,20 +50,45 @@ export const Tasks: React.FC = () => {
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamDesc, setNewTeamDesc] = useState('');
+  const [selectedMemberEmails, setSelectedMemberEmails] = useState<string[]>([]);
   const [teamSubmitting, setTeamSubmitting] = useState(false);
   const [teamSuccessMsg, setTeamSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadInitialData() {
       try {
-        const [prjs, tms, usrs] = await Promise.all([
+        const [prjs, tms] = await Promise.all([
           api.getProjects().catch(() => []),
-          api.getTeams().catch(() => []),
-          api.getUsers('', 0, 50).catch(() => ({ content: [] }))
+          api.getTeams().catch(() => [])
         ]);
         setProjects(prjs);
         setTeams(tms);
-        setUsers(usrs.content || []);
+
+        let userList: UserProfile[] = [];
+        try {
+          const uRes = await api.getUsers('', 0, 100);
+          if (uRes && Array.isArray(uRes.content) && uRes.content.length > 0) {
+            userList = uRes.content;
+          }
+        } catch (e) {}
+
+        if (userList.length === 0) {
+          try {
+            const teamRes = await api.getTeamMembers();
+            if (Array.isArray(teamRes) && teamRes.length > 0) {
+              userList = teamRes.map((t: any) => ({
+                id: t.id,
+                email: t.email,
+                fullName: t.fullName || t.email,
+                role: t.role || 'MEMBER',
+                active: t.active !== false,
+                createdAt: t.createdAt || new Date().toISOString()
+              }));
+            }
+          } catch (e) {}
+        }
+        setUsers(userList);
+
         if (prjs.length > 0 && !selectedProjectId) {
           setSelectedProjectId(prjs[0].id);
         }
@@ -232,12 +257,15 @@ export const Tasks: React.FC = () => {
     try {
       const created = await api.createTeam({
         name: newTeamName.trim(),
-        description: newTeamDesc.trim()
-      });
+        description: newTeamDesc.trim(),
+        members: selectedMemberEmails,
+        memberEmails: selectedMemberEmails
+      } as any);
       setTeams((prev) => [...prev, created]);
-      setTeamSuccessMsg(`Squad "${created.name}" created!`);
+      setTeamSuccessMsg(`Team "${created.name}" created with ${selectedMemberEmails.length} member(s)!`);
       setNewTeamName('');
       setNewTeamDesc('');
+      setSelectedMemberEmails([]);
       setTimeout(() => {
         setTeamSuccessMsg(null);
         setShowTeamModal(false);
@@ -347,7 +375,7 @@ export const Tasks: React.FC = () => {
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#EFECE4] border border-[#E2E0D8] text-xs font-semibold text-[#56664C] hover:bg-[#E2E0D8] transition-colors shadow-xs"
           >
             <Users className="w-3.5 h-3.5" />
-            <span>+ Squad</span>
+            <span>+ Create Team</span>
           </button>
 
           <button
@@ -780,40 +808,112 @@ export const Tasks: React.FC = () => {
         </div>
       )}
 
-      {/* CREATE GROUP MODAL */}
+      {/* CREATE TEAM MODAL */}
       {showTeamModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-[#FAFAF7] border border-[#E2E0D8] rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-[#292D28]">Create New Group</h3>
+          <div className="bg-[#FAFAF7] border border-[#E2E0D8] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-[#292D28]">Create Team</h3>
+                <p className="text-[11px] text-[#78866B]">Create a cross-functional squad and assign members</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTeamModal(false)}
+                className="p-1 rounded-lg hover:bg-[#EFECE4] text-[#5A6258] text-sm"
+              >
+                ✕
+              </button>
+            </div>
 
             {teamSuccessMsg && (
-              <div className="p-3 bg-green-50 border border-green-200 text-green-800 text-xs rounded-xl font-semibold">
-                {teamSuccessMsg}
+              <div className="p-3 bg-green-50 border border-green-200 text-green-800 text-xs rounded-xl font-semibold flex items-center gap-2">
+                <span>✓</span> {teamSuccessMsg}
               </div>
             )}
 
             <form onSubmit={handleCreateTeam} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-[#5A6258] uppercase mb-1">Group Name</label>
+                <label className="block text-xs font-semibold text-[#5A6258] uppercase mb-1">Team Name</label>
                 <input
                   type="text"
                   required
                   value={newTeamName}
                   onChange={(e) => setNewTeamName(e.target.value)}
-                  placeholder="e.g. Mobile Engineering Group"
+                  placeholder="e.g. Core Engineering, Mobile Guild, QA Team"
                   className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-xl text-xs text-[#292D28] focus:outline-none focus:border-[#56664C]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#5A6258] uppercase mb-1">Domain & Responsibilities</label>
+                <label className="block text-xs font-semibold text-[#5A6258] uppercase mb-1">Domain & Description</label>
                 <textarea
                   rows={2}
                   value={newTeamDesc}
                   onChange={(e) => setNewTeamDesc(e.target.value)}
-                  placeholder="Mobile app components and offline sync..."
+                  placeholder="Primary sprint focus, core services, and responsibilities..."
                   className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-xl text-xs text-[#292D28] focus:outline-none focus:border-[#56664C] resize-none"
                 />
+              </div>
+
+              {/* Team Members Selection */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-[#5A6258] uppercase">
+                    Select Team Members ({selectedMemberEmails.length} selected)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedMemberEmails.length === users.length) {
+                        setSelectedMemberEmails([]);
+                      } else {
+                        setSelectedMemberEmails(users.map(u => u.email).filter(Boolean));
+                      }
+                    }}
+                    className="text-[11px] text-[#56664C] hover:underline font-semibold"
+                  >
+                    {selectedMemberEmails.length === users.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+
+                <div className="max-h-44 overflow-y-auto border border-[#E2E0D8] rounded-xl bg-white p-2 divide-y divide-[#F4F2E9]">
+                  {users.length === 0 ? (
+                    <div className="py-3 text-center text-xs text-[#78866B]">No users found to add.</div>
+                  ) : (
+                    users.map((u) => {
+                      const isSelected = selectedMemberEmails.includes(u.email);
+                      return (
+                        <label
+                          key={u.id}
+                          className="flex items-center justify-between py-2 px-2 hover:bg-[#FAFAF7] rounded-lg cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedMemberEmails(prev => [...prev, u.email]);
+                                } else {
+                                  setSelectedMemberEmails(prev => prev.filter(em => em !== u.email));
+                                }
+                              }}
+                              className="rounded border-[#E2E0D8] text-[#56664C] focus:ring-[#56664C]"
+                            />
+                            <div>
+                              <div className="text-xs font-bold text-[#292D28]">{u.fullName || u.email}</div>
+                              <div className="text-[10px] text-[#78866B] font-mono">{u.email}</div>
+                            </div>
+                          </div>
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#EFECE4] text-[#5A6258]">
+                            {u.role || 'MEMBER'}
+                          </span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-2 pt-2">
@@ -829,7 +929,7 @@ export const Tasks: React.FC = () => {
                   disabled={teamSubmitting}
                   className="flex-1 py-2.5 rounded-xl bg-[#56664C] text-[#F4F2E9] text-xs font-semibold hover:bg-[#485640] transition-colors shadow-sm disabled:opacity-50"
                 >
-                  {teamSubmitting ? 'Creating...' : 'Create Group'}
+                  {teamSubmitting ? 'Creating Team...' : 'Create Team'}
                 </button>
               </div>
             </form>

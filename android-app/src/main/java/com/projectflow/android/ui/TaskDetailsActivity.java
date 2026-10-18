@@ -82,6 +82,7 @@ public class TaskDetailsActivity extends AppCompatActivity {
         }
 
         String assignee = getIntent().getStringExtra("task_assignee_name");
+        String email = getIntent().getStringExtra("task_assignee_email");
         String team = getIntent().getStringExtra("task_team_name");
         String basePrj = (taskProjectId != null && !taskProjectId.isEmpty()) ? "PRJ-" + taskProjectId : "PF-CORE";
         if (assignee != null && !assignee.isEmpty()) {
@@ -90,6 +91,27 @@ public class TaskDetailsActivity extends AppCompatActivity {
             tvProject.setText(basePrj + " • 👥 " + team);
         } else {
             tvProject.setText(basePrj);
+        }
+
+        TextView tvDetailAssignee = findViewById(R.id.tvDetailAssignee);
+        TextView tvDetailAssigneeSub = findViewById(R.id.tvDetailAssigneeSub);
+        if (tvDetailAssignee != null) {
+            if (assignee != null && !assignee.isEmpty()) {
+                tvDetailAssignee.setText(assignee);
+                if (tvDetailAssigneeSub != null) {
+                    tvDetailAssigneeSub.setText(email != null && !email.isEmpty() ? email : (team != null ? "Squad: " + team : "Core Member"));
+                }
+            } else if (team != null && !team.isEmpty()) {
+                tvDetailAssignee.setText("Squad: " + team);
+                if (tvDetailAssigneeSub != null) {
+                    tvDetailAssigneeSub.setText("Whole Squad Assignment");
+                }
+            } else {
+                tvDetailAssignee.setText("Unassigned");
+                if (tvDetailAssigneeSub != null) {
+                    tvDetailAssigneeSub.setText("Open for assignment");
+                }
+            }
         }
 
         int initialProgress = getIntent().getIntExtra("task_progress", 0);
