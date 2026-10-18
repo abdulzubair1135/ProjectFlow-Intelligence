@@ -184,6 +184,13 @@ public class ProjectsFragment extends Fragment {
                 }
             }
 
+            // 3. User directive: "demo data nahi chahiye ... sirf user ko wahi task or project dike jo user ko diya gaya hai"
+            boolean hasUserAssignee = (p.assigneeEmail != null && !p.assigneeEmail.trim().isEmpty());
+            boolean hasSquadAssignee = (p.teamName != null && !p.teamName.trim().isEmpty());
+            if (!hasUserAssignee && !hasSquadAssignee) {
+                continue; // Exclude unassigned demo projects
+            }
+
             filtered.add(p);
         }
         adapter.setProjects(filtered);
