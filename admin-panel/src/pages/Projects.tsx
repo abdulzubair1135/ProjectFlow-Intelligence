@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import { Project, Workspace, ProjectStatus } from '../types';
+import { Project, Workspace, ProjectStatus, Task } from '../types';
 import {
   FolderKanban,
   Plus,
@@ -12,7 +12,8 @@ import {
   Search,
   ArrowRight,
   Sparkles,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Users
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -27,6 +28,8 @@ export const Projects: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [updatingProjectId, setUpdatingProjectId] = useState<string | null>(null);
 
+  const [tasks, setTasks] = useState<Task[]>([]);
+
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [selectedWs, setSelectedWs] = useState<string>('');
@@ -40,12 +43,14 @@ export const Projects: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [projList, wsList] = await Promise.all([
+      const [projList, wsList, taskList] = await Promise.all([
         api.getProjects().catch(() => []),
-        api.getWorkspaces().catch(() => [])
+        api.getWorkspaces().catch(() => []),
+        api.getAllTasks().catch(() => [])
       ]);
       setProjects(projList);
       setWorkspaces(wsList);
+      setTasks(taskList);
       if (wsList.length > 0 && !selectedWs) {
         setSelectedWs(wsList[0].id);
       }
@@ -234,6 +239,7 @@ export const Projects: React.FC = () => {
               <tr>
                 <th className="px-6 py-3.5">Code & Project</th>
                 <th className="px-6 py-3.5">Status (Interactive)</th>
+                <th className="px-6 py-3.5">Assigned Squads</th>
                 <th className="px-6 py-3.5">Radar Health</th>
                 <th className="px-6 py-3.5">Target Baseline</th>
                 <th className="px-6 py-3.5 text-right">Actions</th>
@@ -242,7 +248,7 @@ export const Projects: React.FC = () => {
             <tbody className="divide-y divide-[#E2E0D8] text-[#292D28]">
               {filteredProjects.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-[#5A6258]">
+                  <td colSpan={6} className="px-6 py-12 text-center text-[#5A6258]">
                     <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-[#E2E0D8] text-[#56664C] flex items-center justify-center">
                       <FolderKanban className="w-5 h-5" />
                     </div>
@@ -250,65 +256,104 @@ export const Projects: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredProjects.map((p) => (
-                  <tr key={p.id} className="hover:bg-[#F4F2E9]/60 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-[#56664C]/10 text-[#56664C] flex items-center justify-center font-mono font-bold text-xs shrink-0">
-                          {p.code ? p.code.substring(0, 3) : 'PRJ'}
+                filteredProjects.map((p) => {
+                  const projectTeams = Array.from(
+                    new Set(
+                      tasks
+                        .filter((t) => t.projectId === p.id && t.teamName)
+                        .map((t) => t.teamName as string)
+                    )
+                  );
+
+                  return (
+                    <tr key={p.id} className="hover:bg-[#F4F2E9]/60 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-[#56664C]/10 text-[#56664C] flex items-center justify-center font-mono font-bold text-xs shrink-0">
+                            {p.code ? p.code.substring(0, 3) : 'PRJ'}
+                          </div>
+                          <div>
+                            <div className="font-bold text-xs text-[#292D28]">{p.name}</div>
+                            <div className="text-[11px] text-[#78866B] font-mono">{p.code}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-bold text-xs text-[#292D28]">{p.name}</div>
-                          <div className="text-[11px] text-[#78866B] font-mono">{p.code}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {/* Interactive Status Selector */}
+                        <select
+                          disabled={updatingProjectId === p.id}
+                          value={p.status || 'PLANNING'}
+                          onChange={(e) => handleStatusChange(p.id, e.target.value as ProjectStatus)}
+                          className={`font-mono text-[10px] font-bold px-2 py-1 rounded-lg border border-[#E2E0D8] focus:outline-none ${
+                            p.status === 'COMPLETED'
+                              ? 'bg-green-100 text-green-800'
+                              : p.status === 'IN_PROGRESS'
+                              ? 'bg-[#56664C]/15 text-[#56664C]'
+                              : p.status === 'ON_HOLD'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          <option value="PLANNING">PLANNING</option>
+                          <option value="IN_PROGRESS">IN_PROGRESS</option>
+                          <option value="ON_HOLD">ON_HOLD</option>
+                          <option value="COMPLETED">COMPLETED</option>
+                        </select>
+                      </td>
+                      <td className="px-6 py-4">
+                        {projectTeams.length === 0 ? (
+                          <span className="text-[11px] text-[#78866B] italic">
+                            No squad assigned
+                          </span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5 max-w-xs">
+                            {projectTeams.map((tm) => (
+                              <span
+                                key={tm}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#56664C]/10 text-[#56664C] font-semibold text-[10px]"
+                              >
+                                <Users className="w-3 h-3" />
+                                {tm}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {getHealthBadge(p.health)}
+                      </td>
+                      <td className="px-6 py-4 font-mono text-[11px] text-[#78866B]">
+                        {p.targetDate ? (
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-[#56664C]" />
+                            {new Date(p.targetDate).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })}
+                          </div>
+                        ) : (
+                          'Ongoing sprint'
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            to={`/tasks?projectId=${p.id}&action=newTask`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#56664C] text-[#F4F2E9] font-bold text-xs hover:bg-[#485640] transition-colors shadow-xs"
+                            title="Assign a Squad or Member to a Task in this Project"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Assign Squad / Task</span>
+                          </Link>
+                          <Link
+                            to={`/tasks?projectId=${p.id}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-[#E2E0D8] bg-white hover:bg-[#EFECE4] text-[#292D28] font-bold text-xs transition-colors shadow-xs"
+                          >
+                            <span>Tasks Pipeline</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {/* Interactive Status Selector */}
-                      <select
-                        disabled={updatingProjectId === p.id}
-                        value={p.status || 'PLANNING'}
-                        onChange={(e) => handleStatusChange(p.id, e.target.value as ProjectStatus)}
-                        className={`font-mono text-[10px] font-bold px-2 py-1 rounded-lg border border-[#E2E0D8] focus:outline-none ${
-                          p.status === 'COMPLETED'
-                            ? 'bg-green-100 text-green-800'
-                            : p.status === 'IN_PROGRESS'
-                            ? 'bg-[#56664C]/15 text-[#56664C]'
-                            : p.status === 'ON_HOLD'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        <option value="PLANNING">PLANNING</option>
-                        <option value="IN_PROGRESS">IN_PROGRESS</option>
-                        <option value="ON_HOLD">ON_HOLD</option>
-                        <option value="COMPLETED">COMPLETED</option>
-                      </select>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getHealthBadge(p.health)}
-                    </td>
-                    <td className="px-6 py-4 font-mono text-[11px] text-[#78866B]">
-                      {p.targetDate ? (
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-[#56664C]" />
-                          {new Date(p.targetDate).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })}
-                        </div>
-                      ) : (
-                        'Ongoing sprint'
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Link
-                        to={`/tasks?projectId=${p.id}`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-[#E2E0D8] bg-white hover:bg-[#EFECE4] text-[#292D28] font-bold text-xs transition-colors shadow-xs"
-                      >
-                        <span>Tasks Pipeline</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

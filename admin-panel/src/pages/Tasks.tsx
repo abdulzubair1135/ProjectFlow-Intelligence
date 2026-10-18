@@ -99,6 +99,13 @@ export const Tasks: React.FC = () => {
     }
   }, [selectedProjectId]);
 
+  useEffect(() => {
+    if (searchParams.get('action') === 'newTask') {
+      setShowModal(true);
+      setAssignType('TEAM');
+    }
+  }, [searchParams]);
+
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     setUpdatingTaskId(taskId);
     try {
