@@ -76,7 +76,7 @@ const releaseApkPath = 'releases/android/ProjectFlow-Intelligence-v2.0.0.apk';
 assert(fs.existsSync(releaseApkPath), 'Official release APK artifact must exist in storage path');
 const apkBuffer = fs.readFileSync(releaseApkPath);
 const hash = crypto.createHash('sha256').update(apkBuffer).digest('hex');
-assert.strictEqual(hash, '45bc8a788c4ca98e3080fc90fbbd1bd75ad717a416815b977d81a9ad9d978b32', 'Release APK checksum must match cryptographic hash');
+assert.strictEqual(hash, 'b0ba8582d3c3bd3c6a38a6779c045e7d19e7a43cd4a7b1ec5fd321e778d50651', 'Release APK checksum must match cryptographic hash');
 console.log('✔ Official APK release artifact verified on disk with valid SHA-256: ' + hash);
 
 console.log('\n🎉 ALL PROJECTFLOW INTELLIGENCE BACKEND TESTS PASSED SUCCESSFULLY!\n');

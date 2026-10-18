@@ -126,8 +126,8 @@ const store = {
       artifactFilename: 'ProjectFlow-Intelligence-v2.0.0.apk',
       storagePath: 'releases/android/ProjectFlow-Intelligence-v2.0.0.apk',
       mimeType: 'application/vnd.android.package-archive',
-      fileSizeBytes: 11233336,
-      sha256Checksum: '45bc8a788c4ca98e3080fc90fbbd1bd75ad717a416815b977d81a9ad9d978b32',
+      fileSizeBytes: 11241520,
+      sha256Checksum: 'b0ba8582d3c3bd3c6a38a6779c045e7d19e7a43cd4a7b1ec5fd321e778d50651',
       releaseChannel: 'STABLE',
       releaseNotes: 'Official universal signed release of ProjectFlow Intelligence with 16-screen UI flow, Natural Mineral design system, and deterministic risk engine.',
       minimumSupportedVersionCode: 1,
@@ -305,7 +305,20 @@ async function loadFromSupabase() {
       }));
     }
 
-    console.log('[SUPABASE] Synced live data from Supabase PostgreSQL successfully! Total profiles:', store.users.length, 'Total tasks:', store.tasks.length);
+    const { data: msgs, error: mErr } = await supabase.from('chat_messages').select('*').order('created_at', { ascending: true });
+    if (!mErr && msgs && msgs.length > 0) {
+      store.messages = msgs.map(m => ({
+        id: m.id,
+        senderId: m.sender_id,
+        senderName: m.sender_name,
+        content: m.content,
+        channel: m.channel,
+        reactions: { '👍': 0, '❤️': 0, '🚀': 0, '🔥': 0, '🎯': 0 },
+        createdAt: m.created_at
+      }));
+    }
+
+    console.log('[SUPABASE] Synced live data from Supabase PostgreSQL successfully! Total profiles:', store.users.length, 'Total tasks:', store.tasks.length, 'Total messages:', (store.messages || []).length);
   } catch (err) {
     console.warn('[SUPABASE] Data sync warning:', err.message);
   }
@@ -313,6 +326,22 @@ async function loadFromSupabase() {
 
 // Initial sync on module load
 loadFromSupabase();
+
+async function saveChatMessageToSupabase(msg) {
+  if (!supabase) return;
+  try {
+    await supabase.from('chat_messages').upsert({
+      id: msg.id,
+      sender_id: (msg.senderId && msg.senderId.length === 36) ? msg.senderId : null,
+      sender_name: msg.senderName || 'Member',
+      channel: msg.channel || 'general',
+      content: msg.content || '',
+      created_at: msg.createdAt || new Date().toISOString()
+    });
+  } catch (err) {
+    console.warn('[SUPABASE] saveChatMessage error:', err.message);
+  }
+}
 
 async function saveTaskToSupabase(task) {
   if (!supabase) return;
@@ -376,6 +405,7 @@ module.exports = {
   supabase, 
   store, 
   loadFromSupabase, 
+  saveChatMessageToSupabase,
   saveTaskToSupabase, 
   saveProjectToSupabase, 
   saveWorkspaceToSupabase 

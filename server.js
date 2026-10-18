@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const { store, supabase, saveTaskToSupabase, saveProjectToSupabase, saveWorkspaceToSupabase } = require('./src/supabase');
+const { store, supabase, saveTaskToSupabase, saveProjectToSupabase, saveWorkspaceToSupabase, saveChatMessageToSupabase } = require('./src/supabase');
 const { evaluateProjectRisks } = require('./src/engine/deterministicRiskEngine');
 const { evaluateScenario } = require('./src/engine/whatIfSchedulingEngine');
 
@@ -1190,8 +1190,36 @@ app.get('/api/v1/chat/channels', (req, res) => {
   res.json(uniqueChannels);
 });
 
-app.get('/api/v1/chat/messages', (req, res) => {
+app.get('/api/v1/chat/messages', async (req, res) => {
   const channel = req.query.channel;
+  if (supabase) {
+    try {
+      let query = supabase.from('chat_messages').select('*').order('created_at', { ascending: true });
+      if (channel && channel !== 'all') {
+        query = query.eq('channel', channel);
+      }
+      const { data: dbMsgs, error } = await query;
+      if (!error && dbMsgs && dbMsgs.length > 0) {
+        dbMsgs.forEach(dm => {
+          const idx = (store.messages || []).findIndex(m => m.id === dm.id);
+          const mapped = {
+            id: dm.id,
+            senderId: dm.sender_id,
+            senderName: dm.sender_name,
+            content: dm.content,
+            channel: dm.channel,
+            reactions: { '👍': 0, '❤️': 0, '🚀': 0, '🔥': 0, '🎯': 0 },
+            createdAt: dm.created_at
+          };
+          if (idx >= 0) store.messages[idx] = { ...store.messages[idx], ...mapped };
+          else (store.messages = store.messages || []).push(mapped);
+        });
+      }
+    } catch (e) {
+      console.warn('[CHAT] Supabase sync warning:', e.message);
+    }
+  }
+
   let list = store.messages || [];
   if (channel && channel !== 'all') {
     list = list.filter(m => m.channel === channel);
@@ -1240,6 +1268,7 @@ app.post('/api/v1/chat/messages', async (req, res) => {
     createdAt: new Date().toISOString()
   };
   (store.messages = store.messages || []).push(msg);
+  saveChatMessageToSupabase(msg);
 
   // Broadcast notification and push
   const isDirect = targetChannel.startsWith('dm_');

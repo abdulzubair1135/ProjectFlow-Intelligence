@@ -457,6 +457,89 @@ public class ChatFragment extends Fragment {
         });
     }
 
+    private final android.os.Handler chatPollHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable chatPollRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!isResumed() || getActivity() == null) return;
+            if (layoutChatRoom != null && layoutChatRoom.getVisibility() == View.VISIBLE) {
+                loadMessagesSilently();
+            } else if (layoutConversationList != null && layoutConversationList.getVisibility() == View.VISIBLE) {
+                loadConversationsSilently();
+            }
+            chatPollHandler.postDelayed(this, 2500);
+        }
+    };
+
+    private void loadMessagesSilently() {
+        if (activeChannel == null || repository == null) return;
+        repository.fetchChatMessagesByChannel(activeChannel, new ProjectFlowRepository.DataCallback<List<ChatMessageDto>>() {
+            @Override
+            public void onData(List<ChatMessageDto> data) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        if (chatAdapter != null && data != null) {
+                            boolean changed = chatAdapter.setMessagesSilently(data);
+                            if (changed) {
+                                if (data.isEmpty()) {
+                                    llEmptyChat.setVisibility(View.VISIBLE);
+                                } else {
+                                    llEmptyChat.setVisibility(View.GONE);
+                                    rvChatMessages.smoothScrollToPosition(chatAdapter.getItemCount() - 1);
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            @Override public void onError(String message) {}
+        });
+    }
+
+    private void loadConversationsSilently() {
+        if (repository == null) return;
+        repository.fetchChatGroups(new ProjectFlowRepository.DataCallback<List<ChatGroupDto>>() {
+            @Override
+            public void onData(List<ChatGroupDto> groups) {
+                repository.fetchTeam(new ProjectFlowRepository.DataCallback<List<TeamMemberDto>>() {
+                    @Override
+                    public void onData(List<TeamMemberDto> teamMembers) {
+                        repository.fetchAllChatMessages(new ProjectFlowRepository.DataCallback<List<ChatMessageDto>>() {
+                            @Override
+                            public void onData(List<ChatMessageDto> allMsgs) {
+                                if (getActivity() != null) {
+                                    getActivity().runOnUiThread(() -> buildConversationList(groups, teamMembers, allMsgs));
+                                }
+                            }
+                            @Override public void onError(String msg) {}
+                        });
+                    }
+                    @Override public void onError(String message) {}
+                });
+            }
+            @Override public void onError(String message) {}
+        });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        chatPollHandler.removeCallbacks(chatPollRunnable);
+        chatPollHandler.post(chatPollRunnable);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        chatPollHandler.removeCallbacks(chatPollRunnable);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        chatPollHandler.removeCallbacks(chatPollRunnable);
+    }
+
     private void sendMessage() {
         String text = etChatMessage.getText().toString().trim();
         if (text.isEmpty()) return;

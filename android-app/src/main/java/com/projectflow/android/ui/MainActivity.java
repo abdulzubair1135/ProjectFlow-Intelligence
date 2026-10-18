@@ -136,6 +136,8 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.drawer_team) {
                 loadFragment(new TeamFragment(), "Persons & Groups");
                 bottomNav.setSelectedItemId(R.id.nav_team);
+            } else if (id == R.id.drawer_chat) {
+                loadFragment(new ChatFragment(), "Live Discussions & Chats");
             } else if (id == R.id.drawer_calendar) {
                 loadFragment(new CalendarFragment(), "Calendar");
             } else if (id == R.id.drawer_reports) {
