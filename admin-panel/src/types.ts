@@ -35,6 +35,12 @@ export interface Project {
   description?: string;
   status: ProjectStatus;
   health: ProjectHealth;
+  assigneeId?: string | null;
+  assigneeName?: string | null;
+  assigneeEmail?: string | null;
+  teamId?: string | null;
+  teamName?: string | null;
+  assignedEmails?: string[];
   startDate?: string;
   targetDate?: string;
   completedAt?: string;

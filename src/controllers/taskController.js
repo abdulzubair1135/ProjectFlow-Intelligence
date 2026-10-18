@@ -3,39 +3,119 @@ const { store, supabase, saveTaskToSupabase } = require('../supabase');
 const { broadcastSystemNotification } = require('./notificationController');
 
 function getAllTasks(req, res) {
+  const reqEmail = (req.headers['x-user-email'] || req.query.userEmail || (req.user && req.user.email) || '').trim().toLowerCase();
+  const reqRole = (req.headers['x-user-role'] || (req.user && req.user.role) || '').toUpperCase();
+  const clientPlatform = (req.headers['x-client-platform'] || '').toLowerCase();
+  const matchedUser = reqEmail ? (store.users || []).find(u => u.email?.toLowerCase() === reqEmail) : null;
+  const reqUserId = req.headers['x-user-id'] || req.query.userId || (matchedUser ? matchedUser.id : (req.user && req.user.id));
+
+  const userTeams = reqEmail
+    ? (store.teams || []).filter(t => Array.isArray(t.members) && t.members.some(m => m.toLowerCase() === reqEmail))
+    : [];
+  const userTeamIds = userTeams.map(t => t.id);
+  const userTeamNames = userTeams.map(t => t.name.toLowerCase());
+
   let list = store.tasks;
   if (req.query.projectId) list = list.filter(t => t.projectId === req.query.projectId);
   if (req.query.assigneeId) list = list.filter(t => t.assigneeId === req.query.assigneeId);
   if (req.query.teamId) list = list.filter(t => t.teamId === req.query.teamId);
-  res.json(list.map(t => {
+
+  const mapped = list.map(t => {
     const user = t.assigneeId ? store.users.find(u => u.id === t.assigneeId) : null;
-    const team = t.teamId ? (store.teams || []).find(tm => tm.id === t.teamId) : null;
+    const team = t.teamId ? (store.teams || []).find(tm => tm.id === t.teamId || tm.slug === t.teamId || (t.teamName && tm.name.toLowerCase() === t.teamName.toLowerCase())) : null;
     return {
       ...t,
       assigneeName: user ? user.fullName : (t.assigneeName || null),
+      assigneeEmail: user ? user.email : (t.assigneeEmail || null),
       teamName: team ? team.name : (t.teamName || null)
     };
-  }));
+  });
+
+  const isStrictClient = clientPlatform === 'android' || reqRole === 'MEMBER' || req.query.assignedOnly === 'true' || req.query.my === 'true';
+  if (isStrictClient && reqEmail) {
+    const filtered = mapped.filter(t => {
+      const assignedToOtherUser = t.assigneeEmail && t.assigneeEmail.toLowerCase() !== reqEmail;
+      const assignedToOtherTeam = t.teamName && !userTeamNames.includes(t.teamName.toLowerCase()) && !userTeamIds.includes(t.teamId);
+
+      // If explicitly assigned to someone else, reject
+      if (assignedToOtherUser) return false;
+      // If explicitly assigned to another squad, reject
+      if (assignedToOtherTeam) return false;
+
+      // 1. Assigned to this user directly
+      if (t.assigneeId && reqUserId && t.assigneeId === reqUserId) return true;
+      if (t.assigneeEmail && t.assigneeEmail.toLowerCase() === reqEmail) return true;
+      if (matchedUser && t.assigneeName && t.assigneeName.toLowerCase() === matchedUser.fullName?.toLowerCase()) return true;
+
+      // 2. Assigned to this user's team / squad
+      if ((t.teamId && userTeamIds.includes(t.teamId)) || (t.teamName && userTeamNames.includes(t.teamName.toLowerCase()))) return true;
+
+      // 3. Unassigned / General task
+      if (!t.assigneeId && !t.assigneeEmail && !t.teamId && !t.teamName) return true;
+
+      return false;
+    });
+    return res.json(filtered);
+  }
+
+  res.json(mapped);
 }
 
 async function getProjectTasks(req, res) {
+  const reqEmail = (req.headers['x-user-email'] || req.query.userEmail || (req.user && req.user.email) || '').trim().toLowerCase();
+  const reqRole = (req.headers['x-user-role'] || (req.user && req.user.role) || '').toUpperCase();
+  const clientPlatform = (req.headers['x-client-platform'] || '').toLowerCase();
+  const matchedUser = reqEmail ? (store.users || []).find(u => u.email?.toLowerCase() === reqEmail) : null;
+  const reqUserId = req.headers['x-user-id'] || req.query.userId || (matchedUser ? matchedUser.id : (req.user && req.user.id));
+
+  const userTeams = reqEmail
+    ? (store.teams || []).filter(t => Array.isArray(t.members) && t.members.some(m => m.toLowerCase() === reqEmail))
+    : [];
+  const userTeamIds = userTeams.map(t => t.id);
+  const userTeamNames = userTeams.map(t => t.name.toLowerCase());
+
   if (supabase) {
     try {
       const { data: dbTasks, error } = await supabase.from('tasks').select('*').eq('project_id', req.params.id);
       if (!error && dbTasks) {
         dbTasks.forEach(dt => {
           const idx = store.tasks.findIndex(t => t.id === dt.id);
+          let rawDesc = dt.description || '';
+          let teamId = null, teamName = null, assigneeName = null, assigneeEmail = null;
+          if (rawDesc.includes('<!--PF_TASK:')) {
+            const m = rawDesc.match(/<!--PF_TASK:(.*?)-->/);
+            if (m && m[1]) {
+              const tokens = m[1].split(':');
+              tokens.forEach(tok => {
+                const eq = tok.indexOf('=');
+                if (eq > 0) {
+                  const k = tok.slice(0, eq);
+                  const v = tok.slice(eq + 1);
+                  if (k === 'teamId') teamId = v;
+                  if (k === 'teamName') teamName = v;
+                  if (k === 'assigneeName') assigneeName = v;
+                  if (k === 'assigneeEmail') assigneeEmail = v;
+                }
+              });
+            }
+            rawDesc = rawDesc.replace(/<!--PF_TASK:[^>]*-->/g, '').trim();
+          }
+
           const mapped = {
             id: dt.id,
             projectId: dt.project_id,
             title: dt.title,
-            description: dt.description || '',
+            description: rawDesc,
             priority: dt.priority,
             statusCategory: dt.status_category,
             progressPercent: dt.progress_percent,
             completedAt: dt.completed_at,
             dueDate: dt.due_date,
             assigneeId: dt.assignee_id,
+            teamId,
+            teamName,
+            assigneeName,
+            assigneeEmail,
             createdAt: dt.created_at
           };
           if (idx >= 0) store.tasks[idx] = { ...store.tasks[idx], ...mapped };
@@ -44,16 +124,47 @@ async function getProjectTasks(req, res) {
       }
     } catch (e) {}
   }
-  const list = store.tasks.filter(t => t.projectId === req.params.id).map(t => {
+
+  const rawList = store.tasks.filter(t => t.projectId === req.params.id);
+  const mapped = rawList.map(t => {
     const user = t.assigneeId ? store.users.find(u => u.id === t.assigneeId) : null;
-    const team = t.teamId ? (store.teams || []).find(tm => tm.id === t.teamId) : null;
+    const team = t.teamId ? (store.teams || []).find(tm => tm.id === t.teamId || tm.slug === t.teamId || (t.teamName && tm.name.toLowerCase() === t.teamName.toLowerCase())) : null;
     return {
       ...t,
       assigneeName: user ? user.fullName : (t.assigneeName || null),
+      assigneeEmail: user ? user.email : (t.assigneeEmail || null),
       teamName: team ? team.name : (t.teamName || null)
     };
   });
-  res.json(list);
+
+  const isStrictClient = clientPlatform === 'android' || reqRole === 'MEMBER' || req.query.assignedOnly === 'true' || req.query.my === 'true';
+  if (isStrictClient && reqEmail) {
+    const filtered = mapped.filter(t => {
+      const assignedToOtherUser = t.assigneeEmail && t.assigneeEmail.toLowerCase() !== reqEmail;
+      const assignedToOtherTeam = t.teamName && !userTeamNames.includes(t.teamName.toLowerCase()) && !userTeamIds.includes(t.teamId);
+
+      // If explicitly assigned to someone else, reject
+      if (assignedToOtherUser) return false;
+      // If explicitly assigned to another squad, reject
+      if (assignedToOtherTeam) return false;
+
+      // 1. Assigned to this user directly
+      if (t.assigneeId && reqUserId && t.assigneeId === reqUserId) return true;
+      if (t.assigneeEmail && t.assigneeEmail.toLowerCase() === reqEmail) return true;
+      if (matchedUser && t.assigneeName && t.assigneeName.toLowerCase() === matchedUser.fullName?.toLowerCase()) return true;
+
+      // 2. Assigned to this user's team / squad
+      if ((t.teamId && userTeamIds.includes(t.teamId)) || (t.teamName && userTeamNames.includes(t.teamName.toLowerCase()))) return true;
+
+      // 3. Unassigned / General task
+      if (!t.assigneeId && !t.assigneeEmail && !t.teamId && !t.teamName) return true;
+
+      return false;
+    });
+    return res.json(filtered);
+  }
+
+  res.json(mapped);
 }
 
 async function createTask(req, res) {

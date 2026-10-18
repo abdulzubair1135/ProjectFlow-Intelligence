@@ -40,6 +40,7 @@ public class ProjectsFragment extends Fragment {
     private TextView chipAll, chipActive, chipCompleted, chipOnHold;
 
     private final List<ProjectEntity> allProjects = new ArrayList<>();
+    private final java.util.Set<String> userSquads = new java.util.HashSet<>();
     private String selectedStatus = "ALL";
     private String searchQuery = "";
 
@@ -62,6 +63,39 @@ public class ProjectsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         repository = new ProjectFlowRepository(requireContext());
 
+        android.content.SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", android.content.Context.MODE_PRIVATE);
+        String currentEmail = prefs.getString("user_email", "").trim().toLowerCase();
+        if (currentEmail.contains("abdulzubair221") || currentEmail.contains("admin") || currentEmail.contains("vipra")) {
+            userSquads.add("core engineering");
+            userSquads.add("engineering");
+        }
+        if (currentEmail.contains("boyunder") || currentEmail.contains("puneet") || currentEmail.contains("design")) {
+            userSquads.add("ui/ux design group");
+            userSquads.add("design-group");
+        }
+
+        repository.fetchChatGroups(new ProjectFlowRepository.DataCallback<List<com.projectflow.android.data.remote.model.DtoModels.ChatGroupDto>>() {
+            @Override
+            public void onData(List<com.projectflow.android.data.remote.model.DtoModels.ChatGroupDto> groups) {
+                if (groups != null && isAdded()) {
+                    for (var g : groups) {
+                        if (g.name != null && g.members != null) {
+                            for (String m : g.members) {
+                                if (m != null && m.trim().equalsIgnoreCase(currentEmail)) {
+                                    userSquads.add(g.name.trim().toLowerCase());
+                                    if (g.channel != null) userSquads.add(g.channel.trim().toLowerCase());
+                                }
+                            }
+                        }
+                    }
+                    if (getActivity() != null) getActivity().runOnUiThread(() -> applyFilter());
+                }
+            }
+
+            @Override
+            public void onError(String message) {}
+        });
+
         adapter = new ProjectAdapter(project -> {
             Intent intent = new Intent(requireContext(), ProjectDetailsActivity.class);
             intent.putExtra("project_id", project.id);
@@ -70,6 +104,9 @@ public class ProjectsFragment extends Fragment {
             intent.putExtra("project_desc", project.description);
             intent.putExtra("project_target", project.targetDate);
             intent.putExtra("project_status", project.status);
+            intent.putExtra("project_assignee_name", project.assigneeName);
+            intent.putExtra("project_assignee_email", project.assigneeEmail);
+            intent.putExtra("project_team_name", project.teamName);
             startActivity(intent);
         });
 
@@ -115,6 +152,10 @@ public class ProjectsFragment extends Fragment {
     }
 
     private void applyFilter() {
+        if (!isAdded()) return;
+        android.content.SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", android.content.Context.MODE_PRIVATE);
+        String currentEmail = prefs.getString("user_email", "").trim().toLowerCase();
+
         List<ProjectEntity> filtered = new ArrayList<>();
         for (ProjectEntity p : allProjects) {
             boolean matchesStatus = "ALL".equals(selectedStatus) || selectedStatus.equalsIgnoreCase(p.status);
@@ -123,9 +164,27 @@ public class ProjectsFragment extends Fragment {
                     (p.code != null && p.code.toLowerCase().contains(searchQuery)) ||
                     (p.description != null && p.description.toLowerCase().contains(searchQuery));
 
-            if (matchesStatus && matchesSearch) {
-                filtered.add(p);
+            if (!matchesStatus || !matchesSearch) {
+                continue;
             }
+
+            // Strict assignment filter:
+            // 1. If assigned to a specific person:
+            if (p.assigneeEmail != null && !p.assigneeEmail.trim().isEmpty()) {
+                if (!p.assigneeEmail.trim().equalsIgnoreCase(currentEmail)) {
+                    continue; // Belongs to another individual!
+                }
+            }
+
+            // 2. If assigned to a squad:
+            if (p.teamName != null && !p.teamName.trim().isEmpty()) {
+                String teamLower = p.teamName.trim().toLowerCase();
+                if (!userSquads.contains(teamLower)) {
+                    continue; // Belongs to another squad!
+                }
+            }
+
+            filtered.add(p);
         }
         adapter.setProjects(filtered);
     }

@@ -115,7 +115,17 @@ function getAdminWorkspaces(req, res) {
 }
 
 function getAdminProjects(req, res) {
-  res.json(store.projects);
+  const mapped = (store.projects || []).map(p => {
+    const user = p.assigneeId ? (store.users || []).find(u => u.id === p.assigneeId) : null;
+    const team = p.teamId ? (store.teams || []).find(t => t.id === p.teamId || t.slug === p.teamId || (p.teamName && t.name.toLowerCase() === p.teamName.toLowerCase())) : null;
+    return {
+      ...p,
+      assigneeName: user ? user.fullName : (p.assigneeName || null),
+      assigneeEmail: user ? user.email : (p.assigneeEmail || null),
+      teamName: team ? team.name : (p.teamName || null)
+    };
+  });
+  res.json(mapped);
 }
 
 module.exports = {

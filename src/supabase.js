@@ -35,6 +35,38 @@ const store = {
       role: 'MANAGER',
       active: true,
       createdAt: new Date().toISOString()
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000003',
+      email: 'abdulzubair221@gmail.com',
+      fullName: 'Abdul Zubair',
+      role: 'MEMBER',
+      active: true,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000004',
+      email: 'vipra@projectflow.io',
+      fullName: 'Vipra',
+      role: 'MEMBER',
+      active: true,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000005',
+      email: 'boyundertheaim@gmail.com',
+      fullName: 'Design Lead',
+      role: 'MEMBER',
+      active: true,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000006',
+      email: 'lalwanipuneet91@gmail.com',
+      fullName: 'Puneet Lalwani',
+      role: 'MEMBER',
+      active: true,
+      createdAt: new Date().toISOString()
     }
   ],
   workspaces: [
@@ -277,35 +309,94 @@ async function loadFromSupabase() {
 
     const { data: projects, error: prjErr } = await supabase.from('projects').select('*');
     if (!prjErr && projects && projects.length > 0) {
-      store.projects = projects.map(p => ({
-        id: p.id,
-        workspaceId: p.workspace_id,
-        name: p.name,
-        code: p.code,
-        description: p.description || '',
-        status: p.status,
-        health: p.health,
-        startDate: p.start_date,
-        targetDate: p.target_date,
-        createdAt: p.created_at
-      }));
+      store.projects = projects.map(p => {
+        let rawDesc = p.description || '';
+        let teamId = null, teamName = null, assigneeId = null, assigneeName = null, assigneeEmail = null;
+        let assignedEmails = [];
+        if (rawDesc.includes('<!--PF_ASSIGN:')) {
+          const m = rawDesc.match(/<!--PF_ASSIGN:(.*?)-->/);
+          if (m && m[1]) {
+            const tokens = m[1].split(':');
+            tokens.forEach(tok => {
+              const eq = tok.indexOf('=');
+              if (eq > 0) {
+                const k = tok.slice(0, eq);
+                const v = tok.slice(eq + 1);
+                if (k === 'teamId') teamId = v;
+                if (k === 'teamName') teamName = v;
+                if (k === 'assigneeId') assigneeId = v;
+                if (k === 'assigneeName') assigneeName = v;
+                if (k === 'assigneeEmail') assigneeEmail = v;
+                if (k === 'assignedEmails') assignedEmails = v.split(',').filter(Boolean);
+              }
+            });
+          }
+          rawDesc = rawDesc.replace(/<!--PF_ASSIGN:[^>]*-->/g, '').trim();
+        }
+
+        return {
+          id: p.id,
+          workspaceId: p.workspace_id,
+          name: p.name,
+          code: p.code,
+          description: rawDesc,
+          status: p.status,
+          health: p.health,
+          teamId,
+          teamName,
+          assigneeId,
+          assigneeName,
+          assigneeEmail,
+          assignedEmails,
+          startDate: p.start_date,
+          targetDate: p.target_date,
+          createdAt: p.created_at
+        };
+      });
     }
 
     const { data: tasks, error: tErr } = await supabase.from('tasks').select('*');
     if (!tErr && tasks && tasks.length > 0) {
-      store.tasks = tasks.map(t => ({
-        id: t.id,
-        projectId: t.project_id,
-        title: t.title,
-        description: t.description || '',
-        priority: t.priority,
-        statusCategory: t.status_category,
-        progressPercent: t.progress_percent,
-        completedAt: t.completed_at,
-        dueDate: t.due_date,
-        assigneeId: t.assignee_id,
-        createdAt: t.created_at
-      }));
+      store.tasks = tasks.map(t => {
+        let rawDesc = t.description || '';
+        let teamId = null, teamName = null, assigneeName = null, assigneeEmail = null;
+        if (rawDesc.includes('<!--PF_TASK:')) {
+          const m = rawDesc.match(/<!--PF_TASK:(.*?)-->/);
+          if (m && m[1]) {
+            const tokens = m[1].split(':');
+            tokens.forEach(tok => {
+              const eq = tok.indexOf('=');
+              if (eq > 0) {
+                const k = tok.slice(0, eq);
+                const v = tok.slice(eq + 1);
+                if (k === 'teamId') teamId = v;
+                if (k === 'teamName') teamName = v;
+                if (k === 'assigneeName') assigneeName = v;
+                if (k === 'assigneeEmail') assigneeEmail = v;
+              }
+            });
+          }
+          rawDesc = rawDesc.replace(/<!--PF_TASK:[^>]*-->/g, '').trim();
+        }
+
+        return {
+          id: t.id,
+          projectId: t.project_id,
+          title: t.title,
+          description: rawDesc,
+          priority: t.priority,
+          statusCategory: t.status_category,
+          progressPercent: t.progress_percent,
+          completedAt: t.completed_at,
+          dueDate: t.due_date,
+          assigneeId: t.assignee_id,
+          teamId,
+          teamName,
+          assigneeName,
+          assigneeEmail,
+          createdAt: t.created_at
+        };
+      });
     }
 
     const { data: msgs, error: mErr } = await supabase.from('chat_messages').select('*').order('created_at', { ascending: true });
@@ -349,11 +440,21 @@ async function saveChatMessageToSupabase(msg) {
 async function saveTaskToSupabase(task) {
   if (!supabase) return;
   try {
+    let desc = task.description || '';
+    desc = desc.replace(/<!--PF_TASK:[^>]*-->/g, '').trim();
+    const metaParts = [];
+    if (task.teamId) metaParts.push(`teamId=${task.teamId}`);
+    if (task.teamName) metaParts.push(`teamName=${task.teamName}`);
+    if (task.assigneeName) metaParts.push(`assigneeName=${task.assigneeName}`);
+    if (task.assigneeEmail) metaParts.push(`assigneeEmail=${task.assigneeEmail}`);
+    const metaTag = metaParts.length > 0 ? ` <!--PF_TASK:${metaParts.join(':')}-->` : '';
+    const fullDesc = desc + metaTag;
+
     await supabase.from('tasks').upsert({
       id: task.id,
       project_id: task.projectId,
       title: task.title,
-      description: task.description || '',
+      description: fullDesc,
       priority: task.priority || 'MEDIUM',
       status_category: task.statusCategory || 'TODO',
       progress_percent: task.progressPercent || 0,
@@ -370,12 +471,26 @@ async function saveTaskToSupabase(task) {
 async function saveProjectToSupabase(project) {
   if (!supabase) return;
   try {
+    let desc = project.description || '';
+    desc = desc.replace(/<!--PF_ASSIGN:[^>]*-->/g, '').trim();
+    const metaParts = [];
+    if (project.teamId) metaParts.push(`teamId=${project.teamId}`);
+    if (project.teamName) metaParts.push(`teamName=${project.teamName}`);
+    if (project.assigneeId) metaParts.push(`assigneeId=${project.assigneeId}`);
+    if (project.assigneeName) metaParts.push(`assigneeName=${project.assigneeName}`);
+    if (project.assigneeEmail) metaParts.push(`assigneeEmail=${project.assigneeEmail}`);
+    if (Array.isArray(project.assignedEmails) && project.assignedEmails.length > 0) {
+      metaParts.push(`assignedEmails=${project.assignedEmails.join(',')}`);
+    }
+    const metaTag = metaParts.length > 0 ? ` <!--PF_ASSIGN:${metaParts.join(':')}-->` : '';
+    const fullDesc = desc + metaTag;
+
     await supabase.from('projects').upsert({
       id: project.id,
       workspace_id: project.workspaceId,
       name: project.name,
       code: project.code,
-      description: project.description || '',
+      description: fullDesc,
       status: project.status || 'PLANNING',
       health: project.health || 'ON_TRACK',
       start_date: project.startDate,

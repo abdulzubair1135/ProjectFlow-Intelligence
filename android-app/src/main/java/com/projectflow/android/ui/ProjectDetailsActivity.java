@@ -55,11 +55,17 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         String desc = getIntent().getStringExtra("project_desc");
         String target = getIntent().getStringExtra("project_target");
         String status = getIntent().getStringExtra("project_status");
+        String assignee = getIntent().getStringExtra("project_assignee_name");
+        String team = getIntent().getStringExtra("project_team_name");
 
         tvProjectName.setText(name != null ? name : "ProjectFlow Core Platform");
         tvProjectCode.setText(code != null ? code : "PRJ");
         tvProjectDesc.setText(desc != null ? desc : "Full-stack project management and intelligence engine.");
-        tvTargetDate.setText("Target: " + (target != null ? target : "Ongoing"));
+        
+        String assignmentInfo = "";
+        if (assignee != null && !assignee.isEmpty()) assignmentInfo = " • 👤 " + assignee;
+        else if (team != null && !team.isEmpty()) assignmentInfo = " • 👥 " + team;
+        tvTargetDate.setText("Target: " + (target != null ? target : "Ongoing") + assignmentInfo);
         tvProjectStatus.setText(status != null ? status : "IN_PROGRESS");
 
         taskAdapter = new TaskAdapter(task -> {
@@ -72,6 +78,9 @@ public class ProjectDetailsActivity extends AppCompatActivity {
             intent.putExtra("task_due", task.dueDate);
             intent.putExtra("task_progress", task.progressPercent);
             intent.putExtra("task_project_id", task.projectId);
+            intent.putExtra("task_assignee_name", task.assigneeName);
+            intent.putExtra("task_assignee_email", task.assigneeEmail);
+            intent.putExtra("task_team_name", task.teamName);
             startActivity(intent);
         });
         rvProjectTasks.setLayoutManager(new LinearLayoutManager(this));

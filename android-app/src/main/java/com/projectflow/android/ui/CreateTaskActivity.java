@@ -136,10 +136,12 @@ public class CreateTaskActivity extends AppCompatActivity {
             int personPos = spAssignPerson.getSelectedItemPosition();
             String assigneeId = null;
             String assigneeName = null;
+            String assigneeEmail = null;
             if (personPos > 0 && personPos - 1 < memberList.size()) {
                 TeamMemberDto m = memberList.get(personPos - 1);
                 assigneeId = m.id;
                 assigneeName = m.fullName;
+                assigneeEmail = m.email;
             }
 
             int groupPos = spAssignGroup.getSelectedItemPosition();
@@ -153,6 +155,7 @@ public class CreateTaskActivity extends AppCompatActivity {
 
             final String finalAssigneeId = assigneeId;
             final String finalAssigneeName = assigneeName;
+            final String finalAssigneeEmail = assigneeEmail;
             final String finalTeamId = teamId;
             final String finalTeamName = teamName;
 
@@ -162,7 +165,7 @@ public class CreateTaskActivity extends AppCompatActivity {
                         ((projects != null && !projects.isEmpty()) ? projects.get(0).id : "10000000-0000-0000-0000-000000000001");
 
                 String dueDate = etDueDate.getText() != null ? etDueDate.getText().toString().trim() : null;
-                repository.createTask(projectId, title, desc, finalPriority, dueDate, finalAssigneeId, finalAssigneeName, finalTeamId, finalTeamName,
+                repository.createTask(projectId, title, desc, finalPriority, dueDate, finalAssigneeId, finalAssigneeName, finalAssigneeEmail, finalTeamId, finalTeamName,
                         () -> runOnUiThread(() -> {
                             Toast.makeText(this, "Task Created Successfully", Toast.LENGTH_SHORT).show();
                             // Fire system tray notification with sound and vibration

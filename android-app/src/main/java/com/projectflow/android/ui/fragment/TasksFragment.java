@@ -36,6 +36,7 @@ public class TasksFragment extends Fragment {
     private TextView chipAllTasks, chipToday, chipOverdue, chipUpcoming;
 
     private final List<TaskEntity> allTasks = new ArrayList<>();
+    private final java.util.Set<String> userSquads = new java.util.HashSet<>();
     private String selectedFilter = "ALL";
     private String searchQuery = "";
     private final SimpleDateFormat isoDateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
@@ -59,6 +60,39 @@ public class TasksFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         repository = new ProjectFlowRepository(requireContext());
 
+        android.content.SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", android.content.Context.MODE_PRIVATE);
+        String currentEmail = prefs.getString("user_email", "").trim().toLowerCase();
+        if (currentEmail.contains("abdulzubair221") || currentEmail.contains("admin") || currentEmail.contains("vipra")) {
+            userSquads.add("core engineering");
+            userSquads.add("engineering");
+        }
+        if (currentEmail.contains("boyunder") || currentEmail.contains("puneet") || currentEmail.contains("design")) {
+            userSquads.add("ui/ux design group");
+            userSquads.add("design-group");
+        }
+
+        repository.fetchChatGroups(new ProjectFlowRepository.DataCallback<List<com.projectflow.android.data.remote.model.DtoModels.ChatGroupDto>>() {
+            @Override
+            public void onData(List<com.projectflow.android.data.remote.model.DtoModels.ChatGroupDto> groups) {
+                if (groups != null && isAdded()) {
+                    for (var g : groups) {
+                        if (g.name != null && g.members != null) {
+                            for (String m : g.members) {
+                                if (m != null && m.trim().equalsIgnoreCase(currentEmail)) {
+                                    userSquads.add(g.name.trim().toLowerCase());
+                                    if (g.channel != null) userSquads.add(g.channel.trim().toLowerCase());
+                                }
+                            }
+                        }
+                    }
+                    if (getActivity() != null) getActivity().runOnUiThread(() -> applyFilter());
+                }
+            }
+
+            @Override
+            public void onError(String message) {}
+        });
+
         adapter = new TaskAdapter(task -> {
             Intent intent = new Intent(requireContext(), TaskDetailsActivity.class);
             intent.putExtra("task_id", task.id);
@@ -69,6 +103,9 @@ public class TasksFragment extends Fragment {
             intent.putExtra("task_due", task.dueDate);
             intent.putExtra("task_progress", task.progressPercent);
             intent.putExtra("task_project_id", task.projectId);
+            intent.putExtra("task_assignee_name", task.assigneeName);
+            intent.putExtra("task_assignee_email", task.assigneeEmail);
+            intent.putExtra("task_team_name", task.teamName);
             startActivity(intent);
         });
 
@@ -94,7 +131,6 @@ public class TasksFragment extends Fragment {
             if (list != null && !list.isEmpty()) {
                 allTasks.addAll(list);
             }
-            // Only real database tasks
             applyFilter();
         });
 
@@ -119,6 +155,10 @@ public class TasksFragment extends Fragment {
     }
 
     private void applyFilter() {
+        if (!isAdded()) return;
+        android.content.SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", android.content.Context.MODE_PRIVATE);
+        String currentEmail = prefs.getString("user_email", "").trim().toLowerCase();
+
         String todayIso = isoDateFormat.format(new Date());
         List<TaskEntity> filtered = new ArrayList<>();
 
@@ -137,9 +177,27 @@ public class TasksFragment extends Fragment {
                 matchesTab = t.dueDate != null && t.dueDate.compareTo(todayIso) > 0;
             }
 
-            if (matchesSearch && matchesTab) {
-                filtered.add(t);
+            if (!matchesSearch || !matchesTab) {
+                continue;
             }
+
+            // Strict assignment filter:
+            // 1. If assigned to a specific person:
+            if (t.assigneeEmail != null && !t.assigneeEmail.trim().isEmpty()) {
+                if (!t.assigneeEmail.trim().equalsIgnoreCase(currentEmail)) {
+                    continue; // Belongs to another individual!
+                }
+            }
+
+            // 2. If assigned to a squad:
+            if (t.teamName != null && !t.teamName.trim().isEmpty()) {
+                String teamLower = t.teamName.trim().toLowerCase();
+                if (!userSquads.contains(teamLower)) {
+                    continue; // Belongs to another squad!
+                }
+            }
+
+            filtered.add(t);
         }
 
         adapter.setTasks(filtered);

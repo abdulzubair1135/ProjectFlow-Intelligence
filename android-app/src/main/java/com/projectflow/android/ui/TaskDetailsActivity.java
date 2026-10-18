@@ -81,8 +81,15 @@ public class TaskDetailsActivity extends AppCompatActivity {
             tvDueDate.setText(taskDue.contains("T") ? taskDue.split("T")[0] : taskDue);
         }
 
-        if (taskProjectId != null && !taskProjectId.isEmpty()) {
-            tvProject.setText("PRJ-" + taskProjectId);
+        String assignee = getIntent().getStringExtra("task_assignee_name");
+        String team = getIntent().getStringExtra("task_team_name");
+        String basePrj = (taskProjectId != null && !taskProjectId.isEmpty()) ? "PRJ-" + taskProjectId : "PF-CORE";
+        if (assignee != null && !assignee.isEmpty()) {
+            tvProject.setText(basePrj + " • 👤 " + assignee);
+        } else if (team != null && !team.isEmpty()) {
+            tvProject.setText(basePrj + " • 👥 " + team);
+        } else {
+            tvProject.setText(basePrj);
         }
 
         int initialProgress = getIntent().getIntExtra("task_progress", 0);

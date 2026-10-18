@@ -45,6 +45,22 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
         String status = p.status != null ? p.status : "Active";
         holder.tvMeta.setText(status + " • " + (p.code != null ? p.code : "PRJ"));
 
+        if (holder.tvAssignee != null) {
+            if (p.assigneeName != null && !p.assigneeName.isEmpty()) {
+                holder.tvAssignee.setText("👤 Assigned: " + p.assigneeName);
+                holder.tvAssignee.setVisibility(View.VISIBLE);
+            } else if (p.assigneeEmail != null && !p.assigneeEmail.isEmpty()) {
+                holder.tvAssignee.setText("👤 Assigned: " + p.assigneeEmail);
+                holder.tvAssignee.setVisibility(View.VISIBLE);
+            } else if (p.teamName != null && !p.teamName.isEmpty()) {
+                holder.tvAssignee.setText("👥 Squad: " + p.teamName);
+                holder.tvAssignee.setVisibility(View.VISIBLE);
+            } else {
+                holder.tvAssignee.setText("👤 Unassigned");
+                holder.tvAssignee.setVisibility(View.VISIBLE);
+            }
+        }
+
         int progress = 65;
         if (p.name.contains("Mobile")) progress = 75;
         else if (p.name.contains("Website")) progress = 40;
@@ -64,13 +80,14 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
     }
 
     static class ProjectViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvMeta, tvProgress;
+        TextView tvName, tvMeta, tvAssignee, tvProgress;
         ProgressBar pbProgress;
 
         public ProjectViewHolder(@NonNull View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvProjectName);
             tvMeta = itemView.findViewById(R.id.tvProjectMeta);
+            tvAssignee = itemView.findViewById(R.id.tvProjectAssignee);
             tvProgress = itemView.findViewById(R.id.tvProgressPercent);
             pbProgress = itemView.findViewById(R.id.pbProjectProgress);
         }

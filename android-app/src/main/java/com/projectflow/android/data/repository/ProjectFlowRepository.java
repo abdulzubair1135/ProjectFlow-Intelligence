@@ -84,16 +84,19 @@ public class ProjectFlowRepository {
     public void refreshProjects() {
         executor.execute(() -> {
             try {
-                List<WorkspaceEntity> wsList = db.workspaceDao().getAllSync();
-                for (WorkspaceEntity ws : wsList) {
-                    Response<List<ProjectDto>> resp = api.getProjects(ws.id).execute();
-                    if (resp.isSuccessful() && resp.body() != null) {
-                        List<ProjectEntity> entities = new ArrayList<>();
-                        for (ProjectDto dto : resp.body()) {
-                            entities.add(new ProjectEntity(dto.id, dto.workspaceId, dto.name, dto.code, dto.description, dto.status, dto.health, dto.targetDate));
-                        }
-                        db.projectDao().insertAll(entities);
+                Response<List<ProjectDto>> resp = api.getAllProjects().execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    List<ProjectEntity> entities = new ArrayList<>();
+                    for (ProjectDto dto : resp.body()) {
+                        entities.add(new ProjectEntity(
+                                dto.id, dto.workspaceId, dto.name, dto.code, dto.description,
+                                dto.status, dto.health, dto.targetDate,
+                                dto.assigneeId, dto.assigneeName, dto.assigneeEmail,
+                                dto.teamId, dto.teamName
+                        ));
                     }
+                    db.projectDao().deleteAll();
+                    db.projectDao().insertAll(entities);
                 }
             } catch (Exception e) {
                 // Offline mode
@@ -101,29 +104,43 @@ public class ProjectFlowRepository {
         });
     }
 
-    public void createProject(String workspaceId, String name, String code, String description, Runnable onSuccess, Runnable onError) {
+    public void createProject(String workspaceId, String name, String code, String description, String assigneeId, String assigneeName, String assigneeEmail, String teamId, String teamName, Runnable onSuccess, Runnable onError) {
         executor.execute(() -> {
             try {
                 Map<String, String> body = new HashMap<>();
                 body.put("name", name);
                 body.put("code", code);
                 body.put("description", description != null ? description : "");
+                if (assigneeId != null) body.put("assigneeId", assigneeId);
+                if (assigneeName != null) body.put("assigneeName", assigneeName);
+                if (assigneeEmail != null) body.put("assigneeEmail", assigneeEmail);
+                if (teamId != null) body.put("teamId", teamId);
+                if (teamName != null) body.put("teamName", teamName);
                 Response<ProjectDto> resp = api.createProject(workspaceId, body).execute();
                 if (resp.isSuccessful() && resp.body() != null) {
                     ProjectDto dto = resp.body();
-                    db.projectDao().insert(new ProjectEntity(dto.id, dto.workspaceId, dto.name, dto.code, dto.description, dto.status, dto.health, dto.targetDate));
+                    db.projectDao().insert(new ProjectEntity(
+                            dto.id, dto.workspaceId, dto.name, dto.code, dto.description,
+                            dto.status, dto.health, dto.targetDate,
+                            dto.assigneeId, dto.assigneeName, dto.assigneeEmail,
+                            dto.teamId, dto.teamName
+                    ));
                     if (onSuccess != null) onSuccess.run();
                     return;
                 }
             } catch (Exception e) {
                 String id = UUID.randomUUID().toString();
-                db.projectDao().insert(new ProjectEntity(id, workspaceId, name, code, description, "PLANNING", "ON_TRACK", null));
+                db.projectDao().insert(new ProjectEntity(id, workspaceId, name, code, description, "PLANNING", "ON_TRACK", null, assigneeId, assigneeName, assigneeEmail, teamId, teamName));
                 db.syncQueueDao().insert(new SyncQueueEntity(UUID.randomUUID().toString(), "CREATE", "PROJECT", id, "{}", "PENDING", new Date().toString()));
                 if (onSuccess != null) onSuccess.run();
                 return;
             }
             if (onError != null) onError.run();
         });
+    }
+
+    public void createProject(String workspaceId, String name, String code, String description, Runnable onSuccess, Runnable onError) {
+        createProject(workspaceId, name, code, description, null, null, null, null, null, onSuccess, onError);
     }
 
     // Tasks
@@ -139,8 +156,14 @@ public class ProjectFlowRepository {
                 if (resp.isSuccessful() && resp.body() != null) {
                     List<TaskEntity> entities = new ArrayList<>();
                     for (TaskDto dto : resp.body()) {
-                        entities.add(new TaskEntity(dto.id, dto.projectId, dto.title, dto.description, dto.priority, dto.statusCategory, dto.progressPercent, dto.dueDate));
+                        entities.add(new TaskEntity(
+                                dto.id, dto.projectId, dto.title, dto.description,
+                                dto.priority, dto.statusCategory, dto.progressPercent, dto.dueDate,
+                                dto.assigneeId, dto.assigneeName, dto.assigneeEmail,
+                                dto.teamId, dto.teamName
+                        ));
                     }
+                    db.taskDao().deleteAll();
                     db.taskDao().insertAll(entities);
                 }
             } catch (Exception e) {
@@ -162,7 +185,12 @@ public class ProjectFlowRepository {
                 if (resp.isSuccessful() && resp.body() != null) {
                     List<TaskEntity> entities = new ArrayList<>();
                     for (TaskDto dto : resp.body()) {
-                        entities.add(new TaskEntity(dto.id, dto.projectId, dto.title, dto.description, dto.priority, dto.statusCategory, dto.progressPercent, dto.dueDate));
+                        entities.add(new TaskEntity(
+                                dto.id, dto.projectId, dto.title, dto.description,
+                                dto.priority, dto.statusCategory, dto.progressPercent, dto.dueDate,
+                                dto.assigneeId, dto.assigneeName, dto.assigneeEmail,
+                                dto.teamId, dto.teamName
+                        ));
                     }
                     db.taskDao().insertAll(entities);
                 }
@@ -172,7 +200,7 @@ public class ProjectFlowRepository {
         });
     }
 
-    public void createTask(String projectId, String title, String description, String priority, String dueDate, String assigneeId, String assigneeName, String teamId, String teamName, Runnable onSuccess, Runnable onError) {
+    public void createTask(String projectId, String title, String description, String priority, String dueDate, String assigneeId, String assigneeName, String assigneeEmail, String teamId, String teamName, Runnable onSuccess, Runnable onError) {
         executor.execute(() -> {
             try {
                 Map<String, Object> body = new HashMap<>();
@@ -188,6 +216,9 @@ public class ProjectFlowRepository {
                 if (assigneeName != null && !assigneeName.isEmpty()) {
                     body.put("assigneeName", assigneeName);
                 }
+                if (assigneeEmail != null && !assigneeEmail.isEmpty()) {
+                    body.put("assigneeEmail", assigneeEmail);
+                }
                 if (teamId != null && !teamId.isEmpty()) {
                     body.put("teamId", teamId);
                 }
@@ -197,19 +228,28 @@ public class ProjectFlowRepository {
                 Response<TaskDto> resp = api.createTask(projectId, body).execute();
                 if (resp.isSuccessful() && resp.body() != null) {
                     TaskDto dto = resp.body();
-                    db.taskDao().insert(new TaskEntity(dto.id, dto.projectId, dto.title, dto.description, dto.priority, dto.statusCategory, dto.progressPercent, dto.dueDate));
+                    db.taskDao().insert(new TaskEntity(
+                            dto.id, dto.projectId, dto.title, dto.description,
+                            dto.priority, dto.statusCategory, dto.progressPercent, dto.dueDate,
+                            dto.assigneeId, dto.assigneeName, dto.assigneeEmail,
+                            dto.teamId, dto.teamName
+                    ));
                     if (onSuccess != null) onSuccess.run();
                     return;
                 }
             } catch (Exception e) {
                 String id = UUID.randomUUID().toString();
-                db.taskDao().insert(new TaskEntity(id, projectId, title, description, priority, "TODO", 0, dueDate));
+                db.taskDao().insert(new TaskEntity(id, projectId, title, description, priority, "TODO", 0, dueDate, assigneeId, assigneeName, assigneeEmail, teamId, teamName));
                 db.syncQueueDao().insert(new SyncQueueEntity(UUID.randomUUID().toString(), "CREATE", "TASK", id, "{}", "PENDING", new Date().toString()));
                 if (onSuccess != null) onSuccess.run();
                 return;
             }
             if (onError != null) onError.run();
         });
+    }
+
+    public void createTask(String projectId, String title, String description, String priority, String dueDate, String assigneeId, String assigneeName, String teamId, String teamName, Runnable onSuccess, Runnable onError) {
+        createTask(projectId, title, description, priority, dueDate, assigneeId, assigneeName, null, teamId, teamName, onSuccess, onError);
     }
 
     public void createTask(String projectId, String title, String description, String priority, String dueDate, Runnable onSuccess, Runnable onError) {

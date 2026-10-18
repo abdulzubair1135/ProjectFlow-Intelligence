@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import { Project, Workspace, ProjectStatus, Task } from '../types';
+import { Project, Workspace, ProjectStatus, Task, Team, UserProfile } from '../types';
 import {
   FolderKanban,
   Plus,
@@ -13,13 +13,16 @@ import {
   ArrowRight,
   Sparkles,
   SlidersHorizontal,
-  Users
+  Users,
+  UserCheck
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Projects: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,20 +40,25 @@ export const Projects: React.FC = () => {
   const [code, setCode] = useState('');
   const [description, setDescription] = useState('');
   const [targetDate, setTargetDate] = useState('');
+  const [assignedTarget, setAssignedTarget] = useState<string>('UNASSIGNED');
   const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [projList, wsList, taskList] = await Promise.all([
+      const [projList, wsList, taskList, teamList, userList] = await Promise.all([
         api.getProjects().catch(() => []),
         api.getWorkspaces().catch(() => []),
-        api.getAllTasks().catch(() => [])
+        api.getAllTasks().catch(() => []),
+        api.getTeams().catch(() => []),
+        api.getUsers().then(res => res.content || []).catch(() => [])
       ]);
       setProjects(projList);
       setWorkspaces(wsList);
       setTasks(taskList);
+      setTeams(teamList);
+      setUsers(userList);
       if (wsList.length > 0 && !selectedWs) {
         setSelectedWs(wsList[0].id);
       }
@@ -75,6 +83,42 @@ export const Projects: React.FC = () => {
     }
   };
 
+  const handleAssignProject = async (projectId: string, assignValue: string) => {
+    setUpdatingProjectId(projectId);
+    try {
+      let patchData: Partial<Project> = {};
+      if (assignValue === 'UNASSIGNED') {
+        patchData = { assigneeId: null, assigneeName: null, assigneeEmail: null, teamId: null, teamName: null };
+      } else if (assignValue.startsWith('TEAM:')) {
+        const teamId = assignValue.replace('TEAM:', '');
+        const tm = teams.find(t => t.id === teamId);
+        patchData = {
+          teamId,
+          teamName: tm?.name || null,
+          assigneeId: null,
+          assigneeName: null,
+          assigneeEmail: null
+        };
+      } else if (assignValue.startsWith('USER:')) {
+        const userId = assignValue.replace('USER:', '');
+        const u = users.find(usr => usr.id === userId);
+        patchData = {
+          assigneeId: userId,
+          assigneeName: u?.fullName || u?.email?.split('@')[0],
+          assigneeEmail: u?.email,
+          teamId: null,
+          teamName: null
+        };
+      }
+      const updated = await api.updateProject(projectId, patchData);
+      setProjects(prev => prev.map(p => p.id === projectId ? { ...p, ...updated } : p));
+    } catch (err: any) {
+      alert(`Assignment update failed: ${err.message}`);
+    } finally {
+      setUpdatingProjectId(null);
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedWs) {
@@ -83,10 +127,32 @@ export const Projects: React.FC = () => {
     }
     setSubmitting(true);
     try {
+      let initialAssigneeId: string | null = null;
+      let initialAssigneeName: string | null = null;
+      let initialAssigneeEmail: string | null = null;
+      let initialTeamId: string | null = null;
+      let initialTeamName: string | null = null;
+      if (assignedTarget.startsWith('TEAM:')) {
+        initialTeamId = assignedTarget.replace('TEAM:', '');
+        const tm = teams.find(t => t.id === initialTeamId);
+        initialTeamName = tm?.name || null;
+      } else if (assignedTarget.startsWith('USER:')) {
+        initialAssigneeId = assignedTarget.replace('USER:', '');
+        const u = users.find(usr => usr.id === initialAssigneeId);
+        initialAssigneeName = u?.fullName || null;
+        initialAssigneeEmail = u?.email || null;
+      }
+
       const created = await api.createProject(selectedWs, {
         name: name.trim(),
         code: code.trim().toUpperCase(),
-        description: description.trim()
+        description: description.trim(),
+        targetDate: targetDate || undefined,
+        assigneeId: initialAssigneeId,
+        assigneeName: initialAssigneeName,
+        assigneeEmail: initialAssigneeEmail,
+        teamId: initialTeamId,
+        teamName: initialTeamName
       });
       setProjects((prev) => [created, ...prev]);
       setShowModal(false);
@@ -94,6 +160,7 @@ export const Projects: React.FC = () => {
       setCode('');
       setDescription('');
       setTargetDate('');
+      setAssignedTarget('UNASSIGNED');
     } catch (err: any) {
       alert(`Project creation failed: ${err.message}`);
     } finally {
@@ -239,7 +306,7 @@ export const Projects: React.FC = () => {
               <tr>
                 <th className="px-6 py-3.5">Code & Project</th>
                 <th className="px-6 py-3.5">Status (Interactive)</th>
-                <th className="px-6 py-3.5">Assigned Squads</th>
+                <th className="px-6 py-3.5">Assigned To (Squad / Person)</th>
                 <th className="px-6 py-3.5">Radar Health</th>
                 <th className="px-6 py-3.5">Target Baseline</th>
                 <th className="px-6 py-3.5 text-right">Actions</th>
@@ -301,23 +368,38 @@ export const Projects: React.FC = () => {
                         </select>
                       </td>
                       <td className="px-6 py-4">
-                        {projectTeams.length === 0 ? (
-                          <span className="text-[11px] text-[#78866B] italic">
-                            No squad assigned
-                          </span>
-                        ) : (
-                          <div className="flex flex-wrap gap-1.5 max-w-xs">
-                            {projectTeams.map((tm) => (
-                              <span
-                                key={tm}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#56664C]/10 text-[#56664C] font-semibold text-[10px]"
-                              >
-                                <Users className="w-3 h-3" />
-                                {tm}
-                              </span>
+                        <select
+                          disabled={updatingProjectId === p.id}
+                          value={
+                            p.assigneeId
+                              ? `USER:${p.assigneeId}`
+                              : p.teamId
+                              ? `TEAM:${p.teamId}`
+                              : 'UNASSIGNED'
+                          }
+                          onChange={(e) => handleAssignProject(p.id, e.target.value)}
+                          className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border focus:outline-none transition-colors cursor-pointer ${
+                            p.assigneeId || p.teamName
+                              ? 'bg-[#56664C]/10 text-[#292D28] border-[#56664C]/30 hover:border-[#56664C]'
+                              : 'bg-[#FAFAF7] text-[#78866B] border-[#E2E0D8] hover:border-[#56664C]'
+                          }`}
+                        >
+                          <option value="UNASSIGNED">👤 Unassigned (Click to Assign)</option>
+                          <optgroup label="── 👥 Squads & Teams ──">
+                            {teams.map((tm) => (
+                              <option key={tm.id} value={`TEAM:${tm.id}`}>
+                                👥 Squad: {tm.name}
+                              </option>
                             ))}
-                          </div>
-                        )}
+                          </optgroup>
+                          <optgroup label="── 👤 Persons & Members ──">
+                            {users.map((usr) => (
+                              <option key={usr.id} value={`USER:${usr.id}`}>
+                                👤 Person: {usr.fullName || usr.email}
+                              </option>
+                            ))}
+                          </optgroup>
+                        </select>
                       </td>
                       <td className="px-6 py-4">
                         {getHealthBadge(p.health)}
@@ -428,6 +510,33 @@ export const Projects: React.FC = () => {
                     className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-xl text-xs text-[#292D28] focus:outline-none focus:border-[#56664C]"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#5A6258] uppercase tracking-wider mb-1">
+                  Assign Project To (Squad or Person)
+                </label>
+                <select
+                  value={assignedTarget}
+                  onChange={(e) => setAssignedTarget(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-xl text-xs text-[#292D28] focus:outline-none focus:border-[#56664C]"
+                >
+                  <option value="UNASSIGNED">👤 Unassigned</option>
+                  <optgroup label="── 👥 Squads & Teams ──">
+                    {teams.map((tm) => (
+                      <option key={tm.id} value={`TEAM:${tm.id}`}>
+                        👥 Squad: {tm.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="── 👤 Persons & Members ──">
+                    {users.map((usr) => (
+                      <option key={usr.id} value={`USER:${usr.id}`}>
+                        👤 Person: {usr.fullName || usr.email}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
               </div>
 
               <div>

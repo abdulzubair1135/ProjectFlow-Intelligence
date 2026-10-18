@@ -53,9 +53,14 @@ public class ApiClient {
             Request original = chain.request();
             String token = prefs.getString(KEY_TOKEN, "dev-admin-token");
             String email = prefs.getString("user_email", "admin@projectflow.io");
+            String role = prefs.getString("user_role", "MEMBER");
+            String userId = prefs.getString("user_id", "");
             Request.Builder builder = original.newBuilder()
                     .header("Authorization", "Bearer " + token)
                     .header("x-user-email", email)
+                    .header("x-user-role", role)
+                    .header("x-user-id", userId)
+                    .header("x-client-platform", "android")
                     .header("Accept", "application/json");
             return chain.proceed(builder.build());
         };

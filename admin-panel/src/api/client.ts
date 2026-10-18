@@ -163,7 +163,7 @@ export const api = {
     return handleResponse<Project[]>(res);
   },
 
-  async createProject(workspaceId: string, data: { name: string; code: string; description?: string }) {
+  async createProject(workspaceId: string, data: { name: string; code: string; description?: string; assigneeId?: string | null; assigneeName?: string | null; assigneeEmail?: string | null; teamId?: string | null; teamName?: string | null; targetDate?: string }) {
     const res = await fetch(`${API_BASE}/workspaces/${workspaceId}/projects`, {
       method: 'POST',
       headers: getAuthHeaders(),

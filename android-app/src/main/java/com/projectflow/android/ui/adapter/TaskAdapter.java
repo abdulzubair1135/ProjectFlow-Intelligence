@@ -64,6 +64,18 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         String prj = (t.projectId != null && !t.projectId.isEmpty()) ? "PRJ-" + t.projectId : "PF-CORE";
         holder.tvProject.setText(prj);
 
+        if (holder.tvAssignee != null) {
+            if (t.assigneeName != null && !t.assigneeName.isEmpty()) {
+                holder.tvAssignee.setText("👤 " + t.assigneeName);
+                holder.tvAssignee.setVisibility(View.VISIBLE);
+            } else if (t.teamName != null && !t.teamName.isEmpty()) {
+                holder.tvAssignee.setText("👥 " + t.teamName);
+                holder.tvAssignee.setVisibility(View.VISIBLE);
+            } else {
+                holder.tvAssignee.setVisibility(View.GONE);
+            }
+        }
+
         boolean isDone = "DONE".equalsIgnoreCase(t.statusCategory);
         holder.cbComplete.setOnCheckedChangeListener(null);
         holder.cbComplete.setChecked(isDone);
@@ -109,7 +121,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvPriority, tvDueDate, tvProject;
+        TextView tvTitle, tvPriority, tvDueDate, tvProject, tvAssignee;
         CheckBox cbComplete;
         ImageView ivAction;
 
@@ -119,6 +131,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvPriority = itemView.findViewById(R.id.tvTaskPriority);
             tvDueDate = itemView.findViewById(R.id.tvTaskDueDate);
             tvProject = itemView.findViewById(R.id.tvTaskProject);
+            tvAssignee = itemView.findViewById(R.id.tvTaskAssignee);
             cbComplete = itemView.findViewById(R.id.cbTaskComplete);
             ivAction = itemView.findViewById(R.id.ivTaskAction);
         }

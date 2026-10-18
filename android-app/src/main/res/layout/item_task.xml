@@ -102,6 +102,21 @@
             android:textColor="@color/text_secondary"
             android:textSize="10.5sp" />
 
+        <!-- Assignee Badge Pill -->
+        <TextView
+            android:id="@+id/tvTaskAssignee"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_neu_pill"
+            android:letterSpacing="0.04"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="3dp"
+            android:text="👤 Abdul Zubair"
+            android:textColor="@color/deep_sage"
+            android:textSize="10.5sp"
+            android:textStyle="bold" />
+
         <View
             android:layout_width="0dp"
             android:layout_height="1dp"

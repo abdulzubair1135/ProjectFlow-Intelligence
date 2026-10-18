@@ -21,6 +21,11 @@ public class DtoModels {
         public String status;
         public String health;
         public String targetDate;
+        public String assigneeId;
+        public String assigneeName;
+        public String assigneeEmail;
+        public String teamId;
+        public String teamName;
     }
 
     public static class TaskDto {
@@ -33,6 +38,8 @@ public class DtoModels {
         public int progressPercent;
         public String dueDate;
         public String assigneeId;
+        public String assigneeName;
+        public String assigneeEmail;
         public String teamId;
         public String teamName;
     }

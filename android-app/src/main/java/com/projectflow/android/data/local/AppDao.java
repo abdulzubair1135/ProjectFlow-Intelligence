@@ -41,6 +41,9 @@ public interface AppDao {
 
         @Insert(onConflict = OnConflictStrategy.REPLACE)
         void insert(ProjectEntity item);
+
+        @Query("DELETE FROM projects")
+        void deleteAll();
     }
 
     @Dao
@@ -62,6 +65,9 @@ public interface AppDao {
 
         @Update
         void update(TaskEntity item);
+
+        @Query("DELETE FROM tasks")
+        void deleteAll();
     }
 
     @Dao

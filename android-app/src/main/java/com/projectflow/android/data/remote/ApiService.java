@@ -30,6 +30,9 @@ public interface ApiService {
     @GET("workspaces/{id}/projects")
     Call<List<ProjectDto>> getProjects(@Path("id") String workspaceId);
 
+    @GET("projects")
+    Call<List<ProjectDto>> getAllProjects();
+
     @POST("workspaces/{id}/projects")
     Call<ProjectDto> createProject(@Path("id") String workspaceId, @Body Map<String, String> body);
 

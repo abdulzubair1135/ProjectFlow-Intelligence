@@ -176,10 +176,10 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void fallbackLocalLogin(String email) {
-        String token = "dev-admin-token";
-        String role = "ADMINISTRATOR";
-        if (email.contains("manager")) { token = "dev-manager-token"; role = "MANAGER"; }
-        if (email.contains("member")) { token = "dev-member-token"; role = "MEMBER"; }
+        String token = "dev-member-token";
+        String role = "MEMBER";
+        if (email.contains("admin")) { token = "dev-admin-token"; role = "ADMINISTRATOR"; }
+        else if (email.contains("manager")) { token = "dev-manager-token"; role = "MANAGER"; }
         saveSessionAndNavigate(token, email, null, role);
     }
 
@@ -189,6 +189,18 @@ public class LoginActivity extends AppCompatActivity {
                 : ((etName.getText() != null && !etName.getText().toString().trim().isEmpty())
                     ? etName.getText().toString().trim()
                     : (email.split("@")[0]));
+
+        if (token != null && token.contains(".")) {
+            try {
+                String[] parts = token.split("\\.");
+                if (parts.length >= 2) {
+                    byte[] decoded = android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE | android.util.Base64.NO_WRAP | android.util.Base64.DEFAULT);
+                    String payload = new String(decoded, java.nio.charset.StandardCharsets.UTF_8);
+                    org.json.JSONObject obj = new org.json.JSONObject(payload);
+                    if (obj.has("role")) role = obj.getString("role");
+                }
+            } catch (Exception ignored) {}
+        }
 
         SharedPreferences prefs = getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
         prefs.edit()
