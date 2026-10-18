@@ -223,6 +223,15 @@ export const api = {
     return handleResponse<Task>(res);
   },
 
+  async updateTask(taskId: string, data: Partial<Task>) {
+    const res = await fetch(`${API_BASE}/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse<Task>(res);
+  },
+
   // Teams & Squads
   async getTeams() {
     const res = await fetch(`${API_BASE}/teams`, {

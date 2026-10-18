@@ -133,6 +133,52 @@ export const Tasks: React.FC = () => {
     }
   };
 
+  const handleAssignTask = async (taskId: string, targetValue: string) => {
+    setUpdatingTaskId(taskId);
+    try {
+      let assigneeId: string | undefined = undefined;
+      let assigneeName: string | undefined = undefined;
+      let teamId: string | undefined = undefined;
+      let teamName: string | undefined = undefined;
+
+      if (targetValue.startsWith('USER:')) {
+        const uId = targetValue.substring(5);
+        const u = users.find(usr => usr.id === uId);
+        assigneeId = uId;
+        assigneeName = u ? u.fullName : 'Team Member';
+      } else if (targetValue.startsWith('TEAM:')) {
+        const tId = targetValue.substring(5);
+        const tm = teams.find(t => t.id === tId);
+        teamId = tId;
+        teamName = tm ? tm.name : 'Squad';
+      }
+
+      const updated = await api.updateTask(taskId, {
+        assigneeId,
+        assigneeName,
+        teamId,
+        teamName
+      });
+
+      setTasks(prev => prev.map(t => {
+        if (t.id === taskId) {
+          return {
+            ...t,
+            assigneeId: updated.assigneeId,
+            assigneeName: updated.assigneeName,
+            teamId: updated.teamId,
+            teamName: updated.teamName
+          };
+        }
+        return t;
+      }));
+    } catch (err: any) {
+      alert(`Failed to assign task: ${err.message}`);
+    } finally {
+      setUpdatingTaskId(null);
+    }
+  };
+
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProjectId) return;
@@ -399,23 +445,50 @@ export const Tasks: React.FC = () => {
                           </p>
                         )}
 
-                        {/* Assignee / Group */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {t.teamName && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-[#56664C]/10 text-[#56664C] px-2 py-0.5 rounded-md">
-                              <Users className="w-3 h-3" />
-                              {t.teamName}
+                        {/* Interactive Assignee / Squad Selector */}
+                        <div className="pt-0.5">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[9px] font-bold text-[#78866B] uppercase tracking-wider">
+                              Assigned To
                             </span>
-                          )}
-                          {t.assigneeName && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-[#F4F2E9] text-[#292D28] px-2 py-0.5 rounded-md border border-[#E2E0D8]">
-                              <User className="w-3 h-3 text-[#5A6258]" />
-                              {t.assigneeName}
-                            </span>
-                          )}
-                          {!t.teamName && !t.assigneeName && (
-                            <span className="text-[10px] text-[#78866B] italic">Unassigned</span>
-                          )}
+                            {updatingTaskId === t.id && (
+                              <span className="text-[9px] font-mono text-[#56664C] animate-pulse">
+                                Syncing...
+                              </span>
+                            )}
+                          </div>
+                          <select
+                            disabled={updatingTaskId === t.id}
+                            value={
+                              t.assigneeId
+                                ? `USER:${t.assigneeId}`
+                                : t.teamId
+                                ? `TEAM:${t.teamId}`
+                                : 'UNASSIGNED'
+                            }
+                            onChange={(e) => handleAssignTask(t.id, e.target.value)}
+                            className={`w-full text-[11px] font-semibold px-2 py-1.5 rounded-lg border focus:outline-none transition-colors cursor-pointer ${
+                              t.assigneeId || t.teamName
+                                ? 'bg-[#56664C]/10 text-[#292D28] border-[#56664C]/30 hover:border-[#56664C]'
+                                : 'bg-[#FAFAF7] text-[#78866B] border-[#E2E0D8] hover:border-[#56664C]'
+                            }`}
+                          >
+                            <option value="UNASSIGNED">👤 Unassigned (Click to Assign)</option>
+                            <optgroup label="── 👥 Squads & Teams ──">
+                              {teams.map((tm) => (
+                                <option key={tm.id} value={`TEAM:${tm.id}`}>
+                                  👥 Squad: {tm.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="── 👤 Team Members (Persons) ──">
+                              {users.map((u) => (
+                                <option key={u.id} value={`USER:${u.id}`}>
+                                  👤 {u.fullName} ({u.email})
+                                </option>
+                              ))}
+                            </optgroup>
+                          </select>
                         </div>
 
                         {/* Progress Bar & Due Date */}
@@ -507,23 +580,38 @@ export const Tasks: React.FC = () => {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1 items-start">
-                          {t.teamName && (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#56664C]/15 text-[#56664C] border border-[#56664C]/30">
-                              <Users className="w-3 h-3" />
-                              {t.teamName}
-                            </span>
-                          )}
-                          {t.assigneeName && (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#EFECE4] text-[#292D28] border border-[#E2E0D8]">
-                              <User className="w-3 h-3 text-[#5A6258]" />
-                              {t.assigneeName}
-                            </span>
-                          )}
-                          {!t.teamName && !t.assigneeName && (
-                            <span className="text-[10px] text-[#78866B] italic">Unassigned</span>
-                          )}
-                        </div>
+                        <select
+                          disabled={updatingTaskId === t.id}
+                          value={
+                            t.assigneeId
+                              ? `USER:${t.assigneeId}`
+                              : t.teamId
+                              ? `TEAM:${t.teamId}`
+                              : 'UNASSIGNED'
+                          }
+                          onChange={(e) => handleAssignTask(t.id, e.target.value)}
+                          className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border focus:outline-none transition-colors cursor-pointer ${
+                            t.assigneeId || t.teamName
+                              ? 'bg-[#56664C]/10 text-[#292D28] border-[#56664C]/30'
+                              : 'bg-white text-[#78866B] border-[#E2E0D8]'
+                          }`}
+                        >
+                          <option value="UNASSIGNED">👤 Unassigned</option>
+                          <optgroup label="── 👥 Squads & Teams ──">
+                            {teams.map((tm) => (
+                              <option key={tm.id} value={`TEAM:${tm.id}`}>
+                                👥 Squad: {tm.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="── 👤 Team Members (Persons) ──">
+                            {users.map((u) => (
+                              <option key={u.id} value={`USER:${u.id}`}>
+                                👤 {u.fullName} ({u.email})
+                              </option>
+                            ))}
+                          </optgroup>
+                        </select>
                       </td>
                       <td className="px-6 py-4">{getPriorityBadge(t.priority)}</td>
                       <td className="px-6 py-4">
