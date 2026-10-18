@@ -190,6 +190,12 @@ public class TeamFragment extends Fragment {
         applyFilter();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        loadAllData();
+    }
+
     private void loadAllData() {
         loadTeamData();
         loadSquadGroups();
@@ -355,8 +361,9 @@ public class TeamFragment extends Fragment {
                     ? "dm_" + clean1 + "_" + clean2
                     : "dm_" + clean2 + "_" + clean1;
 
+            boolean isOnline = member.isOnline || (member.email != null && member.email.trim().toLowerCase().equals(myEmail.trim().toLowerCase()));
             ((MainActivity) getActivity()).navigateToFragment(
-                    ChatFragment.newInstance(dmChannel, member.fullName, "DIRECT", member.isOnline),
+                    ChatFragment.newInstance(dmChannel, member.fullName, "DIRECT", isOnline),
                     "Chat: " + member.fullName
             );
         }
@@ -393,8 +400,12 @@ public class TeamFragment extends Fragment {
             String initial = (m.fullName != null && !m.fullName.isEmpty()) ? m.fullName.substring(0, 1).toUpperCase() : "U";
             holder.tvInitial.setText(initial);
 
+            android.content.SharedPreferences sp = holder.itemView.getContext().getSharedPreferences("projectflow_prefs", android.content.Context.MODE_PRIVATE);
+            String currentEmail = sp.getString("user_email", "").trim().toLowerCase();
+            boolean isMemberOnline = m.isOnline || (!currentEmail.isEmpty() && m.email != null && m.email.trim().toLowerCase().equals(currentEmail));
+
             if (holder.tvStatus != null) {
-                if (m.isOnline) {
+                if (isMemberOnline) {
                     holder.tvStatus.setText("ONLINE");
                     holder.tvStatus.setBackgroundResource(R.drawable.bg_badge_success);
                     holder.tvStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.earth_success));

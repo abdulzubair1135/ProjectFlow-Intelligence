@@ -4,9 +4,11 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem('projectflow_token') || 'dev-admin-token';
+  const email = localStorage.getItem('projectflow_user_email') || 'admin@projectflow.io';
   return {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
+    'Authorization': `Bearer ${token}`,
+    'x-user-email': email
   };
 }
 
@@ -371,5 +373,15 @@ export const api = {
       headers: getAuthHeaders()
     });
     return handleResponse<any[]>(res);
+  },
+
+  async sendHeartbeat(email?: string) {
+    const userEmail = email || localStorage.getItem('projectflow_user_email') || 'admin@projectflow.io';
+    const res = await fetch(`${API_BASE}/users/heartbeat`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ email: userEmail })
+    });
+    return handleResponse<{ success: boolean; online: boolean }>(res);
   }
 };

@@ -13,6 +13,34 @@ const PORT = process.env.PORT || 8082;
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'projectflow_jwt_secret_production_key_2026';
+
+// Global Active Sessions Store
+store.activeSessions = store.activeSessions || {};
+
+// Presence & Authentication Interceptor Middleware
+app.use((req, res, next) => {
+  try {
+    let email = req.headers['x-user-email'];
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const decoded = jwt.decode(token);
+      if (decoded && decoded.email) {
+        if (!email) email = decoded.email;
+        req.user = decoded;
+      }
+    }
+    if (email) {
+      const emailKey = email.trim().toLowerCase();
+      store.activeSessions[emailKey] = Date.now();
+      req.userEmail = emailKey;
+    }
+  } catch (e) {}
+  next();
+});
+
 // Serve static logo and public assets
 app.use(express.static(path.join(__dirname, 'admin-panel', 'public')));
 app.use(express.static(path.join(__dirname, 'admin-panel', 'dist')));
@@ -52,8 +80,6 @@ function recordAuditLog(action, entityType, entityId, actorEmail, details) {
 // -------------------------------------------------------------
 // AUTHENTICATION & SESSIONS (REAL SUPABASE + DEV FALLBACK)
 // -------------------------------------------------------------
-const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'projectflow_jwt_secret_production_key_2026';
 
 app.post('/api/v1/auth/login', async (req, res) => {
   const email = (req.body && req.body.email) ? req.body.email.trim().toLowerCase() : '';
@@ -366,11 +392,20 @@ app.post('/api/v1/scenarios/simulate', (req, res) => {
 
 app.get('/api/v1/me', (req, res) => {
   const auth = req.headers.authorization || '';
-  let email = 'admin@projectflow.io';
-  if (auth.includes('manager')) email = 'manager@projectflow.io';
-  if (auth.includes('member')) email = 'member@projectflow.io';
+  let email = req.userEmail || (req.user && req.user.email) || req.headers['x-user-email'];
+  if (!email && auth.startsWith('Bearer ')) {
+    try {
+      const decoded = jwt.decode(auth.substring(7));
+      if (decoded && decoded.email) email = decoded.email;
+    } catch (e) {}
+  }
+  if (!email) {
+    if (auth.includes('manager')) email = 'manager@projectflow.io';
+    else if (auth.includes('member')) email = 'member@projectflow.io';
+    else email = 'admin@projectflow.io';
+  }
 
-  const user = store.users.find(u => u.email === email) || store.users[0];
+  const user = store.users.find(u => u.email.toLowerCase() === email.toLowerCase()) || store.users[0];
   res.json(user);
 });
 
@@ -408,13 +443,15 @@ app.get('/api/v1/admin/users', async (req, res) => {
   }
 
   const query = (req.query.query || '').toLowerCase();
+  const callerEmail = (req.userEmail || req.headers['x-user-email'] || (req.user && req.user.email) || '').toLowerCase();
   let filtered = store.users.map(u => {
-    const lastSeen = store.activeSessions ? store.activeSessions[u.email.toLowerCase()] : null;
-    const isOnline = !!lastSeen && (Date.now() - lastSeen < 180000);
+    const emailKey = (u.email || '').toLowerCase();
+    const lastSeen = store.activeSessions ? store.activeSessions[emailKey] : null;
+    const isOnline = !!(lastSeen && (Date.now() - lastSeen < 180000)) || (!!callerEmail && callerEmail === emailKey);
     return {
       ...u,
       isOnline,
-      lastSeenAt: lastSeen
+      lastSeenAt: lastSeen || (isOnline ? Date.now() : null)
     };
   });
   if (query) {
@@ -929,20 +966,18 @@ app.post('/api/v1/teams', (req, res) => {
   res.status(201).json(newTeam);
 });
 
-store.activeSessions = store.activeSessions || {};
-
 app.post('/api/v1/users/heartbeat', (req, res) => {
-  const email = req.body.email || req.headers['x-user-email'];
+  const email = req.body.email || req.userEmail || req.headers['x-user-email'] || (req.user && req.user.email);
   if (email) {
-    store.activeSessions[email.toLowerCase()] = Date.now();
+    store.activeSessions[email.trim().toLowerCase()] = Date.now();
   }
   res.json({ success: true, online: true, timestamp: Date.now() });
 });
 
 app.get('/api/v1/team', async (req, res) => {
-  const reqEmail = req.headers['x-user-email'] || req.query.userEmail;
+  const reqEmail = req.userEmail || req.headers['x-user-email'] || req.query.userEmail || (req.user && req.user.email);
   if (reqEmail) {
-    store.activeSessions[reqEmail.toLowerCase()] = Date.now();
+    store.activeSessions[reqEmail.trim().toLowerCase()] = Date.now();
   }
   if (supabase) {
     try {
@@ -960,11 +995,12 @@ app.get('/api/v1/team', async (req, res) => {
     } catch (e) {}
   }
   const now = Date.now();
+  const callerEmail = (reqEmail || '').trim().toLowerCase();
   const team = store.users.map(u => {
     const emailKey = (u.email || '').toLowerCase();
     const lastActive = store.activeSessions ? store.activeSessions[emailKey] : 0;
-    // User is online only if they had active session/heartbeat in last 3 minutes (180,000 ms)
-    const isOnline = !!(lastActive && (now - lastActive < 180000));
+    // User is online only if they had active session/heartbeat in last 3 minutes or are the current caller
+    const isOnline = !!(lastActive && (now - lastActive < 180000)) || (!!callerEmail && callerEmail === emailKey);
     return {
       id: u.id,
       email: u.email,
@@ -972,7 +1008,7 @@ app.get('/api/v1/team', async (req, res) => {
       role: u.role,
       active: u.active !== false,
       isOnline: isOnline,
-      lastSeen: lastActive ? new Date(lastActive).toISOString() : null,
+      lastSeen: lastActive ? new Date(lastActive).toISOString() : (isOnline ? new Date().toISOString() : null),
       assignedTasksCount: store.tasks.filter(t => t.assigneeId === u.id).length
     };
   });

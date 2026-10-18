@@ -105,6 +105,10 @@ export const Discussions: React.FC<DiscussionsProps> = ({ initialChannel, initia
 
   useEffect(() => {
     loadChannelsAndMembers();
+    const interval = setInterval(() => {
+      loadChannelsAndMembers();
+    }, 8000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -157,12 +161,13 @@ export const Discussions: React.FC<DiscussionsProps> = ({ initialChannel, initia
     const c1 = myEmail.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
     const c2 = (m.email || m.fullName).replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
     const dmChannel = c1.localeCompare(c2) < 0 ? `dm_${c1}_${c2}` : `dm_${c2}_${c1}`;
+    const isMemberOnline = !!m.isOnline || (m.email?.toLowerCase() === myEmail.toLowerCase());
 
     setActiveChannel(dmChannel);
     setActiveTitle(m.fullName || m.email);
-    setActiveSubtitle(m.isOnline ? 'Online • Direct Chat' : 'Offline • Direct Chat');
+    setActiveSubtitle(isMemberOnline ? 'Online • Direct Chat' : 'Offline • Direct Chat');
     setActiveIsDirect(true);
-    setActiveOnline(m.isOnline);
+    setActiveOnline(isMemberOnline);
   };
 
   const handleCreateGroup = async (e: React.FormEvent) => {
@@ -308,6 +313,8 @@ export const Discussions: React.FC<DiscussionsProps> = ({ initialChannel, initia
                 const c2 = (m.email || m.fullName).replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
                 const dmChannel = c1.localeCompare(c2) < 0 ? `dm_${c1}_${c2}` : `dm_${c2}_${c1}`;
                 const isActive = activeChannel === dmChannel;
+                const isSelf = !!(user?.email && m.email?.toLowerCase() === user.email.toLowerCase());
+                const isMemberOnline = !!m.isOnline || isSelf;
 
                 return (
                   <button
@@ -319,7 +326,7 @@ export const Discussions: React.FC<DiscussionsProps> = ({ initialChannel, initia
                   >
                     <div className="relative w-9 h-9 rounded-xl bg-[#E2E0D8] text-[#56664C] flex items-center justify-center font-bold text-xs shrink-0">
                       {m.fullName ? m.fullName.substring(0, 2).toUpperCase() : 'PF'}
-                      {m.isOnline && (
+                      {isMemberOnline && (
                         <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#47745A] border-2 border-white"></span>
                       )}
                     </div>
@@ -327,9 +334,9 @@ export const Discussions: React.FC<DiscussionsProps> = ({ initialChannel, initia
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-[#292D28] truncate">{m.fullName}</span>
                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                          m.isOnline ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                          isMemberOnline ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                         }`}>
-                          {m.isOnline ? 'ONLINE' : 'OFFLINE'}
+                          {isMemberOnline ? 'ONLINE' : 'OFFLINE'}
                         </span>
                       </div>
                       <p className="text-[11px] text-[#78866B] truncate">{m.role} • {m.email}</p>

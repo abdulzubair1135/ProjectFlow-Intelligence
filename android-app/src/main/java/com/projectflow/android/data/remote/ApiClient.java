@@ -52,8 +52,10 @@ public class ApiClient {
         Interceptor authInterceptor = chain -> {
             Request original = chain.request();
             String token = prefs.getString(KEY_TOKEN, "dev-admin-token");
+            String email = prefs.getString("user_email", "admin@projectflow.io");
             Request.Builder builder = original.newBuilder()
                     .header("Authorization", "Bearer " + token)
+                    .header("x-user-email", email)
                     .header("Accept", "application/json");
             return chain.proceed(builder.build());
         };

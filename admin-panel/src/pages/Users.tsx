@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { UserProfile, Role } from '../types';
+import { useAuth } from '../context/AuthContext';
 import { Discussions } from './Discussions';
 import {
   Users,
@@ -28,6 +29,7 @@ export const UserManagement: React.FC = () => {
     tabParam === 'discussions' ? 'discussions' : 'members'
   );
   const [targetChatEmail, setTargetChatEmail] = useState<string | undefined>(undefined);
+  const { user: currentUser } = useAuth();
 
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [total, setTotal] = useState(0);
@@ -54,7 +56,6 @@ export const UserManagement: React.FC = () => {
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const fetchUsers = async () => {
-    setLoading(true);
     setError(null);
     try {
       const resp = await api.getUsers(query, 0, 100);
@@ -71,6 +72,10 @@ export const UserManagement: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
+    const interval = setInterval(() => {
+      fetchUsers();
+    }, 10000);
+    return () => clearInterval(interval);
   }, [query]);
 
   const handleRoleChange = async () => {
@@ -308,17 +313,22 @@ export const UserManagement: React.FC = () => {
                             {u.fullName ? u.fullName.charAt(0).toUpperCase() : u.email.charAt(0).toUpperCase()}
                           </div>
                           {/* Live Online Badge Indicator */}
-                          <span
-                            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
-                              u.isOnline ? 'bg-emerald-500' : 'bg-gray-300'
-                            }`}
-                            title={u.isOnline ? 'Online now' : 'Offline'}
-                          />
+                          {(() => {
+                            const isUserOnline = !!u.isOnline || (!!currentUser?.email && u.email?.toLowerCase() === currentUser.email.toLowerCase());
+                            return (
+                              <span
+                                className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                                  isUserOnline ? 'bg-emerald-500' : 'bg-gray-300'
+                                }`}
+                                title={isUserOnline ? 'Online now' : 'Offline'}
+                              />
+                            );
+                          })()}
                         </div>
                         <div>
                           <div className="font-semibold text-[#292D28] flex items-center gap-2">
                             <span>{u.fullName || 'Unnamed User'}</span>
-                            {u.isOnline && (
+                            {(!!u.isOnline || (!!currentUser?.email && u.email?.toLowerCase() === currentUser.email.toLowerCase())) && (
                               <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-semibold border border-emerald-200">
                                 LIVE
                               </span>
