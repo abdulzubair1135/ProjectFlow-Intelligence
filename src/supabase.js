@@ -197,8 +197,9 @@ const store = {
       name: 'Core Engineering',
       slug: 'engineering',
       description: 'Full-stack architecture, backend APIs, and Android platform development.',
-      memberCount: 5,
+      memberCount: 3,
       channel: 'engineering',
+      members: ['admin@projectflow.io', 'abdulzubair221@gmail.com', 'vipra@projectflow.io'],
       createdAt: new Date().toISOString()
     },
     {
@@ -206,8 +207,9 @@ const store = {
       name: 'UI/UX Design Group',
       slug: 'design-group',
       description: 'Neumorphism 3D visual language, design tokens, and fluid animations.',
-      memberCount: 3,
+      memberCount: 2,
       channel: 'design-group',
+      members: ['boyundertheaim@gmail.com', 'lalwanipuneet91@gmail.com'],
       createdAt: new Date().toISOString()
     },
     {
@@ -215,8 +217,9 @@ const store = {
       name: 'Risk & Quality Assurance',
       slug: 'risk-qa',
       description: 'Deterministic risk engine auditing, stress testing, and hardware verification.',
-      memberCount: 2,
+      memberCount: 1,
       channel: 'risk-qa',
+      members: ['admin@projectflow.io'],
       createdAt: new Date().toISOString()
     }
   ],

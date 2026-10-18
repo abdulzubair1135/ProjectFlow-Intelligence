@@ -105,6 +105,10 @@ public class DtoModels {
         public String priority;
         public String channel;
         public String senderName;
+        public String senderEmail;
+        public String userId;
+        public String targetEmail;
+        public List<String> targetEmails;
         public boolean read;
         public String createdAt;
     }

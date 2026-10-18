@@ -91,6 +91,25 @@ public class NotificationSyncManager {
         SharedPreferences userPrefs = appContext.getSharedPreferences("projectflow_prefs", Context.MODE_PRIVATE);
         String currentEmail = userPrefs.getString("user_email", "").trim().toLowerCase();
         String currentName = userPrefs.getString("user_name", userPrefs.getString("user_display_name", "")).trim().toLowerCase();
+        String tempUserId = userPrefs.getString("user_id", "");
+        if (tempUserId.isEmpty()) {
+            String token = userPrefs.getString("auth_token", "");
+            if (token != null && token.contains(".")) {
+                try {
+                    String[] parts = token.split("\\.");
+                    if (parts.length >= 2) {
+                        byte[] decoded = android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE | android.util.Base64.NO_WRAP | android.util.Base64.DEFAULT);
+                        String payload = new String(decoded, java.nio.charset.StandardCharsets.UTF_8);
+                        org.json.JSONObject obj = new org.json.JSONObject(payload);
+                        if (obj.has("userId")) {
+                            tempUserId = obj.getString("userId");
+                            userPrefs.edit().putString("user_id", tempUserId).apply();
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+        final String finalUserId = tempUserId;
 
         // 1. Sync Chat Messages across all channels
         repository.fetchAllChatMessages(new ProjectFlowRepository.DataCallback<List<ChatMessageDto>>() {
@@ -116,23 +135,35 @@ public class NotificationSyncManager {
                     seenMessageIds.add(msg.id);
                     newFound = true;
 
-                    // Check if message was sent by someone else
+                    // Check if message was sent by current user
                     String author = (msg.senderName != null) ? msg.senderName.trim().toLowerCase() : "";
+                    String authorEmail = (msg.senderEmail != null) ? msg.senderEmail.trim().toLowerCase() : "";
                     boolean isSelf = (!currentName.isEmpty() && author.equals(currentName))
-                            || (!currentEmail.isEmpty() && currentEmail.startsWith(author));
+                            || (!currentEmail.isEmpty() && (currentEmail.equals(authorEmail) || currentEmail.startsWith(author)));
 
-                    if (!isSelf) {
-                        Log.d(TAG, "New incoming chat alert from " + msg.senderName + " in #" + msg.channel);
-                        String sender = (msg.senderName != null && !msg.senderName.isEmpty()) ? msg.senderName : "System Administrator";
-                        String title = (msg.channel != null && msg.channel.startsWith("dm_")) ? ("💬 " + sender) : ("💬 #" + (msg.channel != null ? msg.channel : "general") + " • " + sender);
-                        ProjectFlowNotificationHelper.showChatNotification(
-                                appContext,
-                                title,
-                                msg.content,
-                                msg.channel,
-                                sender
-                        );
+                    if (isSelf) {
+                        continue;
                     }
+
+                    // For Direct Messages (1-on-1): verify current user is an actual participant in this channel!
+                    if (msg.channel != null && msg.channel.startsWith("dm_")) {
+                        String mySlug = (!currentEmail.isEmpty()) ? currentEmail.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase() : "";
+                        if (!mySlug.isEmpty() && !msg.channel.contains(mySlug)) {
+                            // Private DM between two other people -> NEVER notify!
+                            continue;
+                        }
+                    }
+
+                    Log.d(TAG, "New incoming chat alert from " + msg.senderName + " in #" + msg.channel);
+                    String sender = (msg.senderName != null && !msg.senderName.isEmpty()) ? msg.senderName : "System Administrator";
+                    String title = (msg.channel != null && msg.channel.startsWith("dm_")) ? ("💬 " + sender) : ("💬 #" + (msg.channel != null ? msg.channel : "general") + " • " + sender);
+                    ProjectFlowNotificationHelper.showChatNotification(
+                            appContext,
+                            title,
+                            msg.content,
+                            msg.channel,
+                            sender
+                    );
                 }
 
                 if (newFound) {
@@ -162,26 +193,60 @@ public class NotificationSyncManager {
                     // Trigger heads-up notification for ANY action from Control Panel / Workspace
                     if (!notif.read) {
                         if (notif.message != null && notif.message.contains("<!--PF:")) {
-                            java.util.regex.Matcher m = java.util.regex.Pattern.compile("<!--PF:ch=([^:]*):task=([^:]*):sender=([^>]*)-->").matcher(notif.message);
+                            java.util.regex.Matcher m = java.util.regex.Pattern.compile("<!--PF:(.*?)-->").matcher(notif.message);
                             if (m.find()) {
-                                if (notif.channel == null || notif.channel.isEmpty()) notif.channel = m.group(1);
-                                if (notif.taskId == null || notif.taskId.isEmpty()) notif.taskId = m.group(2);
-                                if (notif.senderName == null || notif.senderName.isEmpty()) notif.senderName = m.group(3);
+                                String tagBody = m.group(1);
+                                String[] tokens = tagBody.split(":");
+                                for (String tok : tokens) {
+                                    int eq = tok.indexOf('=');
+                                    if (eq > 0) {
+                                        String k = tok.substring(0, eq);
+                                        String v = tok.substring(eq + 1);
+                                        if ("ch".equals(k) && (notif.channel == null || notif.channel.isEmpty())) notif.channel = v;
+                                        if ("task".equals(k) && (notif.taskId == null || notif.taskId.isEmpty())) notif.taskId = v;
+                                        if ("sender".equals(k) && (notif.senderName == null || notif.senderName.isEmpty())) notif.senderName = v;
+                                        if ("senderEmail".equals(k) && (notif.senderEmail == null || notif.senderEmail.isEmpty())) notif.senderEmail = v;
+                                        if ("targetEmail".equals(k)) notif.targetEmail = v;
+                                    }
+                                }
                             }
                             notif.message = notif.message.replaceAll("<!--PF:[^>]*-->", "").trim();
                         }
 
-                        Log.i(TAG, "Triggering phone notification: " + notif.title + " - " + notif.message);
-                        if ("CHAT_MESSAGE".equalsIgnoreCase(notif.type) || (notif.title != null && notif.title.contains("💬"))) {
-                            String ch = (notif.channel != null && !notif.channel.isEmpty()) ? notif.channel : "";
-                            if (ch.isEmpty()) {
-                                String clean1 = currentEmail.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
-                                String clean2 = "admin_projectflow_io";
-                                ch = (clean1.compareTo(clean2) < 0) ? "dm_" + clean1 + "_" + clean2 : "dm_" + clean2 + "_" + clean1;
+                        // Filter: Never notify for actions initiated by the user themselves
+                        if (notif.senderEmail != null && !notif.senderEmail.isEmpty() && notif.senderEmail.equalsIgnoreCase(currentEmail)) {
+                            continue;
+                        }
+
+                        // Filter: DM notifications - user must be a participant in this channel
+                        if (notif.channel != null && notif.channel.startsWith("dm_")) {
+                            String mySlug = (!currentEmail.isEmpty()) ? currentEmail.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase() : "";
+                            if (!mySlug.isEmpty() && !notif.channel.contains(mySlug)) {
+                                continue;
                             }
-                            String sender = (notif.senderName != null && !notif.senderName.isEmpty()) ? notif.senderName : "System Administrator";
-                            ProjectFlowNotificationHelper.showChatNotification(appContext, notif.title, notif.message, ch, sender);
-                        } else if ("RISK_ALERT".equalsIgnoreCase(notif.type) || "CRITICAL".equalsIgnoreCase(notif.priority)) {
+                        }
+
+                        // Filter: Task notifications - if targetEmail is set, must match current user
+                        if (notif.targetEmail != null && !notif.targetEmail.isEmpty()) {
+                            if (!notif.targetEmail.equalsIgnoreCase(currentEmail)) {
+                                continue;
+                            }
+                        }
+
+                        // Filter: Task notifications - if userId is set, check match
+                        if (notif.userId != null && !notif.userId.isEmpty() && !finalUserId.isEmpty()) {
+                            if (!notif.userId.equals(finalUserId)) {
+                                continue;
+                            }
+                        }
+
+                        // Avoid duplicate chat notifications if already notified in chat sync
+                        if ("CHAT_MESSAGE".equalsIgnoreCase(notif.type) || (notif.title != null && notif.title.contains("💬"))) {
+                            continue;
+                        }
+
+                        Log.i(TAG, "Triggering phone notification: " + notif.title + " - " + notif.message);
+                        if ("RISK_ALERT".equalsIgnoreCase(notif.type) || "CRITICAL".equalsIgnoreCase(notif.priority)) {
                             ProjectFlowNotificationHelper.showRiskNotification(appContext, notif.title, notif.message, notif.priority);
                         } else {
                             ProjectFlowNotificationHelper.showTaskNotification(appContext, notif.title, notif.message, notif.taskId, notif.priority);

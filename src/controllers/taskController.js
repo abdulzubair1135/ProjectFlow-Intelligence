@@ -81,13 +81,35 @@ async function createTask(req, res) {
   store.tasks.push(task);
   saveTaskToSupabase(task);
 
+  const callerEmail = (req.headers['x-user-email'] || (req.user && req.user.email) || '').trim().toLowerCase();
+  let targetUserId = null;
+  let targetEmail = null;
+  let targetEmails = [];
+
+  if (assigneeId) {
+    const u = store.users.find(usr => usr.id === assigneeId);
+    if (u) {
+      targetUserId = u.id;
+      targetEmail = u.email;
+      targetEmails = [u.email];
+    }
+  } else if (teamId) {
+    const tm = (store.teams || []).find(t => t.id === teamId);
+    if (tm && Array.isArray(tm.members) && tm.members.length > 0) {
+      targetEmails = tm.members;
+    }
+  }
+
   const targetLabel = resolvedAssigneeName || (resolvedTeamName ? `Team "${resolvedTeamName}"` : 'Team');
   await broadcastSystemNotification({
     title: '📋 New Task Assigned',
     message: `${targetLabel} received task: "${task.title}" (Priority: ${task.priority})`,
     type: 'TASK_ASSIGNED',
     taskId: task.id,
-    userId: assigneeId || null,
+    userId: targetUserId,
+    targetEmail: targetEmail,
+    targetEmails: targetEmails,
+    senderEmail: callerEmail,
     priority: task.priority
   });
 
@@ -129,14 +151,35 @@ async function updateTask(req, res) {
   saveTaskToSupabase(task);
 
   if (assigneeChanged) {
+    const callerEmail = (req.headers['x-user-email'] || (req.user && req.user.email) || '').trim().toLowerCase();
     const targetLabel = task.assigneeName || (task.teamName ? `Team "${task.teamName}"` : null);
     if (targetLabel) {
+      let targetUserId = null;
+      let targetEmail = null;
+      let targetEmails = [];
+      if (task.assigneeId) {
+        const u = store.users.find(usr => usr.id === task.assigneeId);
+        if (u) {
+          targetUserId = u.id;
+          targetEmail = u.email;
+          targetEmails = [u.email];
+        }
+      } else if (task.teamId) {
+        const tm = (store.teams || []).find(t => t.id === task.teamId);
+        if (tm && Array.isArray(tm.members) && tm.members.length > 0) {
+          targetEmails = tm.members;
+        }
+      }
+
       await broadcastSystemNotification({
         title: '📋 Task Assigned & Delegated',
         message: `${targetLabel} was assigned task: "${task.title}" (Priority: ${task.priority})`,
         type: 'TASK_ASSIGNED',
         taskId: task.id,
-        userId: task.assigneeId || null,
+        userId: targetUserId,
+        targetEmail: targetEmail,
+        targetEmails: targetEmails,
+        senderEmail: callerEmail,
         priority: task.priority
       });
     }

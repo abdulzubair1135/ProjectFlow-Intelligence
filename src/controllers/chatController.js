@@ -52,6 +52,8 @@ async function createGroup(req, res) {
     message: description ? `Group "${newGroup.name}": ${description}` : `Administrator created a new collaboration group "${newGroup.name}".`,
     type: 'GROUP_CREATED',
     channel: newGroup.channel,
+    targetEmails: newGroup.members.filter(m => m.toLowerCase() !== (creatorEmail || '').toLowerCase()),
+    senderEmail: creatorEmail || null,
     priority: 'HIGH'
   });
 
@@ -97,9 +99,21 @@ async function getMessages(req, res) {
   }
 
   let list = store.messages || [];
+  const reqEmail = (req.headers['x-user-email'] || req.query.userEmail || (req.user && req.user.email) || '').trim().toLowerCase();
+  const userSlug = reqEmail ? reqEmail.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase() : '';
+
   if (channel && channel !== 'all') {
     list = list.filter(m => m.channel === channel);
+  } else if (reqEmail) {
+    // When syncing 'all', only return public channels, groups, and DMs involving this user
+    list = list.filter(m => {
+      if (m.channel && m.channel.startsWith('dm_')) {
+        return m.channel.includes(userSlug);
+      }
+      return true;
+    });
   }
+
   const enriched = list.map(m => {
     const matchedUser = store.users?.find(u => 
       (m.senderId && u.id === m.senderId) || 
@@ -146,9 +160,38 @@ async function sendMessage(req, res) {
   (store.messages = store.messages || []).push(msg);
   saveChatMessageToSupabase(msg);
 
-  // Broadcast notification and push
+  // Target notification strictly to recipients
   const isDirect = targetChannel.startsWith('dm_');
   const notifTitle = isDirect ? `💬 ${authorName} (${finalRole})` : `💬 #${targetChannel} • ${authorName}`;
+
+  let recipientUserId = null;
+  let recipientEmail = null;
+  let targetEmails = [];
+
+  if (isDirect) {
+    // Channel format: dm_slugA_slugB
+    const senderSlug = finalEmail.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    const otherUser = (store.users || []).find(u => {
+      const uSlug = (u.email || '').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      return uSlug !== senderSlug && targetChannel.includes(uSlug);
+    });
+    if (otherUser) {
+      recipientUserId = otherUser.id;
+      recipientEmail = otherUser.email;
+      targetEmails = [otherUser.email];
+    }
+  } else if (targetChannel.startsWith('group_')) {
+    const grp = (store.chatGroups || []).find(g => g.channel === targetChannel);
+    if (grp && Array.isArray(grp.members) && grp.members.length > 0) {
+      targetEmails = grp.members.filter(e => e.toLowerCase() !== finalEmail.toLowerCase());
+    }
+  } else if (targetChannel !== 'general') {
+    const tm = (store.teams || []).find(t => t.channel === targetChannel || t.slug === targetChannel);
+    if (tm && Array.isArray(tm.members) && tm.members.length > 0) {
+      targetEmails = tm.members.filter(e => e.toLowerCase() !== finalEmail.toLowerCase());
+    }
+  }
+
   await broadcastSystemNotification({
     title: notifTitle,
     message: content || 'Sent a new message',
@@ -156,6 +199,10 @@ async function sendMessage(req, res) {
     channel: targetChannel,
     senderName: authorName,
     senderId: msg.senderId,
+    senderEmail: finalEmail,
+    userId: recipientUserId,
+    targetEmail: recipientEmail,
+    targetEmails: targetEmails,
     priority: isDirect ? 'HIGH' : 'NORMAL'
   });
 

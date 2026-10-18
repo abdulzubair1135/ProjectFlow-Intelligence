@@ -47,16 +47,18 @@ function getSquadTeams(req, res) {
 }
 
 async function createSquadTeam(req, res) {
-  const { name, description, memberCount } = req.body;
+  const { name, description, memberCount, members, memberEmails } = req.body;
   if (!name) return res.status(400).json({ error: 'Team name is required' });
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   const channel = slug;
+  const assignedMembers = Array.isArray(members) ? members : (Array.isArray(memberEmails) ? memberEmails : []);
   const newTeam = {
     id: uuidv4(),
     name,
     slug,
     description: description || '',
-    memberCount: memberCount || 1,
+    memberCount: assignedMembers.length || memberCount || 1,
+    members: assignedMembers,
     channel,
     createdAt: new Date().toISOString()
   };
@@ -73,12 +75,13 @@ async function createSquadTeam(req, res) {
     createdAt: new Date().toISOString()
   });
 
-  // Broadcast notification to all mobile & web clients
+  // Target notification only to team members if specified
   await broadcastSystemNotification({
     title: '👥 New Team & Group Created',
     message: `Team "${name}" and chat channel #${channel} are now active.`,
     type: 'TEAM_CREATED',
     channel: channel,
+    targetEmails: assignedMembers,
     priority: 'HIGH'
   });
 

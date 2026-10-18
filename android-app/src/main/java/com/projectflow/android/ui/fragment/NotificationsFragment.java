@@ -139,17 +139,47 @@ public class NotificationsFragment extends Fragment {
                     getActivity().runOnUiThread(() -> {
                         swipeRefreshNotifs.setRefreshing(false);
                         allList.clear();
-                        if (data != null) {
+                        if (data != null && isAdded()) {
+                            String myEmail = requireContext().getSharedPreferences("projectflow_prefs", android.content.Context.MODE_PRIVATE)
+                                    .getString("user_email", "").trim().toLowerCase();
+                            String mySlug = !myEmail.isEmpty() ? myEmail.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase() : "";
+
                             for (NotificationDto n : data) {
                                 if (n.message != null && n.message.contains("<!--PF:")) {
-                                    java.util.regex.Matcher m = java.util.regex.Pattern.compile("<!--PF:ch=([^:]*):task=([^:]*):sender=([^>]*)-->").matcher(n.message);
+                                    java.util.regex.Matcher m = java.util.regex.Pattern.compile("<!--PF:(.*?)-->").matcher(n.message);
                                     if (m.find()) {
-                                        if (n.channel == null || n.channel.isEmpty()) n.channel = m.group(1);
-                                        if (n.taskId == null || n.taskId.isEmpty()) n.taskId = m.group(2);
-                                        if (n.senderName == null || n.senderName.isEmpty()) n.senderName = m.group(3);
+                                        String[] tokens = m.group(1).split(":");
+                                        for (String tok : tokens) {
+                                            int eq = tok.indexOf('=');
+                                            if (eq > 0) {
+                                                String k = tok.substring(0, eq);
+                                                String v = tok.substring(eq + 1);
+                                                if ("ch".equals(k) && (n.channel == null || n.channel.isEmpty())) n.channel = v;
+                                                if ("task".equals(k) && (n.taskId == null || n.taskId.isEmpty())) n.taskId = v;
+                                                if ("sender".equals(k) && (n.senderName == null || n.senderName.isEmpty())) n.senderName = v;
+                                                if ("senderEmail".equals(k) && (n.senderEmail == null || n.senderEmail.isEmpty())) n.senderEmail = v;
+                                                if ("targetEmail".equals(k)) n.targetEmail = v;
+                                            }
+                                        }
                                     }
                                     n.message = n.message.replaceAll("<!--PF:[^>]*-->", "").trim();
                                 }
+
+                                // Skip DMs between two other people
+                                if (n.channel != null && n.channel.startsWith("dm_") && !mySlug.isEmpty()) {
+                                    if (!n.channel.contains(mySlug)) continue;
+                                }
+
+                                // Skip notifications triggered by this user
+                                if (n.senderEmail != null && !n.senderEmail.isEmpty() && n.senderEmail.equalsIgnoreCase(myEmail)) {
+                                    continue;
+                                }
+
+                                // Skip tasks targeted to someone else
+                                if (n.targetEmail != null && !n.targetEmail.isEmpty() && !n.targetEmail.equalsIgnoreCase(myEmail)) {
+                                    continue;
+                                }
+
                                 allList.add(n);
                             }
                         }
