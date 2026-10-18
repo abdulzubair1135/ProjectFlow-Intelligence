@@ -7,6 +7,7 @@ router.post('/chat/groups', chatController.createGroup);
 router.get('/chat/channels', chatController.getChannels);
 router.get('/chat/messages', chatController.getMessages);
 router.post('/chat/messages', chatController.sendMessage);
+router.post('/chat/message', chatController.sendMessage);
 router.post('/chat/messages/:id/react', chatController.reactMessage);
 
 module.exports = router;

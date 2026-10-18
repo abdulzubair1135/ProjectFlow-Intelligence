@@ -59,9 +59,9 @@ async function getProjectTasks(req, res) {
 async function createTask(req, res) {
   const { title, description, priority, dueDate, assigneeId, teamId, teamName, assigneeName } = req.body;
   const user = assigneeId ? store.users.find(u => u.id === assigneeId) : null;
-  const team = teamId ? (store.teams || []).find(tm => tm.id === teamId) : null;
+  const team = (teamId || teamName) ? (store.teams || []).find(tm => tm.id === teamId || tm.slug === teamId || (teamName && tm.name.toLowerCase() === teamName.toLowerCase())) : null;
   const resolvedAssigneeName = assigneeName || (user ? user.fullName : null);
-  const resolvedTeamName = teamName || (team ? team.name : null);
+  const resolvedTeamName = team ? team.name : (teamName || null);
 
   const task = {
     id: uuidv4(),
@@ -86,15 +86,19 @@ async function createTask(req, res) {
   let targetEmail = null;
   let targetEmails = [];
 
-  if (assigneeId) {
-    const u = store.users.find(usr => usr.id === assigneeId);
+  const targetAssignee = assigneeId || req.body.assigneeEmail;
+  if (targetAssignee) {
+    const u = store.users.find(usr => usr.id === targetAssignee || (usr.email && usr.email.toLowerCase() === targetAssignee.toLowerCase()) || (usr.fullName && resolvedAssigneeName && usr.fullName.toLowerCase() === resolvedAssigneeName.toLowerCase()));
     if (u) {
       targetUserId = u.id;
       targetEmail = u.email;
       targetEmails = [u.email];
+    } else if (targetAssignee.includes('@')) {
+      targetEmail = targetAssignee.toLowerCase();
+      targetEmails = [targetAssignee.toLowerCase()];
     }
-  } else if (teamId) {
-    const tm = (store.teams || []).find(t => t.id === teamId);
+  } else if (teamId || teamName) {
+    const tm = (store.teams || []).find(t => t.id === teamId || t.slug === teamId || (teamName && t.name.toLowerCase() === teamName.toLowerCase()));
     if (tm && Array.isArray(tm.members) && tm.members.length > 0) {
       targetEmails = tm.members;
     }
@@ -157,15 +161,19 @@ async function updateTask(req, res) {
       let targetUserId = null;
       let targetEmail = null;
       let targetEmails = [];
-      if (task.assigneeId) {
-        const u = store.users.find(usr => usr.id === task.assigneeId);
+      const targetAssignee = task.assigneeId || req.body.assigneeEmail;
+      if (targetAssignee) {
+        const u = store.users.find(usr => usr.id === targetAssignee || (usr.email && usr.email.toLowerCase() === targetAssignee.toLowerCase()) || (usr.fullName && task.assigneeName && usr.fullName.toLowerCase() === task.assigneeName.toLowerCase()));
         if (u) {
           targetUserId = u.id;
           targetEmail = u.email;
           targetEmails = [u.email];
+        } else if (targetAssignee.includes('@')) {
+          targetEmail = targetAssignee.toLowerCase();
+          targetEmails = [targetAssignee.toLowerCase()];
         }
-      } else if (task.teamId) {
-        const tm = (store.teams || []).find(t => t.id === task.teamId);
+      } else if (task.teamId || task.teamName) {
+        const tm = (store.teams || []).find(t => t.id === task.teamId || t.slug === task.teamId || (task.teamName && t.name.toLowerCase() === task.teamName.toLowerCase()));
         if (tm && Array.isArray(tm.members) && tm.members.length > 0) {
           targetEmails = tm.members;
         }

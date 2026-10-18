@@ -298,16 +298,17 @@ async function getNotifications(req, res) {
 
     // 6. Task Assigned: check if assigned to this user or their team
     if (n.type === 'TASK_ASSIGNED' || n.taskId) {
+      if (n.targetEmail && n.targetEmail.toLowerCase() === reqEmail) return true;
+      if (Array.isArray(n.targetEmails) && n.targetEmails.some(e => e.toLowerCase() === reqEmail)) return true;
+      if (n.userId && reqUserId && n.userId === reqUserId) return true;
+
       const task = (store.tasks || []).find(t => t.id === n.taskId);
       if (task) {
         if (task.assigneeId && reqUserId && task.assigneeId === reqUserId) return true;
         if (task.assigneeName && matchedUser && task.assigneeName.toLowerCase() === matchedUser.fullName?.toLowerCase()) return true;
         if (task.teamId && userTeamIds.includes(task.teamId)) return true;
-        // If task was assigned to someone else or a different team, do not show!
-        if (task.assigneeId || task.teamId) return false;
       }
-      if (n.userId && reqUserId && n.userId !== reqUserId) return false;
-      if (n.targetEmail && n.targetEmail.toLowerCase() !== reqEmail) return false;
+      return false;
     }
 
     // 7. General Broadcast alerts
