@@ -19,7 +19,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
       console.warn('API returned 401 Unauthorized');
     }
     const errBody = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(errBody.message || `API error ${res.status}`);
+    throw new Error(errBody.error || errBody.message || `API error ${res.status}`);
   }
   if (res.status === 204) {
     return {} as T;
@@ -46,6 +46,25 @@ export const api = {
     });
     return handleResponse<{ token: string; user: UserProfile }>(res);
   },
+
+  async forgotPassword(email: string) {
+    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    return handleResponse<{ success: boolean; message: string; otp: string }>(res);
+  },
+
+  async resetPassword(email: string, otp: string, newPassword: string) {
+    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp, newPassword })
+    });
+    return handleResponse<{ success: boolean; message: string }>(res);
+  },
+
 
   async getCurrentUser() {
     const res = await fetch(`${API_BASE}/me`, {

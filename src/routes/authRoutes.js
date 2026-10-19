@@ -7,6 +7,8 @@ const notificationController = require('../controllers/notificationController');
 router.post('/auth/login', authController.login);
 router.post('/auth/signup', authController.signup);
 router.post('/auth/dev-login', authController.devLogin);
+router.post('/auth/forgot-password', authController.forgotPassword);
+router.post('/auth/reset-password', authController.resetPassword);
 
 // Current User Profile
 router.get('/me', authController.getMe);

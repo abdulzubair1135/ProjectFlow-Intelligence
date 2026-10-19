@@ -35,6 +35,7 @@ public class LoginActivity extends AppCompatActivity {
     private TextView tvAuthSubtitle;
     private TextView btnSignIn;
     private TextView tvSignUp;
+    private TextView tvForgotPassword;
     private ProgressBar progressBar;
     private TextView tvError;
     private CheckBox cbRememberMe;
@@ -61,6 +62,7 @@ public class LoginActivity extends AppCompatActivity {
         tvAuthSubtitle = findViewById(R.id.tvAuthSubtitle);
         btnSignIn = findViewById(R.id.btnSignIn);
         tvSignUp = findViewById(R.id.tvSignUp);
+        tvForgotPassword = findViewById(R.id.tvForgotPassword);
         progressBar = findViewById(R.id.progressBar);
         tvError = findViewById(R.id.tvError);
         cbRememberMe = findViewById(R.id.cbRememberMe);
@@ -68,10 +70,14 @@ public class LoginActivity extends AppCompatActivity {
         tabSignIn.setOnClickListener(v -> setMode(false));
         tabSignUp.setOnClickListener(v -> setMode(true));
         tvSignUp.setOnClickListener(v -> setMode(!isSignUpMode));
+        if (tvForgotPassword != null) {
+            tvForgotPassword.setOnClickListener(v -> showForgotPasswordDialog());
+        }
 
         btnSignIn.setOnClickListener(v -> {
             String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
             String password = etPassword.getText() != null ? etPassword.getText().toString().trim() : "";
+
 
             if (isSignUpMode) {
                 String name = etName.getText() != null ? etName.getText().toString().trim() : "";
@@ -258,4 +264,161 @@ public class LoginActivity extends AppCompatActivity {
         startActivity(new Intent(LoginActivity.this, MainActivity.class));
         finish();
     }
+
+    private void showForgotPasswordDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_forgot_password, null);
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setCancelable(true)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        View layoutStep1 = dialogView.findViewById(R.id.layoutStep1Email);
+        View layoutStep2 = dialogView.findViewById(R.id.layoutStep2Reset);
+        EditText etForgotEmail = dialogView.findViewById(R.id.etForgotEmail);
+        EditText etForgotOtp = dialogView.findViewById(R.id.etForgotOtp);
+        EditText etForgotNewPassword = dialogView.findViewById(R.id.etForgotNewPassword);
+        TextView tvForgotNotice = dialogView.findViewById(R.id.tvForgotNotice);
+        TextView tvForgotError = dialogView.findViewById(R.id.tvForgotError);
+        ProgressBar progressBarForgot = dialogView.findViewById(R.id.progressBarForgot);
+        View btnCancelStep1 = dialogView.findViewById(R.id.btnCancelStep1);
+        View btnSendOtp = dialogView.findViewById(R.id.btnSendOtp);
+        View btnCancelStep2 = dialogView.findViewById(R.id.btnCancelStep2);
+        View btnSubmitReset = dialogView.findViewById(R.id.btnSubmitReset);
+
+        String currentEmail = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
+        if (!currentEmail.isEmpty()) {
+            etForgotEmail.setText(currentEmail);
+        }
+
+        btnCancelStep1.setOnClickListener(v -> dialog.dismiss());
+        btnCancelStep2.setOnClickListener(v -> dialog.dismiss());
+
+        btnSendOtp.setOnClickListener(v -> {
+            String email = etForgotEmail.getText() != null ? etForgotEmail.getText().toString().trim() : "";
+            if (email.isEmpty()) {
+                etForgotEmail.setError("Email is required");
+                etForgotEmail.requestFocus();
+                return;
+            }
+            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                etForgotEmail.setError("Please enter a valid email address");
+                etForgotEmail.requestFocus();
+                return;
+            }
+
+            progressBarForgot.setVisibility(View.VISIBLE);
+            tvForgotError.setVisibility(View.GONE);
+            btnSendOtp.setEnabled(false);
+
+            ApiService api = ApiClient.getService(this);
+            Map<String, String> body = new HashMap<>();
+            body.put("email", email);
+
+            api.forgotPassword(body).enqueue(new Callback<Map<String, Object>>() {
+                @Override
+                public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
+                    progressBarForgot.setVisibility(View.GONE);
+                    btnSendOtp.setEnabled(true);
+
+                    if (response.isSuccessful() && response.body() != null) {
+                        layoutStep1.setVisibility(View.GONE);
+                        layoutStep2.setVisibility(View.VISIBLE);
+                        tvForgotNotice.setText("Verification code sent! (OTP: 1234)");
+                        etForgotOtp.setText("1234");
+                    } else {
+                        String errMsg = "Email address not found. Please sign up first.";
+                        try {
+                            if (response.errorBody() != null) {
+                                org.json.JSONObject errObj = new org.json.JSONObject(response.errorBody().string());
+                                if (errObj.has("error")) errMsg = errObj.getString("error");
+                            }
+                        } catch (Exception ignored) {}
+                        tvForgotError.setText(errMsg);
+                        tvForgotError.setVisibility(View.VISIBLE);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                    progressBarForgot.setVisibility(View.GONE);
+                    btnSendOtp.setEnabled(true);
+                    tvForgotError.setText("Network error: Unable to reach authentication server.");
+                    tvForgotError.setVisibility(View.VISIBLE);
+                }
+            });
+        });
+
+        btnSubmitReset.setOnClickListener(v -> {
+            String email = etForgotEmail.getText() != null ? etForgotEmail.getText().toString().trim() : "";
+            String otp = etForgotOtp.getText() != null ? etForgotOtp.getText().toString().trim() : "";
+            String newPassword = etForgotNewPassword.getText() != null ? etForgotNewPassword.getText().toString().trim() : "";
+
+            if (otp.isEmpty()) {
+                etForgotOtp.setError("OTP code is required (1234)");
+                etForgotOtp.requestFocus();
+                return;
+            }
+            if (newPassword.isEmpty()) {
+                etForgotNewPassword.setError("New password is required");
+                etForgotNewPassword.requestFocus();
+                return;
+            }
+            if (newPassword.length() < 6) {
+                etForgotNewPassword.setError("Password must be at least 6 characters");
+                etForgotNewPassword.requestFocus();
+                return;
+            }
+
+            progressBarForgot.setVisibility(View.VISIBLE);
+            tvForgotError.setVisibility(View.GONE);
+            btnSubmitReset.setEnabled(false);
+
+            ApiService api = ApiClient.getService(this);
+            Map<String, String> body = new HashMap<>();
+            body.put("email", email);
+            body.put("otp", otp);
+            body.put("newPassword", newPassword);
+
+            api.resetPassword(body).enqueue(new Callback<Map<String, Object>>() {
+                @Override
+                public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
+                    progressBarForgot.setVisibility(View.GONE);
+                    btnSubmitReset.setEnabled(true);
+
+                    if (response.isSuccessful() && response.body() != null) {
+                        dialog.dismiss();
+                        Toast.makeText(LoginActivity.this, "Password reset successfully! Please log in.", Toast.LENGTH_LONG).show();
+                        etEmail.setText(email);
+                        etPassword.setText(newPassword);
+                        etPassword.requestFocus();
+                    } else {
+                        String errMsg = "Password reset failed. Invalid OTP or request.";
+                        try {
+                            if (response.errorBody() != null) {
+                                org.json.JSONObject errObj = new org.json.JSONObject(response.errorBody().string());
+                                if (errObj.has("error")) errMsg = errObj.getString("error");
+                            }
+                        } catch (Exception ignored) {}
+                        tvForgotError.setText(errMsg);
+                        tvForgotError.setVisibility(View.VISIBLE);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                    progressBarForgot.setVisibility(View.GONE);
+                    btnSubmitReset.setEnabled(true);
+                    tvForgotError.setText("Network error: Unable to reach authentication server.");
+                    tvForgotError.setVisibility(View.VISIBLE);
+                }
+            });
+        });
+
+        dialog.show();
+    }
 }
+

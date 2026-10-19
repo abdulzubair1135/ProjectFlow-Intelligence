@@ -18,8 +18,15 @@ public interface ApiService {
     @POST("auth/signup")
     Call<AuthResponse> signup(@Body Map<String, String> body);
 
+    @POST("auth/forgot-password")
+    Call<Map<String, Object>> forgotPassword(@Body Map<String, String> body);
+
+    @POST("auth/reset-password")
+    Call<Map<String, Object>> resetPassword(@Body Map<String, String> body);
+
     @POST("users/fcm-token")
     Call<Map<String, Object>> registerFcmToken(@Body Map<String, String> body);
+
 
     @GET("workspaces")
     Call<List<WorkspaceDto>> getWorkspaces();

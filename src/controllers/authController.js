@@ -327,11 +327,73 @@ function heartbeat(req, res) {
   });
 }
 
+async function forgotPassword(req, res) {
+  const email = (req.body && req.body.email) ? req.body.email.trim().toLowerCase() : '';
+  if (!email) {
+    return res.status(400).json({ error: 'Email address is required' });
+  }
+
+  store.userPasswords = loadCredentials();
+  const existingUser = store.users.find(u => u.email.toLowerCase() === email);
+  const hasPassword = Boolean(store.userPasswords[email]);
+
+  if (!existingUser && !hasPassword) {
+    return res.status(404).json({ error: 'No account found with this email. Please sign up first.' });
+  }
+
+  // Dummy OTP 1234 as required
+  console.log(`[AUTH] Forgot password requested for ${email}. OTP generated: 1234`);
+  return res.json({
+    success: true,
+    message: 'Verification code sent. Use OTP: 1234',
+    otp: '1234',
+    email
+  });
+}
+
+async function resetPassword(req, res) {
+  const email = (req.body && req.body.email) ? req.body.email.trim().toLowerCase() : '';
+  const otp = (req.body && (req.body.otp || req.body.code)) ? String(req.body.otp || req.body.code).trim() : '';
+  const newPassword = (req.body && (req.body.newPassword || req.body.password)) ? String(req.body.newPassword || req.body.password) : '';
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email address is required' });
+  }
+
+  if (otp !== '1234') {
+    return res.status(400).json({ error: 'Invalid verification code. Please enter OTP 1234.' });
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+  }
+
+  store.userPasswords = loadCredentials();
+  store.userPasswords[email] = newPassword;
+  saveCredentials(store.userPasswords);
+
+  const user = store.users.find(u => u.email.toLowerCase() === email);
+  if (user) {
+    user.password = newPassword;
+  }
+
+  recordAuditLog('PASSWORD_RESET', 'USER', user ? user.id : 'unknown', email, { ip: req.ip });
+  console.log(`[AUTH] Password reset successful for ${email}`);
+
+  return res.json({
+    success: true,
+    message: 'Password has been reset successfully! Please log in with your new password.'
+  });
+}
+
 module.exports = {
   login,
   signup,
   devLogin,
   getMe,
   updateProfile,
-  heartbeat
+  heartbeat,
+  forgotPassword,
+  resetPassword
 };
+
