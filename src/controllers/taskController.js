@@ -50,8 +50,10 @@ function getAllTasks(req, res) {
       // 2. Assigned to this user's team / squad
       if ((t.teamId && userTeamIds.includes(t.teamId)) || (t.teamName && userTeamNames.includes(t.teamName.toLowerCase()))) return true;
 
-      // 3. Unassigned / General task
-      if (!t.assigneeId && !t.assigneeEmail && !t.teamId && !t.teamName) return true;
+      // 3. Unassigned / General task -> only include if creatorEmail === reqEmail
+      if (!t.assigneeId && !t.assigneeEmail && !t.teamId && !t.teamName) {
+        return Boolean(t.creatorEmail && t.creatorEmail.toLowerCase() === reqEmail);
+      }
 
       return false;
     });
@@ -148,6 +150,9 @@ async function getProjectTasks(req, res) {
       // If explicitly assigned to another squad, reject
       if (assignedToOtherTeam) return false;
 
+      // 0. Created by this user
+      if (t.creatorEmail && t.creatorEmail.toLowerCase() === reqEmail) return true;
+
       // 1. Assigned to this user directly
       if (t.assigneeId && reqUserId && t.assigneeId === reqUserId) return true;
       if (t.assigneeEmail && t.assigneeEmail.toLowerCase() === reqEmail) return true;
@@ -156,8 +161,10 @@ async function getProjectTasks(req, res) {
       // 2. Assigned to this user's team / squad
       if ((t.teamId && userTeamIds.includes(t.teamId)) || (t.teamName && userTeamNames.includes(t.teamName.toLowerCase()))) return true;
 
-      // 3. Unassigned / General task
-      if (!t.assigneeId && !t.assigneeEmail && !t.teamId && !t.teamName) return true;
+      // 3. Unassigned / General task -> only include if creatorEmail === reqEmail
+      if (!t.assigneeId && !t.assigneeEmail && !t.teamId && !t.teamName) {
+        return Boolean(t.creatorEmail && t.creatorEmail.toLowerCase() === reqEmail);
+      }
 
       return false;
     });
@@ -168,15 +175,47 @@ async function getProjectTasks(req, res) {
 }
 
 async function createTask(req, res) {
-  const { title, description, priority, dueDate, assigneeId, teamId, teamName, assigneeName } = req.body;
-  const user = assigneeId ? store.users.find(u => u.id === assigneeId) : null;
+  const { title, description, priority, dueDate, assigneeId: reqAssigneeId, teamId: reqTeamId, teamName: reqTeamName, assigneeName: reqAssigneeName, assigneeEmail: reqAssigneeEmail } = req.body;
+  const callerEmail = (req.headers['x-user-email'] || (req.user && req.user.email) || '').trim().toLowerCase();
+  const callerUser = callerEmail ? (store.users || []).find(u => u.email?.toLowerCase() === callerEmail) : (store.users && store.users[0]);
+
+  let assigneeId = reqAssigneeId || null;
+  let assigneeEmail = reqAssigneeEmail || null;
+  let assigneeName = reqAssigneeName || null;
+  let teamId = reqTeamId || null;
+  let teamName = reqTeamName || null;
+
+  // Resolve user by ID or email
+  let user = assigneeId ? store.users.find(u => u.id === assigneeId) : null;
+  if (!user && assigneeEmail) {
+    user = store.users.find(u => u.email?.toLowerCase() === assigneeEmail.toLowerCase());
+  }
+  if (user) {
+    assigneeId = user.id;
+    assigneeEmail = user.email;
+    assigneeName = user.fullName;
+  }
+
+  // Resolve team
   const team = (teamId || teamName) ? (store.teams || []).find(tm => tm.id === teamId || tm.slug === teamId || (teamName && tm.name.toLowerCase() === teamName.toLowerCase())) : null;
-  const resolvedAssigneeName = assigneeName || (user ? user.fullName : null);
-  const resolvedTeamName = team ? team.name : (teamName || null);
+  if (team) {
+    teamId = team.id;
+    teamName = team.name;
+  }
+
+  // If completely unassigned, default assign to creator so they can see and manage it
+  if (!assigneeId && !assigneeEmail && !teamId && !teamName && callerUser) {
+    assigneeId = callerUser.id;
+    assigneeName = callerUser.fullName;
+    assigneeEmail = callerUser.email;
+  }
+
+  const defaultProjectId = (store.projects && store.projects[0]) ? store.projects[0].id : '10000000-0000-0000-0000-000000000001';
+  const targetProjectId = req.params.id || req.body.projectId || defaultProjectId;
 
   const task = {
     id: uuidv4(),
-    projectId: req.params.id,
+    projectId: targetProjectId,
     title: title || 'New Task',
     description: description || '',
     priority: priority || 'MEDIUM',
@@ -184,22 +223,23 @@ async function createTask(req, res) {
     progressPercent: 0,
     dueDate: dueDate ? dueDate.split('T')[0] : null,
     assigneeId: assigneeId || null,
-    assigneeName: resolvedAssigneeName,
+    assigneeName: assigneeName || null,
+    assigneeEmail: assigneeEmail || null,
+    creatorEmail: callerEmail || (callerUser ? callerUser.email : 'admin@projectflow.io'),
     teamId: teamId || null,
-    teamName: resolvedTeamName,
+    teamName: teamName || null,
     createdAt: new Date().toISOString()
   };
   store.tasks.push(task);
   saveTaskToSupabase(task);
 
-  const callerEmail = (req.headers['x-user-email'] || (req.user && req.user.email) || '').trim().toLowerCase();
   let targetUserId = null;
   let targetEmail = null;
   let targetEmails = [];
 
-  const targetAssignee = assigneeId || req.body.assigneeEmail;
+  const targetAssignee = assigneeId || assigneeEmail;
   if (targetAssignee) {
-    const u = store.users.find(usr => usr.id === targetAssignee || (usr.email && usr.email.toLowerCase() === targetAssignee.toLowerCase()) || (usr.fullName && resolvedAssigneeName && usr.fullName.toLowerCase() === resolvedAssigneeName.toLowerCase()));
+    const u = store.users.find(usr => usr.id === targetAssignee || (usr.email && usr.email.toLowerCase() === targetAssignee.toLowerCase()) || (usr.fullName && assigneeName && usr.fullName.toLowerCase() === assigneeName.toLowerCase()));
     if (u) {
       targetUserId = u.id;
       targetEmail = u.email;
@@ -215,17 +255,17 @@ async function createTask(req, res) {
     }
   }
 
-  const targetLabel = resolvedAssigneeName || (resolvedTeamName ? `Team "${resolvedTeamName}"` : 'Team');
+  const targetLabel = assigneeName || (teamName ? `Team "${teamName}"` : 'Team');
   await broadcastSystemNotification({
     title: '📋 New Task Assigned',
     message: `${targetLabel} received task: "${task.title}" (Priority: ${task.priority})`,
     type: 'TASK_ASSIGNED',
     taskId: task.id,
-    userId: targetUserId,
     targetEmail: targetEmail,
     targetEmails: targetEmails,
+    userId: targetUserId,
     senderEmail: callerEmail,
-    priority: task.priority
+    priority: task.priority === 'HIGH' ? 'HIGH' : 'NORMAL'
   });
 
   res.status(201).json(task);

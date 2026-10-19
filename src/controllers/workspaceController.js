@@ -58,6 +58,9 @@ function getWorkspaceProjects(req, res) {
       // If explicitly assigned to another team, reject
       if (assignedToOtherTeam) return false;
 
+      // 0. Created by this user
+      if (p.creatorEmail && p.creatorEmail.toLowerCase() === reqEmail) return true;
+
       // 1. Assigned to this user directly
       if (p.assigneeId && reqUserId && p.assigneeId === reqUserId) return true;
       if (p.assigneeEmail && p.assigneeEmail.toLowerCase() === reqEmail) return true;
@@ -80,17 +83,24 @@ function getWorkspaceProjects(req, res) {
 
 async function createWorkspaceProject(req, res) {
   const { name, code, description, assigneeId, assigneeName, assigneeEmail, teamId, teamName, status, targetDate } = req.body;
+  const callerEmail = (req.headers['x-user-email'] || (req.user && req.user.email) || '').trim().toLowerCase();
+  const callerUser = callerEmail ? (store.users || []).find(u => u.email?.toLowerCase() === callerEmail) : (store.users && store.users[0]);
+
+  const defaultWsId = (store.workspaces && store.workspaces[0]) ? store.workspaces[0].id : '00000000-0000-0000-0000-000000000001';
+  const targetWsId = req.params.id || req.body.workspaceId || defaultWsId;
+
   const project = {
     id: uuidv4(),
-    workspaceId: req.params.id,
+    workspaceId: targetWsId,
     name: name || 'New Project',
-    code: code || 'PRJ',
+    code: code || 'PRJ-' + Math.floor(100 + Math.random() * 900),
     description: description || '',
     status: status || 'PLANNING',
     health: 'ON_TRACK',
     assigneeId: null,
     assigneeName: null,
     assigneeEmail: null,
+    creatorEmail: callerEmail || (callerUser ? callerUser.email : 'admin@projectflow.io'),
     teamId: null,
     teamName: null,
     assignedEmails: [],
@@ -129,10 +139,17 @@ async function createWorkspaceProject(req, res) {
     }
   }
 
+  // If completely unassigned, default assign to the creator so they can see and manage it
+  if (!project.assigneeId && !project.assigneeEmail && !project.teamId && !project.teamName && callerUser) {
+    project.assigneeId = callerUser.id;
+    project.assigneeName = callerUser.fullName;
+    project.assigneeEmail = callerUser.email;
+    project.assignedEmails = [callerUser.email];
+  }
+
   store.projects.push(project);
   saveProjectToSupabase(project);
 
-  const callerEmail = (req.headers['x-user-email'] || (req.user && req.user.email) || '').trim().toLowerCase();
   const targetLabel = project.assigneeName || (project.teamName ? `Team "${project.teamName}"` : null);
 
   if (targetLabel) {

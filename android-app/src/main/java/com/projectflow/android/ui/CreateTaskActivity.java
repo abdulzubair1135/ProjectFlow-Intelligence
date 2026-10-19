@@ -153,6 +153,12 @@ public class CreateTaskActivity extends AppCompatActivity {
                 teamName = g.name;
             }
 
+            if (assigneeId == null && teamId == null) {
+                android.content.SharedPreferences prefs = getSharedPreferences("projectflow_prefs", MODE_PRIVATE);
+                assigneeEmail = prefs.getString("user_email", null);
+                assigneeName = prefs.getString("user_name", "Team Member");
+            }
+
             final String finalAssigneeId = assigneeId;
             final String finalAssigneeName = assigneeName;
             final String finalAssigneeEmail = assigneeEmail;

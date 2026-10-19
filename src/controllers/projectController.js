@@ -36,6 +36,9 @@ function getAllProjects(req, res) {
       // If explicitly assigned to another team, reject
       if (assignedToOtherTeam) return false;
 
+      // 0. Created by this user
+      if (p.creatorEmail && p.creatorEmail.toLowerCase() === reqEmail) return true;
+
       // 1. Assigned to this user directly
       if (p.assigneeId && reqUserId && p.assigneeId === reqUserId) return true;
       if (p.assigneeEmail && p.assigneeEmail.toLowerCase() === reqEmail) return true;
@@ -45,8 +48,10 @@ function getAllProjects(req, res) {
       // 2. Assigned to this user's team / squad
       if ((p.teamId && userTeamIds.includes(p.teamId)) || (p.teamName && userTeamNames.includes(p.teamName.toLowerCase()))) return true;
 
-      // 3. Unassigned / General project
-      if (!p.assigneeId && !p.assigneeEmail && !p.teamId && !p.teamName) return true;
+      // 3. Unassigned / General project -> only include if creatorEmail === reqEmail
+      if (!p.assigneeId && !p.assigneeEmail && !p.teamId && !p.teamName) {
+        return Boolean(p.creatorEmail && p.creatorEmail.toLowerCase() === reqEmail);
+      }
 
       return false;
     });

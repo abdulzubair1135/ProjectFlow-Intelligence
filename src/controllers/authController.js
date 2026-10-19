@@ -4,6 +4,45 @@ const { store, supabase } = require('../supabase');
 const { JWT_SECRET } = require('../middleware/authMiddleware');
 const { recordAuditLog } = require('../middleware/auditLogger');
 
+const crypto = require('crypto');
+
+// Pre-configured passwords for system accounts
+store.userPasswords = store.userPasswords || {
+  'admin@projectflow.io': ['ProjectFlow@2026', 'admin123', 'Admin@123'],
+  'manager@projectflow.io': ['ProjectFlow@2026', 'manager123', 'Manager@123'],
+  'abdulzubair221@gmail.com': ['ProjectFlow@2026', 'abdul123', 'Abdul@123', '123456'],
+  'vipra@projectflow.io': ['ProjectFlow@2026', 'vipra123'],
+  'boyundertheaim@gmail.com': ['ProjectFlow@2026', 'design123'],
+  'lalwanipuneet91@gmail.com': ['ProjectFlow@2026', 'puneet123']
+};
+
+function verifyPassword(email, inputPassword) {
+  if (!inputPassword) return false;
+  const normalizedEmail = (email || '').trim().toLowerCase();
+
+  // 1. Check in store.userPasswords
+  const validList = store.userPasswords[normalizedEmail];
+  if (Array.isArray(validList)) {
+    if (validList.includes(inputPassword)) return true;
+  } else if (typeof validList === 'string') {
+    if (validList === inputPassword) return true;
+  }
+
+  // 2. Check if user object in store has password
+  const user = store.users.find(u => u.email.toLowerCase() === normalizedEmail);
+  if (user && user.password && user.password === inputPassword) {
+    return true;
+  }
+
+  // 3. Fallback for accounts created without explicit password:
+  // Only accept standard master password ProjectFlow@2026
+  if (!validList && (!user || !user.password)) {
+    return inputPassword === 'ProjectFlow@2026';
+  }
+
+  return false;
+}
+
 async function login(req, res) {
   const email = (req.body && req.body.email) ? req.body.email.trim().toLowerCase() : '';
   const password = req.body && req.body.password ? req.body.password : '';
@@ -12,20 +51,34 @@ async function login(req, res) {
     return res.status(400).json({ error: 'Email address is required' });
   }
 
-  // 1. Attempt Supabase Auth if password is provided
+  if (!password) {
+    return res.status(400).json({ error: 'Password is required' });
+  }
+
+  // 1. Attempt Supabase Auth if connected
+  let authSuccess = false;
   let authUser = null;
   if (supabase && password) {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (!error && data && data.user) {
         authUser = data.user;
+        authSuccess = true;
       }
     } catch (e) {
       console.warn('[AUTH] Supabase signIn fallback:', e.message);
     }
   }
 
-  // 2. Find or dynamically provision user
+  // 2. If Supabase auth was not used/successful, verify against credential store
+  if (!authSuccess) {
+    const isPasswordValid = verifyPassword(email, password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid email or password. Please verify your credentials.' });
+    }
+  }
+
+  // 3. Find or dynamically provision user
   let user = store.users.find(u => u.email.toLowerCase() === email);
   if (!user) {
     const role = email.includes('admin') ? 'ADMINISTRATOR' : (email.includes('manager') ? 'MANAGER' : 'MEMBER');
@@ -58,10 +111,10 @@ async function login(req, res) {
     }
   }
 
-  // 3. Mark active session
+  // 4. Mark active session
   store.activeSessions[email] = Date.now();
 
-  // 4. Generate JWT
+  // 5. Generate JWT
   const token = jwt.sign(
     { userId: user.id, email: user.email, role: user.role, fullName: user.fullName },
     JWT_SECRET,
@@ -80,6 +133,13 @@ async function signup(req, res) {
   if (!email) {
     return res.status(400).json({ error: 'Email address is required' });
   }
+
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+  }
+
+  // Register password in memory credential store
+  store.userPasswords[email.toLowerCase()] = [password];
 
   let userId = uuidv4();
 
@@ -105,6 +165,7 @@ async function signup(req, res) {
     email,
     fullName,
     role,
+    password,
     active: true,
     createdAt: new Date().toISOString()
   };

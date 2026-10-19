@@ -225,10 +225,16 @@ public class ProjectsFragment extends Fragment {
             if (name.isEmpty()) return;
 
             new Thread(() -> {
+                android.content.SharedPreferences prefs = requireContext().getSharedPreferences("projectflow_prefs", android.content.Context.MODE_PRIVATE);
+                String currentEmail = prefs.getString("user_email", "").trim();
+                String currentName = prefs.getString("user_name", "Team Member").trim();
                 List<WorkspaceEntity> wsList = AppDatabase.getInstance(requireContext()).workspaceDao().getAllSync();
                 String wsId = (wsList != null && !wsList.isEmpty()) ? wsList.get(0).id : "00000000-0000-0000-0000-000000000001";
-                repository.createProject(wsId, name, code, desc,
-                        () -> requireActivity().runOnUiThread(() -> Toast.makeText(requireContext(), "Project Created", Toast.LENGTH_SHORT).show()),
+                repository.createProject(wsId, name, code, desc, null, currentName, currentEmail, null, null,
+                        () -> requireActivity().runOnUiThread(() -> {
+                            Toast.makeText(requireContext(), "Project Created", Toast.LENGTH_SHORT).show();
+                            repository.refreshProjects();
+                        }),
                         () -> requireActivity().runOnUiThread(() -> Toast.makeText(requireContext(), "Failed creating project", Toast.LENGTH_SHORT).show())
                 );
             }).start();

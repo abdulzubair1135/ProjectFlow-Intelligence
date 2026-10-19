@@ -109,6 +109,7 @@ public class DtoModels {
         public String message;
         public String type;
         public String taskId;
+        public String projectId;
         public String priority;
         public String channel;
         public String senderName;

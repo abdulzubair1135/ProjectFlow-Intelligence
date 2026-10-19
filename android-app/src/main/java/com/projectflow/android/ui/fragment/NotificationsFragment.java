@@ -62,11 +62,23 @@ public class NotificationsFragment extends Fragment {
                 repository.markNotificationRead(notif.id, null);
             }
             if (notif.message != null && notif.message.contains("<!--PF:")) {
-                java.util.regex.Matcher m = java.util.regex.Pattern.compile("<!--PF:ch=([^:]*):task=([^:]*):sender=([^>]*)-->").matcher(notif.message);
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("<!--PF:(.*?)-->").matcher(notif.message);
                 if (m.find()) {
-                    if (notif.channel == null || notif.channel.isEmpty()) notif.channel = m.group(1);
-                    if (notif.taskId == null || notif.taskId.isEmpty()) notif.taskId = m.group(2);
-                    if (notif.senderName == null || notif.senderName.isEmpty()) notif.senderName = m.group(3);
+                    String inside = m.group(1);
+                    String[] parts = inside.split(":");
+                    for (String part : parts) {
+                        int eq = part.indexOf('=');
+                        if (eq > 0) {
+                            String k = part.substring(0, eq).trim();
+                            String v = part.substring(eq + 1).trim();
+                            if ("ch".equalsIgnoreCase(k) && (notif.channel == null || notif.channel.isEmpty())) notif.channel = v;
+                            if ("task".equalsIgnoreCase(k) && (notif.taskId == null || notif.taskId.isEmpty())) notif.taskId = v;
+                            if ("sender".equalsIgnoreCase(k) && (notif.senderName == null || notif.senderName.isEmpty())) notif.senderName = v;
+                            if ("senderEmail".equalsIgnoreCase(k) && (notif.senderEmail == null || notif.senderEmail.isEmpty())) notif.senderEmail = v;
+                            if ("targetEmail".equalsIgnoreCase(k)) notif.targetEmail = v;
+                            if ("proj".equalsIgnoreCase(k)) notif.projectId = v;
+                        }
+                    }
                 }
             }
             boolean isChat = (notif.channel != null && !notif.channel.isEmpty())
@@ -89,12 +101,26 @@ public class NotificationsFragment extends Fragment {
                             "Chat: " + sender
                     );
                 }
-            } else if (notif.taskId != null && !notif.taskId.isEmpty()) {
-                android.content.Intent intent = new android.content.Intent(requireContext(), com.projectflow.android.ui.TaskDetailsActivity.class);
-                intent.putExtra("task_id", notif.taskId);
-                intent.putExtra("task_title", notif.title);
-                intent.putExtra("task_desc", notif.message != null ? notif.message.replaceAll("<!--PF:[^>]*-->", "").trim() : "");
-                startActivity(intent);
+            } else if ((notif.taskId != null && !notif.taskId.isEmpty()) || (notif.type != null && notif.type.toUpperCase().contains("TASK"))) {
+                if (notif.taskId != null && !notif.taskId.isEmpty()) {
+                    android.content.Intent intent = new android.content.Intent(requireContext(), com.projectflow.android.ui.TaskDetailsActivity.class);
+                    intent.putExtra("task_id", notif.taskId);
+                    intent.putExtra("task_title", notif.title);
+                    intent.putExtra("task_desc", notif.message != null ? notif.message.replaceAll("<!--PF:[^>]*-->", "").trim() : "");
+                    startActivity(intent);
+                } else if (getActivity() instanceof com.projectflow.android.ui.MainActivity) {
+                    ((com.projectflow.android.ui.MainActivity) getActivity()).navigateToFragment(
+                            new TasksFragment(),
+                            "Tasks"
+                    );
+                }
+            } else if (notif.type != null && notif.type.toUpperCase().contains("PROJECT")) {
+                if (getActivity() instanceof com.projectflow.android.ui.MainActivity) {
+                    ((com.projectflow.android.ui.MainActivity) getActivity()).navigateToFragment(
+                            new ProjectsFragment(),
+                            "Projects"
+                    );
+                }
             }
         });
 

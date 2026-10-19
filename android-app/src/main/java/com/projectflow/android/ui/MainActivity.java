@@ -1,6 +1,7 @@
 package com.projectflow.android.ui;
 
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
@@ -281,6 +282,32 @@ public class MainActivity extends AppCompatActivity {
             return true;
         } else if ("NOTIFICATIONS".equalsIgnoreCase(navigateTo)) {
             loadFragment(new NotificationsFragment(), "Notifications");
+            return true;
+        } else if ("TASK".equalsIgnoreCase(navigateTo) || "TASKS".equalsIgnoreCase(navigateTo)) {
+            String taskId = intent.getStringExtra("task_id");
+            if (taskId != null && !taskId.isEmpty()) {
+                Intent taskIntent = new Intent(this, TaskDetailsActivity.class);
+                taskIntent.putExtra("task_id", taskId);
+                taskIntent.putExtra("task_title", intent.getStringExtra("task_title"));
+                taskIntent.putExtra("task_desc", intent.getStringExtra("task_desc"));
+                taskIntent.putExtra("task_priority", intent.getStringExtra("task_priority"));
+                startActivity(taskIntent);
+            } else {
+                loadFragment(new TasksFragment(), "Tasks");
+                if (bottomNav != null) bottomNav.setSelectedItemId(R.id.nav_tasks);
+            }
+            return true;
+        } else if ("PROJECT".equalsIgnoreCase(navigateTo) || "PROJECTS".equalsIgnoreCase(navigateTo)) {
+            String projectId = intent.getStringExtra("project_id");
+            if (projectId != null && !projectId.isEmpty()) {
+                Intent projIntent = new Intent(this, ProjectDetailsActivity.class);
+                projIntent.putExtra("project_id", projectId);
+                projIntent.putExtra("project_name", intent.getStringExtra("project_name"));
+                startActivity(projIntent);
+            } else {
+                loadFragment(new ProjectsFragment(), "Projects");
+                if (bottomNav != null) bottomNav.setSelectedItemId(R.id.nav_projects);
+            }
             return true;
         }
         return false;

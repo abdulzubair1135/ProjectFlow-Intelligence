@@ -88,6 +88,24 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
+            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                etEmail.setError("Please enter a valid email address");
+                etEmail.requestFocus();
+                return;
+            }
+
+            if (password.isEmpty()) {
+                etPassword.setError("Password is required");
+                etPassword.requestFocus();
+                return;
+            }
+
+            if (password.length() < 6) {
+                etPassword.setError("Password must be at least 6 characters");
+                etPassword.requestFocus();
+                return;
+            }
+
             performAuth(email, password);
         });
     }
@@ -135,9 +153,7 @@ public class LoginActivity extends AppCompatActivity {
         ApiService api = ApiClient.getService(this);
         Map<String, String> body = new HashMap<>();
         body.put("email", email);
-        if (!password.isEmpty()) {
-            body.put("password", password);
-        }
+        body.put("password", password);
 
         Call<AuthResponse> authCall;
         if (isSignUpMode) {
@@ -162,7 +178,19 @@ public class LoginActivity extends AppCompatActivity {
                     String userRole = response.body().user != null ? response.body().user.role : "MEMBER";
                     saveSessionAndNavigate(response.body().token, userEmail, userName, userRole);
                 } else {
-                    fallbackLocalLogin(email);
+                    String errorMsg = "Invalid email or password. Please try again.";
+                    try {
+                        if (response.errorBody() != null) {
+                            String errJson = response.errorBody().string();
+                            org.json.JSONObject obj = new org.json.JSONObject(errJson);
+                            if (obj.has("error")) {
+                                errorMsg = obj.getString("error");
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                    tvError.setText(errorMsg);
+                    tvError.setVisibility(View.VISIBLE);
+                    Toast.makeText(LoginActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                 }
             }
 
@@ -170,17 +198,12 @@ public class LoginActivity extends AppCompatActivity {
             public void onFailure(Call<AuthResponse> call, Throwable t) {
                 progressBar.setVisibility(View.GONE);
                 btnSignIn.setEnabled(true);
-                fallbackLocalLogin(email);
+                String errorMsg = "Unable to connect to server. Please check your network.";
+                tvError.setText(errorMsg);
+                tvError.setVisibility(View.VISIBLE);
+                Toast.makeText(LoginActivity.this, errorMsg, Toast.LENGTH_LONG).show();
             }
         });
-    }
-
-    private void fallbackLocalLogin(String email) {
-        String token = "dev-member-token";
-        String role = "MEMBER";
-        if (email.contains("admin")) { token = "dev-admin-token"; role = "ADMINISTRATOR"; }
-        else if (email.contains("manager")) { token = "dev-manager-token"; role = "MANAGER"; }
-        saveSessionAndNavigate(token, email, null, role);
     }
 
     private void saveSessionAndNavigate(String token, String email, String fullName, String role) {

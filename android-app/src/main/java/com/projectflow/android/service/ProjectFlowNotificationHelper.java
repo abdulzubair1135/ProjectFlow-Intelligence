@@ -107,6 +107,10 @@ public class ProjectFlowNotificationHelper {
             intent.putExtra("task_priority", priority != null ? priority : "MEDIUM");
         } else {
             intent = new Intent(context, MainActivity.class);
+            intent.putExtra("navigate_to", "TASK");
+            intent.putExtra("task_title", title);
+            intent.putExtra("task_desc", message);
+            intent.putExtra("task_priority", priority != null ? priority : "MEDIUM");
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
 
@@ -152,6 +156,7 @@ public class ProjectFlowNotificationHelper {
 
         Intent intent = new Intent(context, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.putExtra("navigate_to", "TASKS");
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context,
@@ -216,12 +221,14 @@ public class ProjectFlowNotificationHelper {
         collapsedView.setTextViewText(R.id.notifChannelTag, isDirect ? "Direct Chat" : "#" + ch);
         collapsedView.setTextViewText(R.id.notifTime, formattedTime);
         collapsedView.setTextViewText(R.id.notifMessage, message != null ? message : "");
+        collapsedView.setOnClickPendingIntent(R.id.rootNotifCollapsed, pendingIntent);
 
         RemoteViews expandedView = new RemoteViews(context.getPackageName(), R.layout.notification_chat_expanded);
         expandedView.setTextViewText(R.id.notifExpandedSender, sender);
         expandedView.setTextViewText(R.id.notifExpandedChannel, isDirect ? "Direct Chat" : "#" + ch);
         expandedView.setTextViewText(R.id.notifExpandedTime, formattedTime);
         expandedView.setTextViewText(R.id.notifExpandedMessage, message != null ? message : "");
+        expandedView.setOnClickPendingIntent(R.id.rootNotifExpanded, pendingIntent);
         expandedView.setOnClickPendingIntent(R.id.btnOpenChat, pendingIntent);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_CHAT)
