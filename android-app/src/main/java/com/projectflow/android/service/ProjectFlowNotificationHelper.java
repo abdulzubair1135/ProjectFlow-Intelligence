@@ -121,20 +121,20 @@ public class ProjectFlowNotificationHelper {
         Bitmap logoBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.logo_clean);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_TASKS)
-                .setSmallIcon(R.drawable.ic_tasks)
+                .setSmallIcon(R.drawable.ic_stat_logo)
                 .setLargeIcon(logoBitmap)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
                 .setSound(defaultSound)
-                .setColor(Color.parseColor("#47745A"))
+                .setColor(Color.parseColor("#795B43"))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setContentIntent(contentPendingIntent);
 
         // Add Quick Action: View Task
         if (taskId != null && !taskId.isEmpty()) {
-            builder.addAction(R.drawable.ic_tasks, "View Task", contentPendingIntent);
+            builder.addAction(R.drawable.ic_stat_logo, "View Task", contentPendingIntent);
         }
 
         NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -164,7 +164,7 @@ public class ProjectFlowNotificationHelper {
         Bitmap logoBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.logo_clean);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_RISKS)
-                .setSmallIcon(R.drawable.ic_risk)
+                .setSmallIcon(R.drawable.ic_stat_logo)
                 .setLargeIcon(logoBitmap)
                 .setContentTitle(title)
                 .setContentText(riskDetail)
@@ -183,9 +183,6 @@ public class ProjectFlowNotificationHelper {
         }
     }
 
-    /**
-     * Displays an actionable heads-up chat notification with native Android MessagingStyle.
-     */
     public static void showChatNotification(Context context, String title, String message, String channelName, String senderName) {
         initChannels(context);
 
@@ -212,38 +209,37 @@ public class ProjectFlowNotificationHelper {
         boolean isDirect = ch.startsWith("dm_");
         String channelDisplay = isDirect ? "Direct Chat" : "#" + ch;
         String displayTitle = isDirect ? sender : ("#" + ch + " • " + sender);
+        String formattedTime = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
 
-        Person user = new Person.Builder()
-                .setName("You")
-                .setKey("current_user")
-                .build();
+        RemoteViews collapsedView = new RemoteViews(context.getPackageName(), R.layout.notification_chat_collapsed);
+        collapsedView.setTextViewText(R.id.notifSenderName, sender);
+        collapsedView.setTextViewText(R.id.notifChannelTag, isDirect ? "Direct Chat" : "#" + ch);
+        collapsedView.setTextViewText(R.id.notifTime, formattedTime);
+        collapsedView.setTextViewText(R.id.notifMessage, message != null ? message : "");
 
-        Person senderPerson = new Person.Builder()
-                .setName(sender)
-                .setKey(sender)
-                .build();
-
-        NotificationCompat.MessagingStyle messagingStyle = new NotificationCompat.MessagingStyle(user)
-                .setConversationTitle(isDirect ? null : ("#" + ch))
-                .setGroupConversation(!isDirect)
-                .addMessage(message != null ? message : "", System.currentTimeMillis(), senderPerson);
+        RemoteViews expandedView = new RemoteViews(context.getPackageName(), R.layout.notification_chat_expanded);
+        expandedView.setTextViewText(R.id.notifExpandedSender, sender);
+        expandedView.setTextViewText(R.id.notifExpandedChannel, isDirect ? "Direct Chat" : "#" + ch);
+        expandedView.setTextViewText(R.id.notifExpandedTime, formattedTime);
+        expandedView.setTextViewText(R.id.notifExpandedMessage, message != null ? message : "");
+        expandedView.setOnClickPendingIntent(R.id.btnOpenChat, pendingIntent);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_CHAT)
-                .setSmallIcon(R.drawable.ic_chat)
-                .setStyle(messagingStyle)
+                .setSmallIcon(R.drawable.ic_stat_logo)
+                .setCustomContentView(collapsedView)
+                .setCustomBigContentView(expandedView)
+                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
                 .setContentTitle(displayTitle)
                 .setContentText(message)
                 .setSubText(channelDisplay)
                 .setSound(defaultSound)
                 .setVibrate(new long[]{0, 200, 100, 200})
-                .setColor(Color.parseColor("#47745A"))
+                .setColor(Color.parseColor("#795B43"))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent);
-
-        builder.addAction(R.drawable.ic_chat, isDirect ? "Open Chat" : "Open #" + ch, pendingIntent);
 
         NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) {

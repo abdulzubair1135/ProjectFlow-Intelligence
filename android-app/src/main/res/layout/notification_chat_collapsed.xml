@@ -3,6 +3,7 @@
     android:id="@+id/rootNotifCollapsed"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/bg_notif_card"
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingStart="12dp"
@@ -10,14 +11,21 @@
     android:paddingEnd="12dp"
     android:paddingBottom="8dp">
 
-    <!-- Brand Logo -->
-    <ImageView
-        android:layout_width="28dp"
-        android:layout_height="28dp"
+    <!-- App Brand Logo in circular badge -->
+    <FrameLayout
+        android:layout_width="36dp"
+        android:layout_height="36dp"
         android:layout_marginEnd="10dp"
-        android:contentDescription="Brand Logo"
-        android:scaleType="fitCenter"
-        android:src="@drawable/logo_clean" />
+        android:background="@drawable/bg_notif_logo_circle">
+
+        <ImageView
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_gravity="center"
+            android:contentDescription="ProjectFlow Logo"
+            android:scaleType="fitCenter"
+            android:src="@drawable/logo_clean" />
+    </FrameLayout>
 
     <!-- Content Column -->
     <LinearLayout
@@ -26,16 +34,51 @@
         android:layout_weight="1"
         android:orientation="vertical">
 
-        <!-- Channel & Sender Title -->
-        <TextView
-            android:id="@+id/notifTitle"
+        <!-- Sender + Channel Tag + Time -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/notifSenderName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Administrator"
+                android:textColor="#30271F"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/notifChannelTag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_notif_tag"
+                android:paddingStart="6dp"
+                android:paddingTop="1dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="1dp"
+                android:text="#general"
+                android:textColor="#47745A"
+                android:textSize="10.5sp"
+                android:textStyle="bold" />
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/notifTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#8C8072"
+                android:textSize="11sp" />
+        </LinearLayout>
 
         <!-- Message Snippet -->
         <TextView
@@ -45,17 +88,8 @@
             android:layout_marginTop="2dp"
             android:ellipsize="end"
             android:maxLines="1"
-            android:textColor="?android:attr/textColorSecondary"
+            android:textColor="#493628"
             android:textSize="12sp" />
     </LinearLayout>
-
-    <!-- Timestamp -->
-    <TextView
-        android:id="@+id/notifTime"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:textColor="?android:attr/textColorSecondary"
-        android:textSize="11sp" />
 
 </LinearLayout>

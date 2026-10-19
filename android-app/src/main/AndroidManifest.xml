@@ -61,6 +61,14 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- Default Notification Icon and Theme Color for Push Notifications -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_logo" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/primary_earth" />
+
         <!-- Firebase Cloud Messaging Push Notification Service -->
         <service
             android:name=".service.ProjectFlowFirebaseMessagingService"
