@@ -26,6 +26,13 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
         this.listener = listener;
     }
 
+    private List<com.projectflow.android.data.local.TaskEntity> tasks = new ArrayList<>();
+
+    public void setTasks(List<com.projectflow.android.data.local.TaskEntity> list) {
+        this.tasks = list != null ? list : new ArrayList<>();
+        notifyDataSetChanged();
+    }
+
     public void setProjects(List<ProjectEntity> list) {
         this.projects = list != null ? list : new ArrayList<>();
         notifyDataSetChanged();
@@ -61,10 +68,17 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
             }
         }
 
-        int progress = 65;
-        if (p.name.contains("Mobile")) progress = 75;
-        else if (p.name.contains("Website")) progress = 40;
-        else if (p.name.contains("Dashboard") || p.name.contains("Client")) progress = 20;
+        int total = 0;
+        int completed = 0;
+        for (com.projectflow.android.data.local.TaskEntity t : tasks) {
+            if (t.projectId != null && t.projectId.equals(p.id)) {
+                total++;
+                if ("DONE".equalsIgnoreCase(t.statusCategory) || "COMPLETED".equalsIgnoreCase(t.statusCategory) || t.progressPercent == 100) {
+                    completed++;
+                }
+            }
+        }
+        int progress = (total > 0) ? (completed * 100 / total) : 0;
 
         holder.tvProgress.setText(progress + "%");
         holder.pbProgress.setProgress(progress);

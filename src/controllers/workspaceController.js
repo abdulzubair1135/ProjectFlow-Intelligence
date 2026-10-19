@@ -39,8 +39,13 @@ function getWorkspaceProjects(req, res) {
   const mapped = rawList.map(p => {
     const user = p.assigneeId ? (store.users || []).find(u => u.id === p.assigneeId) : null;
     const team = p.teamId ? (store.teams || []).find(t => t.id === p.teamId || t.slug === p.teamId || (p.teamName && t.name.toLowerCase() === p.teamName.toLowerCase())) : null;
+    const projectTasks = (store.tasks || []).filter(t => t.projectId === p.id);
+    const total = projectTasks.length;
+    const completed = projectTasks.filter(t => t.statusCategory === 'DONE' || t.progressPercent === 100).length;
+    const progressPercent = (total > 0) ? Math.round((completed * 100) / total) : 0;
     return {
       ...p,
+      progressPercent,
       assigneeName: user ? user.fullName : (p.assigneeName || null),
       assigneeEmail: user ? user.email : (p.assigneeEmail || null),
       teamName: team ? team.name : (p.teamName || null)
@@ -70,8 +75,10 @@ function getWorkspaceProjects(req, res) {
       // 2. Assigned to this user's team / squad
       if ((p.teamId && userTeamIds.includes(p.teamId)) || (p.teamName && userTeamNames.includes(p.teamName.toLowerCase()))) return true;
 
-      // 3. Unassigned / General project
-      if (!p.assigneeId && !p.assigneeEmail && !p.teamId && !p.teamName) return true;
+      // 3. Unassigned / General project -> only include if creatorEmail === reqEmail
+      if (!p.assigneeId && !p.assigneeEmail && !p.teamId && !p.teamName) {
+        return Boolean(p.creatorEmail && p.creatorEmail.toLowerCase() === reqEmail);
+      }
 
       return false;
     });

@@ -171,6 +171,7 @@ public class DashboardFragment extends Fragment {
 
         db.taskDao().getAllLive().observe(getViewLifecycleOwner(), tasks -> {
             rawTasks = (tasks != null) ? tasks : new ArrayList<>();
+            if (projectAdapter != null) projectAdapter.setTasks(rawTasks);
             updateFilteredMetrics();
         });
 

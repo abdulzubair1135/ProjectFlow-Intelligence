@@ -133,6 +133,12 @@ public class ProjectsFragment extends Fragment {
             applyFilter();
         });
 
+        repository.getAllTasks().observe(getViewLifecycleOwner(), taskList -> {
+            if (adapter != null) {
+                adapter.setTasks(taskList);
+            }
+        });
+
         fabAdd.setOnClickListener(v -> showCreateProjectDialog());
     }
 

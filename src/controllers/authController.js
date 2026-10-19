@@ -5,41 +5,64 @@ const { JWT_SECRET } = require('../middleware/authMiddleware');
 const { recordAuditLog } = require('../middleware/auditLogger');
 
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
-// Pre-configured passwords for system accounts
-store.userPasswords = store.userPasswords || {
-  'admin@projectflow.io': ['ProjectFlow@2026', 'admin123', 'Admin@123'],
-  'manager@projectflow.io': ['ProjectFlow@2026', 'manager123', 'Manager@123'],
-  'abdulzubair221@gmail.com': ['ProjectFlow@2026', 'abdul123', 'Abdul@123', '123456'],
-  'vipra@projectflow.io': ['ProjectFlow@2026', 'vipra123'],
-  'boyundertheaim@gmail.com': ['ProjectFlow@2026', 'design123'],
-  'lalwanipuneet91@gmail.com': ['ProjectFlow@2026', 'puneet123']
+const CREDENTIALS_FILE = path.join(__dirname, '../../database/user_credentials.json');
+
+const defaultCredentials = {
+  'admin@projectflow.io': 'ProjectFlow@2026',
+  'manager@projectflow.io': 'ProjectFlow@2026',
+  'abdulzubair221@gmail.com': 'ProjectFlow@2026',
+  'vipra@projectflow.io': 'ProjectFlow@2026',
+  'boyundertheaim@gmail.com': 'ProjectFlow@2026',
+  'lalwanipuneet91@gmail.com': 'ProjectFlow@2026'
 };
+
+function loadCredentials() {
+  try {
+    if (fs.existsSync(CREDENTIALS_FILE)) {
+      const data = fs.readFileSync(CREDENTIALS_FILE, 'utf8');
+      return { ...defaultCredentials, ...JSON.parse(data) };
+    }
+  } catch (e) {
+    console.warn('[AUTH] Error reading user_credentials.json:', e.message);
+  }
+  return { ...defaultCredentials };
+}
+
+function saveCredentials(credentials) {
+  try {
+    const dir = path.dirname(CREDENTIALS_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(credentials, null, 2), 'utf8');
+  } catch (e) {
+    console.warn('[AUTH] Error writing user_credentials.json:', e.message);
+  }
+}
+
+store.userPasswords = loadCredentials();
 
 function verifyPassword(email, inputPassword) {
   if (!inputPassword) return false;
   const normalizedEmail = (email || '').trim().toLowerCase();
 
-  // 1. Check in store.userPasswords
-  const validList = store.userPasswords[normalizedEmail];
-  if (Array.isArray(validList)) {
-    if (validList.includes(inputPassword)) return true;
-  } else if (typeof validList === 'string') {
-    if (validList === inputPassword) return true;
+  // 1. Check in persistent store.userPasswords
+  const registeredPassword = store.userPasswords[normalizedEmail];
+  if (registeredPassword) {
+    if (Array.isArray(registeredPassword)) {
+      return registeredPassword.includes(inputPassword);
+    }
+    return registeredPassword === inputPassword;
   }
 
   // 2. Check if user object in store has password
   const user = store.users.find(u => u.email.toLowerCase() === normalizedEmail);
-  if (user && user.password && user.password === inputPassword) {
-    return true;
+  if (user && user.password) {
+    return user.password === inputPassword;
   }
 
-  // 3. Fallback for accounts created without explicit password:
-  // Only accept standard master password ProjectFlow@2026
-  if (!validList && (!user || !user.password)) {
-    return inputPassword === 'ProjectFlow@2026';
-  }
-
+  // Strict: DO NOT allow unverified accounts to log in
   return false;
 }
 
@@ -54,6 +77,12 @@ async function login(req, res) {
   if (!password) {
     return res.status(400).json({ error: 'Password is required' });
   }
+
+  // Always reload credentials to catch recent signups
+  store.userPasswords = loadCredentials();
+
+  const existingUser = store.users.find(u => u.email.toLowerCase() === email);
+  const hasRegisteredPassword = Boolean(store.userPasswords && store.userPasswords[email]);
 
   // 1. Attempt Supabase Auth if connected
   let authSuccess = false;
@@ -70,22 +99,42 @@ async function login(req, res) {
     }
   }
 
-  // 2. If Supabase auth was not used/successful, verify against credential store
+  // USER DIRECTIVE: Agar email ne sign up nahi kiya hai to login bilkul nahi karne dena
+  if (!existingUser && !hasRegisteredPassword && !authSuccess) {
+    return res.status(404).json({ error: 'No account found with this email. Please sign up first.' });
+  }
+
+  // USER DIRECTIVE: Jo password signup me dala hai wahi password verify karna hai
   if (!authSuccess) {
     const isPasswordValid = verifyPassword(email, password);
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid email or password. Please verify your credentials.' });
+      return res.status(401).json({ error: 'Incorrect password. Please enter the password you created during sign-up.' });
     }
   }
 
-  // 3. Find or dynamically provision user
-  let user = store.users.find(u => u.email.toLowerCase() === email);
+  // 3. User is authorized
+  let user = existingUser;
+  if (!user && authUser) {
+    const role = email.includes('admin') ? 'ADMINISTRATOR' : (email.includes('manager') ? 'MANAGER' : 'MEMBER');
+    const defaultName = email.split('@')[0];
+    const formattedName = defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
+    user = {
+      id: authUser.id,
+      email,
+      fullName: (authUser.user_metadata && authUser.user_metadata.full_name) || formattedName,
+      role,
+      active: true,
+      createdAt: new Date().toISOString()
+    };
+    store.users.push(user);
+  }
+
   if (!user) {
     const role = email.includes('admin') ? 'ADMINISTRATOR' : (email.includes('manager') ? 'MANAGER' : 'MEMBER');
     const defaultName = email.split('@')[0];
     const formattedName = defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
     user = {
-      id: authUser ? authUser.id : uuidv4(),
+      id: uuidv4(),
       email,
       fullName: formattedName,
       role,
@@ -93,22 +142,6 @@ async function login(req, res) {
       createdAt: new Date().toISOString()
     };
     store.users.push(user);
-
-    // Save to Supabase profiles
-    if (supabase) {
-      try {
-        await supabase.from('profiles').upsert({
-          id: user.id,
-          email: user.email,
-          full_name: user.fullName,
-          role: user.role,
-          active: true,
-          created_at: user.createdAt
-        });
-      } catch (e) {
-        console.warn('[AUTH] Supabase profile provision warning:', e.message);
-      }
-    }
   }
 
   // 4. Mark active session
@@ -138,8 +171,16 @@ async function signup(req, res) {
     return res.status(400).json({ error: 'Password must be at least 6 characters long' });
   }
 
-  // Register password in memory credential store
-  store.userPasswords[email.toLowerCase()] = [password];
+  // Check if account already exists
+  store.userPasswords = loadCredentials();
+  const existingUser = store.users.find(u => u.email.toLowerCase() === email);
+  if (existingUser && store.userPasswords[email]) {
+    return res.status(409).json({ error: 'An account with this email already exists. Please log in.' });
+  }
+
+  // Register password in persistent credential store
+  store.userPasswords[email] = password;
+  saveCredentials(store.userPasswords);
 
   let userId = uuidv4();
 
