@@ -884,13 +884,7 @@ public class ChatFragment extends Fragment {
     }
 
     private String formatTime(String isoString) {
-        if (isoString == null) return "";
-        try {
-            SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
-            Date d = parser.parse(isoString);
-            return d != null ? timeFormat.format(d) : "";
-        } catch (Exception e) {
-            return "";
-        }
+        if (isoString == null || isoString.trim().isEmpty()) return "";
+        return com.projectflow.android.ui.adapter.ChatAdapter.formatTime(isoString);
     }
 }

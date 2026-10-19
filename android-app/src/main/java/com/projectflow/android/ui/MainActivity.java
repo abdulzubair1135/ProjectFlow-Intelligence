@@ -227,6 +227,25 @@ public class MainActivity extends AppCompatActivity {
 
         // Start Real-Time Notification & Chat Sync Manager
         NotificationSyncManager.getInstance(this).start();
+
+        // Ensure FCM Push Token is registered with active server
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+                if (task.isSuccessful() && task.getResult() != null) {
+                    String fcmDeviceToken = task.getResult();
+                    prefs.edit().putString("fcm_token", fcmDeviceToken).apply();
+                    new Thread(() -> {
+                        try {
+                            java.util.Map<String, String> body = new java.util.HashMap<>();
+                            body.put("fcmToken", fcmDeviceToken);
+                            String email = prefs.getString("user_email", "abdulzubair221@gmail.com");
+                            body.put("email", email);
+                            com.projectflow.android.data.remote.ApiClient.getService(this).registerFcmToken(body).execute();
+                        } catch (Exception ignored) {}
+                    }).start();
+                }
+            });
+        } catch (Exception ignored) {}
     }
 
     @Override

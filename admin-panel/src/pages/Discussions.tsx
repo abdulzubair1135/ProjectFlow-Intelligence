@@ -48,6 +48,24 @@ interface DiscussionsProps {
   initialMemberEmail?: string;
 }
 
+const formatMessageTime = (dateStr?: string) => {
+  if (!dateStr) return '';
+  try {
+    let clean = dateStr.trim();
+    if (!clean.includes('T') && clean.includes(' ')) {
+      clean = clean.replace(' ', 'T');
+    }
+    if (!clean.endsWith('Z') && !clean.includes('+') && !clean.includes('-')) {
+      clean = clean + 'Z';
+    }
+    const d = new Date(clean);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+  } catch {
+    return '';
+  }
+};
+
 export const Discussions: React.FC<DiscussionsProps> = ({ initialChannel, initialMemberEmail }) => {
   const { user } = useAuth();
 
@@ -425,7 +443,7 @@ export const Discussions: React.FC<DiscussionsProps> = ({ initialChannel, initia
                       {role}
                     </span>
                     <span className="text-[10px] text-[#78866B]">
-                      {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {formatMessageTime(m.createdAt)}
                     </span>
                     {isMe && <span className="text-[10px] text-[#56664C] font-bold">✓✓</span>}
                   </div>

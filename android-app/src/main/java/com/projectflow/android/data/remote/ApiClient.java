@@ -17,7 +17,11 @@ public class ApiClient {
     private static final String KEY_BASE_URL = "api_base_url";
     private static final String KEY_TOKEN = "auth_token";
     // Live Public Production Cloud URL hosted on Render
-    public static final String DEFAULT_URL = "https://projectflow-intelligence.onrender.com/api/v1/";
+    // Primary & Fallback Endpoints
+    public static final String LOCAL_URL = "http://127.0.0.1:8082/api/v1/";
+    public static final String WIFI_URL = "http://10.17.158.31:8082/api/v1/";
+    public static final String CLOUD_URL = "https://projectflow-intelligence.onrender.com/api/v1/";
+    public static final String DEFAULT_URL = LOCAL_URL;
 
     public static ApiService getService(Context context) {
         if (INSTANCE == null) {
@@ -37,8 +41,7 @@ public class ApiClient {
     private static ApiService createService(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         String baseUrl = prefs.getString(KEY_BASE_URL, DEFAULT_URL);
-        // Automatically migrate legacy trycloudflare or localhost URLs to live Render production server
-        if (baseUrl.contains("trycloudflare.com") || baseUrl.contains("127.0.0.1") || baseUrl.contains("localhost") || !baseUrl.contains("projectflow-intelligence.onrender.com")) {
+        if (baseUrl == null || baseUrl.isEmpty() || baseUrl.contains("trycloudflare.com")) {
             baseUrl = DEFAULT_URL;
             prefs.edit().putString(KEY_BASE_URL, DEFAULT_URL).apply();
         }
@@ -68,34 +71,41 @@ public class ApiClient {
         Interceptor fallbackInterceptor = chain -> {
             Request request = chain.request();
             try {
-                return chain.proceed(request);
-            } catch (java.io.IOException e) {
-                okhttp3.HttpUrl originalUrl = request.url();
-                if (originalUrl.host().contains("onrender.com")) {
-                    try {
-                        okhttp3.HttpUrl fallbackUrl = originalUrl.newBuilder()
-                                .scheme("http")
-                                .host("127.0.0.1")
-                                .port(8082)
-                                .build();
-                        return chain.proceed(request.newBuilder().url(fallbackUrl).build());
-                    } catch (java.io.IOException ignored) {
-                        okhttp3.HttpUrl wifiUrl = originalUrl.newBuilder()
-                                .scheme("http")
-                                .host("10.76.238.31")
-                                .port(8082)
-                                .build();
-                        return chain.proceed(request.newBuilder().url(wifiUrl).build());
-                    }
+                okhttp3.Response response = chain.proceed(request);
+                if (response.isSuccessful() || response.code() < 500) {
+                    return response;
                 }
-                throw e;
+                response.close();
+            } catch (java.io.IOException ignored) {}
+
+            okhttp3.HttpUrl originalUrl = request.url();
+            String host = originalUrl.host();
+
+            String[] candidates = new String[] { "127.0.0.1", "10.17.158.31", "projectflow-intelligence.onrender.com" };
+            for (String targetHost : candidates) {
+                if (targetHost.equalsIgnoreCase(host)) continue;
+                try {
+                    okhttp3.HttpUrl.Builder b = originalUrl.newBuilder().host(targetHost);
+                    if (targetHost.contains("onrender.com")) {
+                        b.scheme("https").port(443);
+                    } else {
+                        b.scheme("http").port(8082);
+                    }
+                    okhttp3.Response fbResponse = chain.proceed(request.newBuilder().url(b.build()).build());
+                    if (fbResponse.isSuccessful() || fbResponse.code() < 500) {
+                        return fbResponse;
+                    }
+                    fbResponse.close();
+                } catch (java.io.IOException ignored) {}
             }
+
+            return chain.proceed(request);
         };
 
         OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(15, TimeUnit.SECONDS)
-                .writeTimeout(15, TimeUnit.SECONDS)
+                .connectTimeout(4, TimeUnit.SECONDS)
+                .readTimeout(8, TimeUnit.SECONDS)
+                .writeTimeout(8, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true)
                 .addInterceptor(fallbackInterceptor)
                 .addInterceptor(authInterceptor)

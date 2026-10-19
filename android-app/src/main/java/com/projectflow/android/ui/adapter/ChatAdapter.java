@@ -9,8 +9,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.projectflow.android.R;
 import com.projectflow.android.data.remote.model.DtoModels.ChatMessageDto;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -177,11 +183,35 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return messages.size();
     }
 
-    private String formatTime(String isoString) {
-        if (isoString == null || isoString.length() < 16) return "Just now";
+    public static String formatTime(String isoString) {
+        if (isoString == null || isoString.trim().isEmpty()) return "Just now";
         try {
-            return isoString.substring(11, 16);
+            String trimmed = isoString.trim();
+            Instant instant;
+            if (trimmed.endsWith("Z")) {
+                instant = Instant.parse(trimmed);
+            } else if (trimmed.contains("+") || (trimmed.length() > 19 && (trimmed.charAt(19) == '-' || trimmed.charAt(19) == '+'))) {
+                instant = OffsetDateTime.parse(trimmed).toInstant();
+            } else {
+                String clean = trimmed.replace(" ", "T");
+                if (!clean.endsWith("Z")) clean = clean + "Z";
+                instant = Instant.parse(clean);
+            }
+            ZonedDateTime localTime = instant.atZone(ZoneId.systemDefault());
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("hh:mm a", Locale.getDefault());
+            return localTime.format(dtf);
         } catch (Exception e) {
+            try {
+                String clean = isoString.replace("T", " ").replace("Z", "");
+                if (clean.length() > 19) clean = clean.substring(0, 19);
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+                java.util.Date d = sdf.parse(clean);
+                if (d != null) {
+                    java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("hh:mm a", Locale.getDefault());
+                    return out.format(d);
+                }
+            } catch (Exception ignored) {}
             return "Today";
         }
     }

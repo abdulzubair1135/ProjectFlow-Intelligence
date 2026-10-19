@@ -25,7 +25,7 @@ public class NotificationSyncManager {
     private static final String PREF_NAME = "projectflow_notif_sync";
     private static final String KEY_SEEN_MESSAGES = "seen_chat_ids";
     private static final String KEY_SEEN_NOTIFS = "seen_notif_ids";
-    private static final long SYNC_INTERVAL_MS = 3500; // 3.5 seconds real-time polling
+    private static final long SYNC_INTERVAL_MS = 2000; // 2 seconds real-time polling
 
     private static volatile NotificationSyncManager INSTANCE;
     private final Context appContext;
@@ -138,8 +138,9 @@ public class NotificationSyncManager {
                     // Check if message was sent by current user
                     String author = (msg.senderName != null) ? msg.senderName.trim().toLowerCase() : "";
                     String authorEmail = (msg.senderEmail != null) ? msg.senderEmail.trim().toLowerCase() : "";
-                    boolean isSelf = (!currentName.isEmpty() && author.equals(currentName))
-                            || (!currentEmail.isEmpty() && (currentEmail.equals(authorEmail) || currentEmail.startsWith(author)));
+                    boolean isSelf = (!currentName.isEmpty() && !author.isEmpty() && author.equals(currentName))
+                            || (!currentEmail.isEmpty() && !authorEmail.isEmpty() && currentEmail.equalsIgnoreCase(authorEmail))
+                            || (!currentEmail.isEmpty() && !author.isEmpty() && currentEmail.startsWith(author));
 
                     if (isSelf) {
                         continue;
@@ -240,8 +241,17 @@ public class NotificationSyncManager {
                             }
                         }
 
-                        // Avoid duplicate chat notifications if already notified in chat sync
-                        if ("CHAT_MESSAGE".equalsIgnoreCase(notif.type) || (notif.title != null && notif.title.contains("💬"))) {
+                        if ("CHAT_MESSAGE".equalsIgnoreCase(notif.type) || (notif.channel != null && !notif.channel.isEmpty() && notif.taskId == null)) {
+                            Log.i(TAG, "Triggering chat notification from notif sync: " + notif.title + " - " + notif.message);
+                            String sender = (notif.senderName != null && !notif.senderName.isEmpty()) ? notif.senderName : "System Administrator";
+                            String title = notif.title != null ? notif.title : ("💬 " + sender);
+                            ProjectFlowNotificationHelper.showChatNotification(
+                                    appContext,
+                                    title,
+                                    notif.message,
+                                    notif.channel,
+                                    sender
+                            );
                             continue;
                         }
 
