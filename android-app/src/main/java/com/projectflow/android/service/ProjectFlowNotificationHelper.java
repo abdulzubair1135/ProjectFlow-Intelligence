@@ -13,6 +13,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.widget.RemoteViews;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.Person;
 import com.projectflow.android.R;
 import com.projectflow.android.ui.MainActivity;
 import com.projectflow.android.ui.TaskDetailsActivity;
@@ -183,14 +184,13 @@ public class ProjectFlowNotificationHelper {
     }
 
     /**
-     * Displays an actionable heads-up chat notification with brand logo and rich custom card UI.
+     * Displays an actionable heads-up chat notification with native Android MessagingStyle.
      */
     public static void showChatNotification(Context context, String title, String message, String channelName, String senderName) {
         initChannels(context);
 
         String ch = (channelName != null && !channelName.isEmpty()) ? channelName : "general";
         String sender = (senderName != null && !senderName.isEmpty()) ? senderName : "System Administrator";
-        String timeStr = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
 
         Intent intent = new Intent(context, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -208,41 +208,38 @@ public class ProjectFlowNotificationHelper {
         );
 
         Uri defaultSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        Bitmap logoBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.logo_clean);
 
         boolean isDirect = ch.startsWith("dm_");
         String channelDisplay = isDirect ? "Direct Chat" : "#" + ch;
-        String displayTitle = isDirect ? ("💬 " + sender) : ("💬 #" + ch + " • " + sender);
+        String displayTitle = isDirect ? sender : ("#" + ch + " • " + sender);
 
-        // 1. Rich Collapsed Custom UI with Channel & Sender Title and Time
-        RemoteViews collapsedView = new RemoteViews(context.getPackageName(), R.layout.notification_chat_collapsed);
-        collapsedView.setTextViewText(R.id.notifTitle, displayTitle);
-        collapsedView.setTextViewText(R.id.notifMessage, message);
-        collapsedView.setTextViewText(R.id.notifTime, timeStr);
-        collapsedView.setOnClickPendingIntent(R.id.rootNotifCollapsed, pendingIntent);
+        Person user = new Person.Builder()
+                .setName("You")
+                .setKey("current_user")
+                .build();
 
-        // 2. Rich Expanded Custom UI with Channel Tag, Sender, and Message Bubble
-        RemoteViews expandedView = new RemoteViews(context.getPackageName(), R.layout.notification_chat_expanded);
-        expandedView.setTextViewText(R.id.notifChannelExpanded, channelDisplay);
-        expandedView.setTextViewText(R.id.notifSenderExpanded, sender);
-        expandedView.setTextViewText(R.id.notifMessageExpanded, message);
-        expandedView.setTextViewText(R.id.notifTimeExpanded, timeStr);
-        expandedView.setOnClickPendingIntent(R.id.rootNotifExpanded, pendingIntent);
+        Person senderPerson = new Person.Builder()
+                .setName(sender)
+                .setKey(sender)
+                .build();
+
+        NotificationCompat.MessagingStyle messagingStyle = new NotificationCompat.MessagingStyle(user)
+                .setConversationTitle(isDirect ? null : ("#" + ch))
+                .setGroupConversation(!isDirect)
+                .addMessage(message != null ? message : "", System.currentTimeMillis(), senderPerson);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_CHAT)
                 .setSmallIcon(R.drawable.ic_chat)
-                .setLargeIcon(logoBitmap)
+                .setStyle(messagingStyle)
                 .setContentTitle(displayTitle)
                 .setContentText(message)
                 .setSubText(channelDisplay)
-                .setCustomContentView(collapsedView)
-                .setCustomBigContentView(expandedView)
-                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
                 .setSound(defaultSound)
                 .setVibrate(new long[]{0, 200, 100, 200})
                 .setColor(Color.parseColor("#47745A"))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent);
 
