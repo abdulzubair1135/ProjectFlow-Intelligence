@@ -23,6 +23,9 @@ export const Login: React.FC = () => {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError] = useState<string | null>(null);
   const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
+  const [showForgotOtp, setShowForgotOtp] = useState(true);
+  const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -308,29 +311,48 @@ export const Login: React.FC = () => {
                     <label className="block text-[11px] font-semibold text-[#5A6258] uppercase tracking-wider mb-1">
                       Verification Code (OTP)
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={forgotOtp}
-                      onChange={(e) => setForgotOtp(e.target.value)}
-                      placeholder="Enter 1234"
-                      className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-xl text-sm font-mono tracking-widest text-[#292D28] focus:outline-none focus:border-[#56664C]"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showForgotOtp ? 'text' : 'password'}
+                        required
+                        value={forgotOtp}
+                        onChange={(e) => setForgotOtp(e.target.value)}
+                        placeholder="Enter 1234"
+                        className="w-full pl-3 pr-10 py-2 bg-white border border-[#E2E0D8] rounded-xl text-sm font-mono tracking-widest text-[#292D28] focus:outline-none focus:border-[#56664C]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotOtp(!showForgotOtp)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#78866B] hover:text-[#292D28]"
+                      >
+                        {showForgotOtp ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-[11px] font-semibold text-[#5A6258] uppercase tracking-wider mb-1">
                       New Password
                     </label>
-                    <input
-                      type="password"
-                      required
-                      value={forgotNewPassword}
-                      onChange={(e) => setForgotNewPassword(e.target.value)}
-                      placeholder="Min. 6 characters"
-                      className="w-full px-3 py-2 bg-white border border-[#E2E0D8] rounded-xl text-sm text-[#292D28] focus:outline-none focus:border-[#56664C]"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showForgotNewPassword ? 'text' : 'password'}
+                        required
+                        value={forgotNewPassword}
+                        onChange={(e) => setForgotNewPassword(e.target.value)}
+                        placeholder="Min. 6 characters"
+                        className="w-full pl-3 pr-10 py-2 bg-white border border-[#E2E0D8] rounded-xl text-sm text-[#292D28] focus:outline-none focus:border-[#56664C]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotNewPassword(!showForgotNewPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#78866B] hover:text-[#292D28]"
+                      >
+                        {showForgotNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
+
 
                   <div className="flex gap-2 pt-1">
                     <button

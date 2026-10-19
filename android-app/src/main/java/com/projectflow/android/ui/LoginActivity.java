@@ -36,6 +36,8 @@ public class LoginActivity extends AppCompatActivity {
     private TextView btnSignIn;
     private TextView tvSignUp;
     private TextView tvForgotPassword;
+    private ImageView ivTogglePassword;
+    private boolean isPasswordVisible = false;
     private ProgressBar progressBar;
     private TextView tvError;
     private CheckBox cbRememberMe;
@@ -50,6 +52,7 @@ public class LoginActivity extends AppCompatActivity {
 
         etEmail = findViewById(R.id.emailEditText);
         etPassword = findViewById(R.id.passwordEditText);
+        ivTogglePassword = findViewById(R.id.ivTogglePassword);
         etName = findViewById(R.id.etName);
         etWorkspace = findViewById(R.id.etWorkspace);
         layoutNameField = findViewById(R.id.layoutNameField);
@@ -73,6 +76,14 @@ public class LoginActivity extends AppCompatActivity {
         if (tvForgotPassword != null) {
             tvForgotPassword.setOnClickListener(v -> showForgotPasswordDialog());
         }
+
+        if (ivTogglePassword != null) {
+            ivTogglePassword.setOnClickListener(v -> {
+                isPasswordVisible = !isPasswordVisible;
+                togglePasswordVisibility(etPassword, ivTogglePassword, isPasswordVisible);
+            });
+        }
+
 
         btnSignIn.setOnClickListener(v -> {
             String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
@@ -281,6 +292,8 @@ public class LoginActivity extends AppCompatActivity {
         EditText etForgotEmail = dialogView.findViewById(R.id.etForgotEmail);
         EditText etForgotOtp = dialogView.findViewById(R.id.etForgotOtp);
         EditText etForgotNewPassword = dialogView.findViewById(R.id.etForgotNewPassword);
+        ImageView ivToggleForgotOtp = dialogView.findViewById(R.id.ivToggleForgotOtp);
+        ImageView ivToggleForgotNewPassword = dialogView.findViewById(R.id.ivToggleForgotNewPassword);
         TextView tvForgotNotice = dialogView.findViewById(R.id.tvForgotNotice);
         TextView tvForgotError = dialogView.findViewById(R.id.tvForgotError);
         ProgressBar progressBarForgot = dialogView.findViewById(R.id.progressBarForgot);
@@ -289,10 +302,27 @@ public class LoginActivity extends AppCompatActivity {
         View btnCancelStep2 = dialogView.findViewById(R.id.btnCancelStep2);
         View btnSubmitReset = dialogView.findViewById(R.id.btnSubmitReset);
 
+        final boolean[] isOtpVisible = {true};
+        if (ivToggleForgotOtp != null) {
+            ivToggleForgotOtp.setOnClickListener(v -> {
+                isOtpVisible[0] = !isOtpVisible[0];
+                togglePasswordVisibility(etForgotOtp, ivToggleForgotOtp, isOtpVisible[0]);
+            });
+        }
+
+        final boolean[] isNewPassVisible = {false};
+        if (ivToggleForgotNewPassword != null) {
+            ivToggleForgotNewPassword.setOnClickListener(v -> {
+                isNewPassVisible[0] = !isNewPassVisible[0];
+                togglePasswordVisibility(etForgotNewPassword, ivToggleForgotNewPassword, isNewPassVisible[0]);
+            });
+        }
+
         String currentEmail = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
         if (!currentEmail.isEmpty()) {
             etForgotEmail.setText(currentEmail);
         }
+
 
         btnCancelStep1.setOnClickListener(v -> dialog.dismiss());
         btnCancelStep2.setOnClickListener(v -> dialog.dismiss());
@@ -420,5 +450,22 @@ public class LoginActivity extends AppCompatActivity {
 
         dialog.show();
     }
+
+    private void togglePasswordVisibility(EditText editText, ImageView toggleView, boolean isVisible) {
+        if (editText == null || toggleView == null) return;
+        if (isVisible) {
+            editText.setTransformationMethod(android.text.method.HideReturnsTransformationMethod.getInstance());
+            toggleView.setImageResource(R.drawable.ic_eye);
+            toggleView.setColorFilter(ContextCompat.getColor(this, R.color.primary_earth));
+        } else {
+            editText.setTransformationMethod(android.text.method.PasswordTransformationMethod.getInstance());
+            toggleView.setImageResource(R.drawable.ic_eye_off);
+            toggleView.setColorFilter(ContextCompat.getColor(this, R.color.text_muted));
+        }
+        if (editText.getText() != null) {
+            editText.setSelection(editText.getText().length());
+        }
+    }
 }
+
 
